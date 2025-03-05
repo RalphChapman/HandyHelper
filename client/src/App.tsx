@@ -6,6 +6,7 @@ import { Navigation } from "@/components/navigation";
 import Home from "@/pages/home";
 import Services from "@/pages/services";
 import Quote from "@/pages/quote";
+import Book from "@/pages/book";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -14,6 +15,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/services" component={Services} />
       <Route path="/quote" component={Quote} />
+      <Route path="/book" component={Book} />
       <Route component={NotFound} />
     </Switch>
   );

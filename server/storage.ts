@@ -1,4 +1,4 @@
-import { Service, InsertService, QuoteRequest, InsertQuoteRequest } from "@shared/schema";
+import { Service, InsertService, QuoteRequest, InsertQuoteRequest, Booking, InsertBooking } from "@shared/schema";
 
 export interface IStorage {
   // Services
@@ -9,19 +9,30 @@ export interface IStorage {
   // Quote Requests
   createQuoteRequest(request: InsertQuoteRequest): Promise<QuoteRequest>;
   getQuoteRequests(): Promise<QuoteRequest[]>;
+
+  // Bookings
+  createBooking(booking: InsertBooking): Promise<Booking>;
+  getBooking(id: number): Promise<Booking | undefined>;
+  getBookings(): Promise<Booking[]>;
+  getBookingsByEmail(email: string): Promise<Booking[]>;
+  updateBookingStatus(id: number, status: string): Promise<Booking | undefined>;
 }
 
 export class MemStorage implements IStorage {
   private services: Map<number, Service>;
   private quoteRequests: Map<number, QuoteRequest>;
+  private bookings: Map<number, Booking>;
   private servicesId: number;
   private quoteRequestsId: number;
+  private bookingsId: number;
 
   constructor() {
     this.services = new Map();
     this.quoteRequests = new Map();
+    this.bookings = new Map();
     this.servicesId = 1;
     this.quoteRequestsId = 1;
+    this.bookingsId = 1;
 
     // Seed initial services
     const initialServices: InsertService[] = [
@@ -81,6 +92,38 @@ export class MemStorage implements IStorage {
 
   async getQuoteRequests(): Promise<QuoteRequest[]> {
     return Array.from(this.quoteRequests.values());
+  }
+
+  // Booking methods
+  async createBooking(booking: InsertBooking): Promise<Booking> {
+    const id = this.bookingsId++;
+    const newBooking = { ...booking, id };
+    this.bookings.set(id, newBooking);
+    return newBooking;
+  }
+
+  async getBooking(id: number): Promise<Booking | undefined> {
+    return this.bookings.get(id);
+  }
+
+  async getBookings(): Promise<Booking[]> {
+    return Array.from(this.bookings.values());
+  }
+
+  async getBookingsByEmail(email: string): Promise<Booking[]> {
+    return Array.from(this.bookings.values()).filter(
+      booking => booking.clientEmail === email
+    );
+  }
+
+  async updateBookingStatus(id: number, status: string): Promise<Booking | undefined> {
+    const booking = this.bookings.get(id);
+    if (booking) {
+      const updatedBooking = { ...booking, status };
+      this.bookings.set(id, updatedBooking);
+      return updatedBooking;
+    }
+    return undefined;
   }
 }
 

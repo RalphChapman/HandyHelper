@@ -7,6 +7,7 @@ export function Navigation() {
   const links = [
     { href: "/", label: "Home" },
     { href: "/services", label: "Services" },
+    { href: "/book", label: "Book Now" },
     { href: "/quote", label: "Get Quote" },
   ];
 
@@ -21,7 +22,7 @@ export function Navigation() {
               </a>
             </Link>
           </div>
-          
+
           <div className="hidden sm:flex sm:items-center">
             {links.map((link) => (
               <Link key={link.href} href={link.href}>
