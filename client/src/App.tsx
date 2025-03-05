@@ -10,29 +10,21 @@ import Book from "@/pages/book";
 import Dashboard from "@/pages/dashboard";
 import NotFound from "@/pages/not-found";
 
-function Router() {
-  return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/services" component={Services} />
-      <Route path="/quote" component={Quote} />
-      <Route path="/book" component={Book} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route component={NotFound} />
-    </Switch>
-  );
-}
-
-function App() {
+export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Navigation />
       <main>
-        <Router />
+        <Switch>
+          <Route path="/" component={Home} />
+          <Route path="/services" component={Services} />
+          <Route path="/quote" component={Quote} />
+          <Route path="/book" component={Book} />
+          <Route path="/dashboard" component={Dashboard} />
+          <Route component={NotFound} />
+        </Switch>
       </main>
       <Toaster />
     </QueryClientProvider>
   );
 }
-
-export default App;
