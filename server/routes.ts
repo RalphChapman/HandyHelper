@@ -1,5 +1,4 @@
 import type { Express } from "express";
-import { createServer } from "http";
 import { storage } from "./storage";
 import { insertQuoteRequestSchema, insertBookingSchema } from "@shared/schema";
 import { ZodError } from "zod";
@@ -91,6 +90,4 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ message: "Failed to fetch bookings" });
     }
   });
-
-  return createServer(app);
 }
