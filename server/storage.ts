@@ -89,7 +89,16 @@ export class MemStorage implements IStorage {
         rating: 5,
         review: "Ralph did an amazing job repairing our damaged walls. You can't even tell where the repairs were made!",
         reviewAuthor: "Michael Anderson"
-      }
+      },
+      {
+        name: "General Home Maintenance",
+        description: "Comprehensive home maintenance and repairs including door repairs, window maintenance, gutter cleaning, small fixes, and other miscellaneous tasks to keep your home in top condition.",
+        category: "General Repairs",
+        imageUrl: "https://cdn.iconscout.com/icon/premium/png-256-thumb/home-repair-2236667-1873278.png",
+        rating: 5,
+        review: "Ralph is our go-to handyman for all home repairs. He's fixed everything from sticky doors to loose gutters. His versatility and reliability are outstanding!",
+        reviewAuthor: "Robert Chen"
+      },
     ];
 
     initialServices.forEach(service => {
