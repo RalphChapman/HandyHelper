@@ -1,13 +1,14 @@
-// Force development mode for Replit environment
-process.env.NODE_ENV = "development";
+// Force production mode for Replit environment
+process.env.NODE_ENV = "production";
 
 import express from "express";
+import compression from "compression";
 import { registerRoutes } from "./routes";
-import { setupVite, log } from "./vite";
-import { createServer } from "http";
+import { serveStatic, log } from "./vite";
 
 const app = express();
 app.use(express.json());
+app.use(compression());
 
 // Enhanced request logging
 app.use((req, res, next) => {
@@ -35,15 +36,13 @@ app.use((req, res, next) => {
 
 (async () => {
   try {
-    const server = createServer(app);
-
     // Register API routes first
     await registerRoutes(app);
 
-    // Then setup Vite for development
-    await setupVite(app, server);
+    // Serve static files in production
+    serveStatic(app);
 
-    server.listen(5000, "0.0.0.0", () => {
+    app.listen(5000, "0.0.0.0", () => {
       log("Server running on port 5000");
     });
   } catch (error) {
