@@ -62,6 +62,15 @@ export class MemStorage implements IStorage {
         rating: 5,
         review: "The custom shelving Ralph built for our home office is beautiful. His attention to detail and craftsmanship is exceptional.",
         reviewAuthor: "Emily Wilson"
+      },
+      {
+        name: "Landscaping",
+        description: "Professional landscaping services including lawn care, garden design, tree trimming, and outdoor space maintenance.",
+        category: "Landscaping",
+        imageUrl: "https://cdn.iconscout.com/icon/premium/png-256-thumb/landscape-2236664-1873275.png",
+        rating: 5,
+        review: "Ralph transformed our backyard into a beautiful outdoor living space. His attention to detail with the garden layout and plant selection was impressive.",
+        reviewAuthor: "David Thompson"
       }
     ];
 
