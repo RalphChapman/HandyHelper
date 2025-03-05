@@ -12,11 +12,11 @@ export function ServiceCard({ service }: ServiceCardProps) {
   return (
     <Card className="overflow-hidden">
       <CardHeader>
-        <div className="w-full h-48 flex items-center justify-center bg-gray-100 rounded-t-lg">
+        <div className="w-full h-48 overflow-hidden rounded-t-lg">
           <img
             src={service.imageUrl}
             alt={service.name}
-            className="w-24 h-24 object-contain"
+            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
           />
         </div>
         <CardTitle className="mt-4">{service.name}</CardTitle>

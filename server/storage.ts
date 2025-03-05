@@ -55,7 +55,7 @@ export class MemStorage implements IStorage {
         name: "General Home Maintenance",
         description: "Comprehensive home maintenance and repairs including door repairs, window maintenance, gutter cleaning, small fixes, and other miscellaneous tasks to keep your home in top condition.",
         category: "General Repairs",
-        imageUrl: "https://cdn.iconscout.com/icon/premium/png-256-thumb/home-repair-2236667-1873278.png",
+        imageUrl: "https://images.unsplash.com/photo-1581783898377-1c85bf937427",
         rating: 5,
         review: "Ralph is our go-to handyman for all home repairs. He's fixed everything from sticky doors to loose gutters. His versatility and reliability are outstanding!",
         reviewAuthor: "Robert Chen"
@@ -64,7 +64,7 @@ export class MemStorage implements IStorage {
         name: "Plumbing Repairs",
         description: "Expert plumbing services including leak repairs, pipe maintenance, and fixture installations.",
         category: "Plumbing",
-        imageUrl: "https://cdn.iconscout.com/icon/premium/png-256-thumb/plumbing-repair-2236660-1873271.png",
+        imageUrl: "https://images.unsplash.com/photo-1607472586893-edb57bdc0e39",
         rating: 5,
         review: "Ralph fixed our leaky faucet and replaced some old pipes. He was professional, quick, and the price was very reasonable. Highly recommend!",
         reviewAuthor: "Sarah Johnson"
@@ -73,7 +73,7 @@ export class MemStorage implements IStorage {
         name: "Electrical Work",
         description: "Professional electrical services including wiring, lighting installation, and electrical repairs.",
         category: "Electrical",
-        imageUrl: "https://cdn.iconscout.com/icon/premium/png-256-thumb/electrical-repair-2236662-1873273.png",
+        imageUrl: "https://images.unsplash.com/photo-1621905252507-b35492cc74b4",
         rating: 5,
         review: "Outstanding electrical work! Ralph rewired our entire garage and installed new lighting. His expertise as an electrical engineer really shows.",
         reviewAuthor: "Mike Peters"
@@ -82,7 +82,7 @@ export class MemStorage implements IStorage {
         name: "Carpentry",
         description: "Custom carpentry solutions including furniture repair, cabinet installation, and woodworking.",
         category: "Carpentry",
-        imageUrl: "https://cdn.iconscout.com/icon/premium/png-256-thumb/carpentry-tools-2236663-1873274.png",
+        imageUrl: "https://images.unsplash.com/photo-1504148455328-c376907d081c",
         rating: 5,
         review: "The custom shelving Ralph built for our home office is beautiful. His attention to detail and craftsmanship is exceptional.",
         reviewAuthor: "Emily Wilson"
@@ -91,7 +91,7 @@ export class MemStorage implements IStorage {
         name: "Outdoor Solutions",
         description: "Professional fence painting/repair and patio installations. Expert craftsmanship for all your outdoor structure needs.",
         category: "Landscaping",
-        imageUrl: "https://cdn.iconscout.com/icon/premium/png-256-thumb/landscape-2236664-1873275.png",
+        imageUrl: "https://images.unsplash.com/photo-1598197722123-8549245c4f46",
         rating: 5,
         review: "Ralph repaired and repainted our old fence, and installed a beautiful new patio. The quality of work is outstanding!",
         reviewAuthor: "David Thompson"
@@ -100,7 +100,7 @@ export class MemStorage implements IStorage {
         name: "Interior Painting",
         description: "Professional interior painting services with attention to detail and clean, precise work.",
         category: "Painting",
-        imageUrl: "https://cdn.iconscout.com/icon/premium/png-256-thumb/paint-roller-2236665-1873276.png",
+        imageUrl: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f",
         rating: 5,
         review: "Excellent paint job throughout our house. Ralph's prep work and attention to detail made all the difference.",
         reviewAuthor: "Jennifer Martinez"
@@ -109,7 +109,7 @@ export class MemStorage implements IStorage {
         name: "Sheetrock Repair",
         description: "Expert drywall and sheetrock repair services, from small patches to complete wall restoration.",
         category: "General Repairs",
-        imageUrl: "https://cdn.iconscout.com/icon/premium/png-256-thumb/wall-repair-2236666-1873277.png",
+        imageUrl: "https://images.unsplash.com/photo-1573557755467-5f7b8ae0ce6d",
         rating: 5,
         review: "Ralph did an amazing job repairing our damaged walls. You can't even tell where the repairs were made!",
         reviewAuthor: "Michael Anderson"
