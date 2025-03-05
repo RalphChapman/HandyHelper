@@ -9,6 +9,7 @@ export function Navigation() {
     { href: "/services", label: "Services" },
     { href: "/book", label: "Book Now" },
     { href: "/quote", label: "Get Quote" },
+    { href: "/dashboard", label: "Dashboard" },
   ];
 
   return (

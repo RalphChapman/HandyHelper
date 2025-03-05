@@ -7,6 +7,7 @@ import Home from "@/pages/home";
 import Services from "@/pages/services";
 import Quote from "@/pages/quote";
 import Book from "@/pages/book";
+import Dashboard from "@/pages/dashboard";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/services" component={Services} />
       <Route path="/quote" component={Quote} />
       <Route path="/book" component={Book} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route component={NotFound} />
     </Switch>
   );
