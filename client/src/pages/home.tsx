@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Wrench, Shield, Clock } from "lucide-react";
-import { InlineWidget } from "react-calendly";
 import { BusinessCard } from "@/components/business-card";
 
 export default function Home() {
@@ -128,16 +127,26 @@ export default function Home() {
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center mb-8">Schedule a Service</h2>
-          <div className="max-w-4xl mx-auto">
-            <InlineWidget 
-              url="https://calendly.com/your-calendly-url"
-              styles={{
-                height: '700px'
-              }}
-            />
+          <div className="max-w-lg mx-auto text-center">
+            <p className="text-gray-600 mb-6">
+              Ready to get started? Click below to book a service or request a quote.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/book">
+                <Button size="lg" className="w-full sm:w-auto">
+                  Book Now
+                </Button>
+              </Link>
+              <Link href="/quote">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                  Request Quote
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </section>
+
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center mb-8">Contact Information</h2>
