@@ -9,12 +9,28 @@ import { createServer } from "http";
 const app = express();
 app.use(express.json());
 
-// Simple request logging
+// Enhanced request logging
 app.use((req, res, next) => {
-  if (req.path.startsWith("/api")) {
-    log(`${req.method} ${req.path}`);
-  }
-  next();
+  const start = Date.now();
+  const requestId = Math.random().toString(36).substring(7);
+
+  log(`[${requestId}] Incoming ${req.method} ${req.path}`);
+  log(`[${requestId}] Rate Limit Headers: ${JSON.stringify({
+    'x-ratelimit-limit': req.headers['x-ratelimit-limit'],
+    'x-ratelimit-remaining': req.headers['x-ratelimit-remaining'],
+    'x-ratelimit-reset': req.headers['x-ratelimit-reset']
+  })}`);
+
+  // Add small artificial delay to prevent rate limiting
+  setTimeout(() => {
+    // Log response status and timing after request completes
+    res.on('finish', () => {
+      const duration = Date.now() - start;
+      log(`[${requestId}] Completed ${req.method} ${req.path} with status ${res.statusCode} in ${duration}ms`);
+    });
+
+    next();
+  }, 100); // 100ms delay
 });
 
 (async () => {
