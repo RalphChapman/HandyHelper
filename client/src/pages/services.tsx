@@ -6,6 +6,13 @@ import type { Service } from "@shared/schema";
 export default function Services() {
   const { data: services, isLoading, error } = useQuery<Service[]>({
     queryKey: ["/api/services"],
+    queryFn: async () => {
+      const response = await fetch("/api/services");
+      if (!response.ok) {
+        throw new Error(`Failed to fetch services: ${response.statusText}`);
+      }
+      return response.json();
+    },
     retry: 3, // Add retry logic
     refetchOnWindowFocus: false, // Disable refetch on window focus
   });
