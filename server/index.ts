@@ -4,10 +4,10 @@ process.env.NODE_ENV = "development";
 import express from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, log } from "./vite";
+import { createServer } from "http";
 
 const app = express();
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
 
 // Simple request logging
 app.use((req, res, next) => {
@@ -19,15 +19,12 @@ app.use((req, res, next) => {
 
 (async () => {
   try {
-    const server = await registerRoutes(app);
+    const server = createServer(app);
 
-    // Basic error handling
-    app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-      console.error('Error:', err);
-      res.status(500).json({ message: "Internal Server Error" });
-    });
+    // Register API routes first
+    await registerRoutes(app);
 
-    // Always use setupVite in development
+    // Then setup Vite for development
     await setupVite(app, server);
 
     server.listen(5000, "0.0.0.0", () => {
