@@ -3,12 +3,41 @@ process.env.NODE_ENV = "production";
 
 import express from "express";
 import compression from "compression";
+import rateLimit from "express-rate-limit";
 import { registerRoutes } from "./routes";
-import { serveStatic, log } from "./vite";
+import { serveStatic, setupVite, log } from "./vite";
+import { createServer } from "http";
 
 const app = express();
+
+// Trust proxies in the Replit environment
+app.set('trust proxy', 1);
+
+// Create a limiter for API requests
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30, // Limit each IP to 30 requests per minute
+  message: { message: "Too many requests, please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Create a more lenient limiter for static files
+const staticLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 60, // Limit each IP to 60 requests per minute
+  message: { message: "Too many requests, please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.use(express.json());
 app.use(compression());
+
+// Apply rate limiting to API routes
+app.use("/api", apiLimiter);
+// Apply more lenient rate limiting to other routes
+app.use(staticLimiter);
 
 // Enhanced request logging
 app.use((req, res, next) => {
@@ -39,11 +68,23 @@ app.use((req, res, next) => {
     // Register API routes first
     await registerRoutes(app);
 
-    // Serve static files in production
-    serveStatic(app);
+    try {
+      // Try to serve static files first
+      serveStatic(app);
+      log("Running in production mode with static files");
+    } catch (error) {
+      // If static files are not available, fall back to development mode
+      log("Static files not found, falling back to development mode");
+      const server = createServer(app);
+      await setupVite(app, server);
+      server.listen(5000, "0.0.0.0", () => {
+        log("Server running on port 5000 (development mode)");
+      });
+      return;
+    }
 
     app.listen(5000, "0.0.0.0", () => {
-      log("Server running on port 5000");
+      log("Server running on port 5000 (production mode)");
     });
   } catch (error) {
     console.error("Failed to start server:", error);
