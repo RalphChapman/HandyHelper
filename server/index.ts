@@ -13,17 +13,8 @@ const app = express();
 // Trust proxies in the Replit environment
 app.set('trust proxy', 1);
 
-// Create a limiter for API requests
+// Create a limiter for API requests only
 const apiLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 30, // Limit each IP to 30 requests per minute
-  message: { message: "Too many requests, please try again later." },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-// Create a more lenient limiter for static files
-const staticLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 60, // Limit each IP to 60 requests per minute
   message: { message: "Too many requests, please try again later." },
@@ -34,10 +25,8 @@ const staticLimiter = rateLimit({
 app.use(express.json());
 app.use(compression());
 
-// Apply rate limiting to API routes
+// Apply rate limiting to API routes only
 app.use("/api", apiLimiter);
-// Apply more lenient rate limiting to other routes
-app.use(staticLimiter);
 
 // Enhanced request logging
 app.use((req, res, next) => {
