@@ -53,6 +53,16 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  // Get all quote requests
+  app.get("/api/quote-requests", async (_req, res) => {
+    try {
+      const quoteRequests = await storage.getQuoteRequests();
+      res.json(quoteRequests);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch quote requests" });
+    }
+  });
+
   // Booking routes
   app.post("/api/bookings", async (req, res) => {
     try {
@@ -77,10 +87,14 @@ export async function registerRoutes(app: Express) {
 
   app.get("/api/bookings", async (req, res) => {
     const email = req.query.email as string;
-    const bookings = email
-      ? await storage.getBookingsByEmail(email)
-      : await storage.getBookings();
-    res.json(bookings);
+    try {
+      const bookings = email
+        ? await storage.getBookingsByEmail(email)
+        : await storage.getBookings();
+      res.json(bookings);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch bookings" });
+    }
   });
 
   app.get("/api/bookings/:id", async (req, res) => {
@@ -94,12 +108,16 @@ export async function registerRoutes(app: Express) {
 
   app.patch("/api/bookings/:id/status", async (req, res) => {
     const { status } = req.body;
-    const booking = await storage.updateBookingStatus(Number(req.params.id), status);
-    if (!booking) {
-      res.status(404).json({ message: "Booking not found" });
-      return;
+    try {
+      const booking = await storage.updateBookingStatus(Number(req.params.id), status);
+      if (!booking) {
+        res.status(404).json({ message: "Booking not found" });
+        return;
+      }
+      res.json(booking);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update booking status" });
     }
-    res.json(booking);
   });
 
   return createServer(app);

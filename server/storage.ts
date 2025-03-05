@@ -118,14 +118,14 @@ export class MemStorage implements IStorage {
 
   async createService(service: InsertService): Promise<Service> {
     const id = this.servicesId++;
-    const newService = { id, ...service };
+    const newService: Service = { id, ...service };
     this.services.set(id, newService);
     return newService;
   }
 
   async createQuoteRequest(request: InsertQuoteRequest): Promise<QuoteRequest> {
     const id = this.quoteRequestsId++;
-    const newRequest = { ...request, id };
+    const newRequest: QuoteRequest = { id, ...request };
     this.quoteRequests.set(id, newRequest);
     return newRequest;
   }
@@ -134,10 +134,15 @@ export class MemStorage implements IStorage {
     return Array.from(this.quoteRequests.values());
   }
 
-  // Booking methods
   async createBooking(booking: InsertBooking): Promise<Booking> {
     const id = this.bookingsId++;
-    const newBooking = { ...booking, id };
+    const newBooking: Booking = { 
+      id, 
+      ...booking,
+      status: booking.status || "pending",
+      notes: booking.notes || null,
+      confirmed: booking.confirmed || false
+    };
     this.bookings.set(id, newBooking);
     return newBooking;
   }
