@@ -22,6 +22,29 @@ export default function Home() {
     },
   ];
 
+  const pastProjects = [
+    {
+      image: "https://images.unsplash.com/photo-1595514736526-3091d1b1ac97",
+      title: "Kitchen Remodel",
+      description: "Complete kitchen renovation including cabinets and countertops"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1565183928294-7063f23ce0f8",
+      title: "Bathroom Update",
+      description: "Modern bathroom upgrade with custom tiling"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1513694203232-719a280e022f",
+      title: "Custom Carpentry",
+      description: "Built-in bookshelves and storage solutions"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1556819793-5087447b2d50",
+      title: "Deck Construction",
+      description: "Outdoor living space expansion"
+    }
+  ];
+
   return (
     <div className="min-h-screen">
       <section className="py-20 bg-gradient-to-b from-white to-gray-50">
@@ -79,6 +102,29 @@ export default function Home() {
       </section>
 
       <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-center mb-8">Past Projects</h2>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {pastProjects.map((project, index) => (
+              <div key={index} className="overflow-hidden rounded-lg shadow-lg">
+                <div className="relative h-48">
+                  <img
+                    src={project.image}
+                    alt={project.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="p-4">
+                  <h3 className="font-semibold text-lg mb-2">{project.title}</h3>
+                  <p className="text-sm text-gray-600">{project.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center mb-8">Schedule a Service</h2>
           <div className="max-w-4xl mx-auto">
