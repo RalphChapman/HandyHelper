@@ -1,6 +1,9 @@
 import { Service, InsertService, QuoteRequest, InsertQuoteRequest, Booking, InsertBooking } from "@shared/schema";
 
 export interface IStorage {
+  // Add initialize method to interface
+  initialize(): Promise<void>;
+
   // Services
   getServices(): Promise<Service[]>;
   getService(id: number): Promise<Service | undefined>;
@@ -25,14 +28,26 @@ export class MemStorage implements IStorage {
   private servicesId: number;
   private quoteRequestsId: number;
   private bookingsId: number;
+  private initialized: boolean;
 
   constructor() {
+    console.log("[Storage] Creating new MemStorage instance");
     this.services = new Map();
     this.quoteRequests = new Map();
     this.bookings = new Map();
     this.servicesId = 1;
     this.quoteRequestsId = 1;
     this.bookingsId = 1;
+    this.initialized = false;
+  }
+
+  async initialize(): Promise<void> {
+    if (this.initialized) {
+      console.log("[Storage] Already initialized, skipping");
+      return;
+    }
+
+    console.log("[Storage] Initializing MemStorage");
 
     // Seed initial services
     const initialServices = [
@@ -101,20 +116,27 @@ export class MemStorage implements IStorage {
       }
     ];
 
+    console.log("[Storage] Seeding initial services");
     initialServices.forEach(service => {
       const id = this.servicesId++;
       const newService = { 
         id, 
-        ...service, 
-        rating: service.rating || 5,
-        review: service.review || "",
-        reviewAuthor: service.reviewAuthor || ""
+        ...service
       };
       this.services.set(id, newService);
+      console.log(`[Storage] Added service: ${newService.name} with ID: ${newService.id}`);
     });
+
+    this.initialized = true;
+    console.log(`[Storage] Initialization complete. Seeded ${this.services.size} services`);
   }
 
   async getServices(): Promise<Service[]> {
+    if (!this.initialized) {
+      console.log("[Storage] Storage not initialized, initializing now");
+      await this.initialize();
+    }
+
     console.log("[Storage] Getting all services");
     const services = Array.from(this.services.values());
     console.log(`[Storage] Found ${services.length} services`);
@@ -129,10 +151,7 @@ export class MemStorage implements IStorage {
     const id = this.servicesId++;
     const newService: Service = { 
       id, 
-      ...service,
-      rating: service.rating || 5,
-      review: service.review || "",
-      reviewAuthor: service.reviewAuthor || ""
+      ...service
     };
     this.services.set(id, newService);
     return newService;
@@ -153,10 +172,7 @@ export class MemStorage implements IStorage {
     const id = this.bookingsId++;
     const newBooking: Booking = { 
       id, 
-      ...booking,
-      status: booking.status || "pending",
-      notes: booking.notes || null,
-      confirmed: booking.confirmed || false
+      ...booking
     };
     this.bookings.set(id, newBooking);
     return newBooking;
@@ -187,4 +203,6 @@ export class MemStorage implements IStorage {
   }
 }
 
+// Initialize storage
+console.log("[Storage] Creating storage instance");
 export const storage = new MemStorage();
