@@ -35,7 +35,7 @@ export class MemStorage implements IStorage {
     this.bookingsId = 1;
 
     // Seed initial services
-    const initialServices: InsertService[] = [
+    const initialServices = [
       {
         name: "Plumbing Repairs",
         description: "Expert plumbing services including leak repairs, pipe maintenance, and fixture installations.",
@@ -74,7 +74,11 @@ export class MemStorage implements IStorage {
       }
     ];
 
-    initialServices.forEach(service => this.createService(service));
+    initialServices.forEach(service => {
+      const id = this.servicesId++;
+      const newService: Service = { id, ...service };
+      this.services.set(id, newService);
+    });
   }
 
   async getServices(): Promise<Service[]> {
@@ -87,7 +91,7 @@ export class MemStorage implements IStorage {
 
   async createService(service: InsertService): Promise<Service> {
     const id = this.servicesId++;
-    const newService = { ...service, id };
+    const newService = { id, ...service };
     this.services.set(id, newService);
     return newService;
   }
