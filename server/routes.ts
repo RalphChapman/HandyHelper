@@ -7,17 +7,27 @@ import { sendQuoteNotification } from "./utils/email";
 
 export async function registerRoutes(app: Express) {
   app.get("/api/services", async (_req, res) => {
-    const services = await storage.getServices();
-    res.json(services);
+    try {
+      const services = await storage.getServices();
+      res.json(services);
+    } catch (error) {
+      console.error("Error fetching services:", error);
+      res.status(500).json({ message: "Failed to fetch services" });
+    }
   });
 
   app.get("/api/services/:id", async (req, res) => {
-    const service = await storage.getService(Number(req.params.id));
-    if (!service) {
-      res.status(404).json({ message: "Service not found" });
-      return;
+    try {
+      const service = await storage.getService(Number(req.params.id));
+      if (!service) {
+        res.status(404).json({ message: "Service not found" });
+        return;
+      }
+      res.json(service);
+    } catch (error) {
+      console.error("Error fetching service:", error);
+      res.status(500).json({ message: "Failed to fetch service" });
     }
-    res.json(service);
   });
 
   app.post("/api/quote-requests", async (req, res) => {
@@ -45,11 +55,12 @@ export async function registerRoutes(app: Express) {
 
       res.status(201).json(newQuoteRequest);
     } catch (error) {
+      console.error("Error creating quote request:", error);
       if (error instanceof ZodError) {
         res.status(400).json({ message: "Invalid request data", errors: error.errors });
         return;
       }
-      throw error;
+      res.status(500).json({ message: "Failed to create quote request" });
     }
   });
 
@@ -59,6 +70,7 @@ export async function registerRoutes(app: Express) {
       const quoteRequests = await storage.getQuoteRequests();
       res.json(quoteRequests);
     } catch (error) {
+      console.error("Error fetching quote requests:", error);
       res.status(500).json({ message: "Failed to fetch quote requests" });
     }
   });
@@ -77,11 +89,12 @@ export async function registerRoutes(app: Express) {
       const newBooking = await storage.createBooking(booking);
       res.status(201).json(newBooking);
     } catch (error) {
+      console.error("Error creating booking:", error);
       if (error instanceof ZodError) {
         res.status(400).json({ message: "Invalid booking data", errors: error.errors });
         return;
       }
-      throw error;
+      res.status(500).json({ message: "Failed to create booking" });
     }
   });
 
@@ -93,17 +106,23 @@ export async function registerRoutes(app: Express) {
         : await storage.getBookings();
       res.json(bookings);
     } catch (error) {
+      console.error("Error fetching bookings:", error);
       res.status(500).json({ message: "Failed to fetch bookings" });
     }
   });
 
   app.get("/api/bookings/:id", async (req, res) => {
-    const booking = await storage.getBooking(Number(req.params.id));
-    if (!booking) {
-      res.status(404).json({ message: "Booking not found" });
-      return;
+    try {
+      const booking = await storage.getBooking(Number(req.params.id));
+      if (!booking) {
+        res.status(404).json({ message: "Booking not found" });
+        return;
+      }
+      res.json(booking);
+    } catch (error) {
+      console.error("Error fetching booking:", error);
+      res.status(500).json({ message: "Failed to fetch booking" });
     }
-    res.json(booking);
   });
 
   app.patch("/api/bookings/:id/status", async (req, res) => {
@@ -116,6 +135,7 @@ export async function registerRoutes(app: Express) {
       }
       res.json(booking);
     } catch (error) {
+      console.error("Error updating booking status:", error);
       res.status(500).json({ message: "Failed to update booking status" });
     }
   });

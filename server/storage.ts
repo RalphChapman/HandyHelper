@@ -103,7 +103,13 @@ export class MemStorage implements IStorage {
 
     initialServices.forEach(service => {
       const id = this.servicesId++;
-      const newService: Service = { id, ...service };
+      const newService = { 
+        id, 
+        ...service, 
+        rating: service.rating || 5,
+        review: service.review || "",
+        reviewAuthor: service.reviewAuthor || ""
+      };
       this.services.set(id, newService);
     });
   }
@@ -118,7 +124,13 @@ export class MemStorage implements IStorage {
 
   async createService(service: InsertService): Promise<Service> {
     const id = this.servicesId++;
-    const newService: Service = { id, ...service };
+    const newService: Service = { 
+      id, 
+      ...service,
+      rating: service.rating || 5,
+      review: service.review || "",
+      reviewAuthor: service.reviewAuthor || ""
+    };
     this.services.set(id, newService);
     return newService;
   }
