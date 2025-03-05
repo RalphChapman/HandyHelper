@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { Wrench, Shield, Clock, Award } from "lucide-react";
+import { Wrench, Shield, Clock } from "lucide-react";
+import { InlineWidget } from "react-calendly";
 
 export default function Home() {
   const features = [
@@ -18,11 +19,6 @@ export default function Home() {
       icon: <Clock className="h-6 w-6" />,
       title: "Fast Response",
       description: "Quick response times for all service requests",
-    },
-    {
-      icon: <Award className="h-6 w-6" />,
-      title: "Licensed & Insured",
-      description: "Fully licensed professionals you can trust",
     },
   ];
 
@@ -46,7 +42,7 @@ export default function Home() {
 
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-3 gap-8"> {/* Changed to md:grid-cols-3 */}
             {features.map((feature, index) => (
               <div
                 key={index}
@@ -59,6 +55,20 @@ export default function Home() {
                 <p className="text-gray-600">{feature.description}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-center mb-8">Schedule a Service</h2>
+          <div className="max-w-4xl mx-auto">
+            <InlineWidget 
+              url="https://calendly.com/your-calendly-url"
+              styles={{
+                height: '700px'
+              }}
+            />
           </div>
         </div>
       </section>
