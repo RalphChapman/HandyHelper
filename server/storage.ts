@@ -64,13 +64,31 @@ export class MemStorage implements IStorage {
         reviewAuthor: "Emily Wilson"
       },
       {
-        name: "Landscaping",
-        description: "Professional landscaping services including lawn care, garden design, tree trimming, and outdoor space maintenance.",
+        name: "Outdoor Solutions",
+        description: "Professional fence painting/repair and patio installations. Expert craftsmanship for all your outdoor structure needs.",
         category: "Landscaping",
         imageUrl: "https://cdn.iconscout.com/icon/premium/png-256-thumb/landscape-2236664-1873275.png",
         rating: 5,
-        review: "Ralph transformed our backyard into a beautiful outdoor living space. His attention to detail with the garden layout and plant selection was impressive.",
+        review: "Ralph repaired and repainted our old fence, and installed a beautiful new patio. The quality of work is outstanding!",
         reviewAuthor: "David Thompson"
+      },
+      {
+        name: "Interior Painting",
+        description: "Professional interior painting services with attention to detail and clean, precise work.",
+        category: "Painting",
+        imageUrl: "https://cdn.iconscout.com/icon/premium/png-256-thumb/paint-roller-2236665-1873276.png",
+        rating: 5,
+        review: "Excellent paint job throughout our house. Ralph's prep work and attention to detail made all the difference.",
+        reviewAuthor: "Jennifer Martinez"
+      },
+      {
+        name: "Sheetrock Repair",
+        description: "Expert drywall and sheetrock repair services, from small patches to complete wall restoration.",
+        category: "General Repairs",
+        imageUrl: "https://cdn.iconscout.com/icon/premium/png-256-thumb/wall-repair-2236666-1873277.png",
+        rating: 5,
+        review: "Ralph did an amazing job repairing our damaged walls. You can't even tell where the repairs were made!",
+        reviewAuthor: "Michael Anderson"
       }
     ];
 
