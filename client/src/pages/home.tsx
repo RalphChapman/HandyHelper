@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Wrench, Shield, Clock } from "lucide-react";
 import { InlineWidget } from "react-calendly";
+import { BusinessCard } from "@/components/business-card";
 
 export default function Home() {
   const features = [
@@ -135,6 +136,12 @@ export default function Home() {
               }}
             />
           </div>
+        </div>
+      </section>
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-center mb-8">Contact Information</h2>
+          <BusinessCard />
         </div>
       </section>
     </div>

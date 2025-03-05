@@ -3,6 +3,7 @@ import { createServer } from "http";
 import { storage } from "./storage";
 import { insertQuoteRequestSchema, insertBookingSchema } from "@shared/schema";
 import { ZodError } from "zod";
+import { sendQuoteNotification } from "./utils/email";
 
 export async function registerRoutes(app: Express) {
   app.get("/api/services", async (_req, res) => {
@@ -30,6 +31,18 @@ export async function registerRoutes(app: Express) {
       }
 
       const newQuoteRequest = await storage.createQuoteRequest(quoteRequest);
+
+      // Send email notification
+      try {
+        await sendQuoteNotification({
+          ...newQuoteRequest,
+          serviceName: service.name
+        });
+      } catch (emailError) {
+        console.error("Failed to send email notification:", emailError);
+        // Continue processing even if email fails
+      }
+
       res.status(201).json(newQuoteRequest);
     } catch (error) {
       if (error instanceof ZodError) {
@@ -64,7 +77,7 @@ export async function registerRoutes(app: Express) {
 
   app.get("/api/bookings", async (req, res) => {
     const email = req.query.email as string;
-    const bookings = email 
+    const bookings = email
       ? await storage.getBookingsByEmail(email)
       : await storage.getBookings();
     res.json(bookings);
