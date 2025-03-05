@@ -8,6 +8,9 @@ export const services = pgTable("services", {
   description: text("description").notNull(),
   category: varchar("category", { length: 50 }).notNull(),
   imageUrl: text("image_url").notNull(),
+  rating: integer("rating").notNull().default(5),
+  review: text("review").notNull().default(""),
+  reviewAuthor: varchar("review_author", { length: 100 }).notNull().default(""),
 });
 
 export const quoteRequests = pgTable("quote_requests", {
