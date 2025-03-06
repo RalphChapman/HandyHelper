@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useParams } from "wouter";
+import { useParams, Link } from "wouter";
 import { Service } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { ImageIcon } from "lucide-react";
+import { ReviewForm } from "@/components/review-form";
+import { ReviewsSection } from "@/components/reviews-section";
+import { useAuth } from "@/hooks/use-auth";
 
 interface Project {
   id: number;
@@ -39,6 +42,7 @@ export default function Projects() {
   const params = useParams();
   const serviceId = parseInt(params.serviceId as string);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const { data: service, isLoading: serviceLoading } = useQuery<Service>({
     queryKey: ["/api/services", serviceId],
@@ -236,29 +240,55 @@ export default function Projects() {
           </Dialog>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects?.map((project) => (
-            <div key={project.id} className="overflow-hidden rounded-lg shadow-lg">
-              <div className="relative h-64">
-                <img
-                  src={project.imageUrl}
-                  alt={project.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="p-6">
-                <h3 className="text-xl font-semibold mb-2">{project.title}</h3>
-                <p className="text-gray-600 mb-4">{project.description}</p>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-gray-600 italic mb-2">"{project.comment}"</p>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="font-medium">{project.customerName}</span>
-                    <span className="text-gray-500">{project.date}</span>
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Projects Section */}
+          <div>
+            <h2 className="text-2xl font-semibold mb-6">Recent Projects</h2>
+            <div className="grid md:grid-cols-2 gap-6">
+              {projects?.map((project) => (
+                <div key={project.id} className="overflow-hidden rounded-lg shadow-lg">
+                  <div className="relative h-64">
+                    <img
+                      src={project.imageUrl}
+                      alt={project.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-xl font-semibold mb-2">{project.title}</h3>
+                    <p className="text-gray-600 mb-4">{project.description}</p>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <p className="text-gray-600 italic mb-2">"{project.comment}"</p>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="font-medium">{project.customerName}</span>
+                        <span className="text-gray-500">{project.date}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ))}
             </div>
-          ))}
+          </div>
+
+          {/* Reviews Section */}
+          <div>
+            <h2 className="text-2xl font-semibold mb-6">Customer Reviews</h2>
+            {user ? (
+              <div className="mb-8">
+                <ReviewForm serviceId={serviceId} />
+              </div>
+            ) : (
+              <div className="mb-8 p-4 bg-gray-50 rounded-lg text-center">
+                <p className="text-gray-600">Please log in to leave a review</p>
+                <Link href="/auth">
+                  <Button variant="link" className="mt-2">
+                    Login or Register
+                  </Button>
+                </Link>
+              </div>
+            )}
+            <ReviewsSection serviceId={serviceId} />
+          </div>
         </div>
       </div>
     </div>
