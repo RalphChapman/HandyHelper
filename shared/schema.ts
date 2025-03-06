@@ -87,11 +87,11 @@ export const insertQuoteRequestSchema = createInsertSchema(quoteRequests).omit({
 export const insertBookingSchema = createInsertSchema(bookings)
   .omit({ id: true, status: true, confirmed: true })
   .extend({
-    serviceId: z.number().int().positive(),
+    serviceId: z.coerce.number().int().positive(),
     clientName: z.string().min(1, "Name is required"),
     clientEmail: z.string().email("Invalid email address"),
     clientPhone: z.string().min(10, "Phone number is required"),
-    appointmentDate: z.date(),
+    appointmentDate: z.string(),
     notes: z.string().nullable(),
   });
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });

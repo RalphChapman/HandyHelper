@@ -201,7 +201,7 @@ export async function registerRoutes(app: Express) {
   // Booking routes
   app.post("/api/bookings", async (req, res) => {
     try {
-      console.log("[API] Creating new booking");
+      console.log("[API] Creating new booking with data:", req.body);
       const booking = insertBookingSchema.parse(req.body);
       const service = await storage.getService(booking.serviceId);
 
@@ -213,7 +213,7 @@ export async function registerRoutes(app: Express) {
 
       const newBooking = await storage.createBooking(booking);
       console.log(`[API] Successfully created booking #${newBooking.id}`);
-      res.json(newBooking);
+      res.status(201).json(newBooking);
     } catch (error) {
       if (error instanceof ZodError) {
         console.error("[API] Invalid booking data:", error.errors);

@@ -43,7 +43,7 @@ export default function Book() {
       clientName: "",
       clientEmail: "",
       clientPhone: "",
-      appointmentDate: new Date(),
+      appointmentDate: new Date().toISOString(),
       notes: null,
     },
   });
@@ -68,7 +68,7 @@ export default function Book() {
     });
   };
 
-  const selectedDate = form.watch("appointmentDate");
+  const selectedDate = new Date(form.watch("appointmentDate"));
   const timeSlots = getTimeSlots(selectedDate);
 
   async function onSubmit(formData: any) {
@@ -81,7 +81,7 @@ export default function Book() {
         clientName: formData.clientName,
         clientEmail: formData.clientEmail,
         clientPhone: formData.clientPhone,
-        appointmentDate: formData.appointmentDate.toISOString(),
+        appointmentDate: formData.appointmentDate,
         notes: formData.notes === "" ? null : formData.notes,
       };
 
@@ -157,13 +157,14 @@ export default function Book() {
                     <FormControl>
                       <Calendar
                         mode="single"
-                        selected={field.value}
+                        selected={new Date(field.value)}
                         onSelect={(date) => {
                           if (date) {
                             // Preserve the time when changing date
                             const newDate = new Date(date);
-                            newDate.setHours(field.value.getHours());
-                            field.onChange(newDate);
+                            const currentDate = new Date(field.value);
+                            newDate.setHours(currentDate.getHours());
+                            field.onChange(newDate.toISOString());
                           }
                         }}
                         disabled={(date) => date < new Date()}
@@ -177,13 +178,13 @@ export default function Book() {
                         <Button
                           key={label}
                           type="button"
-                          variant={time.getTime() === field.value.getTime() ? "default" : "outline"}
+                          variant={time.getTime() === new Date(field.value).getTime() ? "default" : "outline"}
                           className="w-full"
                           disabled={disabled}
                           onClick={() => {
-                            const newDate = new Date(field.value);
+                            const newDate = new Date(selectedDate);
                             newDate.setHours(time.getHours(), 0, 0, 0);
-                            field.onChange(newDate);
+                            field.onChange(newDate.toISOString());
                           }}
                         >
                           {label}
