@@ -12,6 +12,7 @@ import Book from "@/pages/book";
 import Dashboard from "@/pages/dashboard";
 import Auth from "@/pages/auth";
 import NotFound from "@/pages/not-found";
+import Provider from "@/pages/provider";
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
             <Route path="/" component={Home} />
             <Route path="/services" component={Services} />
             <Route path="/services/:serviceId/projects" component={Projects} />
+            <Route path="/providers/:providerId" component={Provider} />
             <Route path="/quote" component={Quote} />
             <Route path="/book" component={Book} />
             <Route path="/dashboard" component={Dashboard} />
