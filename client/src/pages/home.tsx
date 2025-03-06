@@ -94,8 +94,8 @@ export default function Home() {
             <h2 className="text-3xl font-bold mb-6">Meet Your Handyman</h2>
             <div className="space-y-4 text-left">
               <p className="text-gray-700 leading-relaxed">
-                I'm Ralph Chapman, an electrical engineer with 18 years of
-                professional experience and a dedicated residential remodel
+                Hello, I am Ralph Chapman, an electrical engineer with 18 years
+                of professional experience and a dedicated residential remodel
                 hobbyist for over 30 years. My journey began right out of high
                 school as a maintenance mechanic, where I worked as a journeyman
                 electrician, machinist, and welder—skills that laid the
@@ -128,7 +128,10 @@ export default function Home() {
           <h2 className="text-3xl font-bold text-center mb-8">Past Projects</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {pastProjects.map((project, index) => (
-              <Link key={index} href={`/services/${project.serviceId}/projects`}>
+              <Link
+                key={index}
+                href={`/services/${project.serviceId}/projects`}
+              >
                 <div className="overflow-hidden rounded-lg shadow-lg transition-transform hover:scale-105 cursor-pointer">
                   <div className="relative h-48">
                     <img
@@ -141,7 +144,9 @@ export default function Home() {
                     <h3 className="font-semibold text-lg mb-2">
                       {project.title}
                     </h3>
-                    <p className="text-sm text-gray-600">{project.description}</p>
+                    <p className="text-sm text-gray-600">
+                      {project.description}
+                    </p>
                   </div>
                 </div>
               </Link>

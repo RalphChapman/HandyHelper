@@ -1,4 +1,4 @@
-import { Service, InsertService, QuoteRequest, InsertQuoteRequest, Booking, InsertBooking, User, InsertUser, Testimonial, InsertTestimonial } from "@shared/schema";
+import { Service, InsertService, QuoteRequest, InsertQuoteRequest, Booking, InsertBooking, User, InsertUser, Testimonial, InsertTestimonial, ServiceProvider, InsertServiceProvider } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import { scrypt, randomBytes } from "crypto";
@@ -53,6 +53,13 @@ export interface IStorage {
   createTestimonial(testimonial: InsertTestimonial): Promise<Testimonial>;
   getTestimonials(approved?: boolean): Promise<Testimonial[]>;
   updateTestimonialApproval(id: number, approved: boolean): Promise<Testimonial | undefined>;
+
+  // Service Provider methods
+  createServiceProvider(provider: InsertServiceProvider): Promise<ServiceProvider>;
+  getServiceProvider(id: number): Promise<ServiceProvider | undefined>;
+  getServiceProviders(): Promise<ServiceProvider[]>;
+  getServiceProvidersForService(serviceId: number): Promise<ServiceProvider[]>;
+  updateServiceProviderAvailability(id: number, availability: any): Promise<ServiceProvider | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -70,6 +77,8 @@ export class MemStorage implements IStorage {
   private testimonialsId: number;
   private initialized: boolean;
   public sessionStore: session.Store;
+  private serviceProviders: Map<number, ServiceProvider>;
+  private serviceProvidersId: number;
 
   constructor() {
     console.log("[Storage] Creating new MemStorage instance");
@@ -89,6 +98,8 @@ export class MemStorage implements IStorage {
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000, // 24 hours
     });
+    this.serviceProviders = new Map();
+    this.serviceProvidersId = 1;
   }
 
   async initialize(): Promise<void> {
@@ -231,8 +242,52 @@ export class MemStorage implements IStorage {
       console.log(`[Storage] Added testimonial from: ${newTestimonial.authorName}`);
     }
 
+    // Add initial service providers
+    console.log("[Storage] Seeding initial service providers");
+    const initialServiceProviders = [
+      {
+        userId: 1,
+        name: "John Smith",
+        bio: "Master carpenter with 15 years of experience in custom woodworking and home renovations. Specializing in custom cabinetry and built-ins.",
+        specialties: ["Custom Carpentry", "Cabinet Installation", "Wood Restoration"],
+        yearsOfExperience: 15,
+        availabilitySchedule: {
+          monday: ["9:00-17:00"],
+          tuesday: ["9:00-17:00"],
+          wednesday: ["9:00-17:00"],
+          thursday: ["9:00-17:00"],
+          friday: ["9:00-17:00"]
+        },
+        profileImage: "https://images.unsplash.com/photo-1600486913747-55e5470d6f40",
+        contactPhone: "843-555-0123",
+        servicesOffered: [1, 4] // General Home Maintenance and Carpentry
+      },
+      {
+        userId: 1,
+        name: "Michael Rodriguez",
+        bio: "Licensed electrician with expertise in residential and commercial electrical systems. Certified in modern smart home installations.",
+        specialties: ["Electrical Repairs", "Smart Home Installation", "Lighting Systems"],
+        yearsOfExperience: 12,
+        availabilitySchedule: {
+          monday: ["8:00-16:00"],
+          tuesday: ["8:00-16:00"],
+          wednesday: ["8:00-16:00"],
+          thursday: ["8:00-16:00"],
+          friday: ["8:00-16:00"]
+        },
+        profileImage: "https://images.unsplash.com/photo-1556157382-97eda2d62296",
+        contactPhone: "843-555-0124",
+        servicesOffered: [3] // Electrical Work
+      }
+    ];
+
+    for (const provider of initialServiceProviders) {
+      await this.createServiceProvider(provider);
+      console.log(`[Storage] Added service provider: ${provider.name}`);
+    }
+
     this.initialized = true;
-    console.log(`[Storage] Initialization complete. Seeded ${this.services.size} services, ${this.projects.size} projects, and ${this.testimonials.size} testimonials`);
+    console.log(`[Storage] Initialization complete. Seeded ${this.services.size} services, ${this.projects.size} projects, ${this.testimonials.size} testimonials, and ${this.serviceProviders.size} service providers`);
   }
 
   async getServices(): Promise<Service[]> {
@@ -370,6 +425,46 @@ export class MemStorage implements IStorage {
       this.testimonials.set(id, updatedTestimonial);
       console.log(`[Storage] Updated testimonial #${id} approval status to: ${approved}`);
       return updatedTestimonial;
+    }
+    return undefined;
+  }
+
+  async createServiceProvider(provider: InsertServiceProvider): Promise<ServiceProvider> {
+    const id = this.serviceProvidersId++;
+    const newProvider: ServiceProvider = {
+      id,
+      rating: 5,
+      createdAt: new Date(),
+      ...provider
+    };
+    this.serviceProviders.set(id, newProvider);
+    console.log(`[Storage] Created new service provider: ${newProvider.name} with ID: ${newProvider.id}`);
+    return newProvider;
+  }
+
+  async getServiceProvider(id: number): Promise<ServiceProvider | undefined> {
+    return this.serviceProviders.get(id);
+  }
+
+  async getServiceProviders(): Promise<ServiceProvider[]> {
+    return Array.from(this.serviceProviders.values());
+  }
+
+  async getServiceProvidersForService(serviceId: number): Promise<ServiceProvider[]> {
+    return Array.from(this.serviceProviders.values()).filter(
+      provider => provider.servicesOffered.includes(serviceId)
+    );
+  }
+
+  async updateServiceProviderAvailability(id: number, availability: any): Promise<ServiceProvider | undefined> {
+    const provider = this.serviceProviders.get(id);
+    if (provider) {
+      const updatedProvider = {
+        ...provider,
+        availabilitySchedule: availability
+      };
+      this.serviceProviders.set(id, updatedProvider);
+      return updatedProvider;
     }
     return undefined;
   }

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, varchar, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, varchar, timestamp, boolean, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -54,12 +54,29 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Add service provider table
+export const serviceProviders = pgTable("service_providers", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  bio: text("bio").notNull(),
+  specialties: text("specialties").array().notNull(),
+  yearsOfExperience: integer("years_of_experience").notNull(),
+  availabilitySchedule: json("availability_schedule").notNull(),
+  rating: integer("rating").notNull().default(5),
+  profileImage: text("profile_image"),
+  contactPhone: varchar("contact_phone", { length: 20 }).notNull(),
+  servicesOffered: integer("services_offered").array().notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Create schemas and types
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true });
 export const insertQuoteRequestSchema = createInsertSchema(quoteRequests).omit({ id: true });
 export const insertBookingSchema = createInsertSchema(bookings).omit({ id: true });
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertTestimonialSchema = createInsertSchema(testimonials).omit({ id: true, approved: true, createdAt: true });
+export const insertServiceProviderSchema = createInsertSchema(serviceProviders).omit({ id: true, rating: true, createdAt: true });
 
 export type Service = typeof services.$inferSelect;
 export type InsertService = z.infer<typeof insertServiceSchema>;
@@ -71,3 +88,5 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Testimonial = typeof testimonials.$inferSelect;
 export type InsertTestimonial = z.infer<typeof insertTestimonialSchema>;
+export type ServiceProvider = typeof serviceProviders.$inferSelect;
+export type InsertServiceProvider = z.infer<typeof insertServiceProviderSchema>;

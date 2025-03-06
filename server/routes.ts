@@ -4,7 +4,7 @@ import multer from "multer";
 import path from "path";
 import express from "express";
 import { storage } from "./storage";
-import { insertQuoteRequestSchema, insertBookingSchema, insertTestimonialSchema } from "@shared/schema";
+import { insertQuoteRequestSchema, insertBookingSchema, insertTestimonialSchema, insertServiceProviderSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { sendQuoteNotification } from "./utils/email";
 import { setupAuth } from "./auth";
@@ -300,6 +300,70 @@ export async function registerRoutes(app: Express) {
     } catch (error) {
       console.error("[API] Error fetching service:", error);
       res.status(500).json({ message: "Failed to fetch service", error: (error as Error).message });
+    }
+  });
+
+  // Service Provider routes
+  app.post("/api/service-providers", async (req, res) => {
+    try {
+      console.log("[API] Creating new service provider");
+      const provider = insertServiceProviderSchema.parse(req.body);
+      const newProvider = await storage.createServiceProvider(provider);
+      console.log(`[API] Successfully created service provider: ${newProvider.name}`);
+      res.status(201).json(newProvider);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        console.error("[API] Invalid service provider data:", error.errors);
+        res.status(400).json({ message: "Invalid request data", errors: error.errors });
+        return;
+      }
+      console.error("[API] Error creating service provider:", error);
+      res.status(500).json({ message: "Failed to create service provider", error: (error as Error).message });
+    }
+  });
+
+  app.get("/api/service-providers", async (_req, res) => {
+    try {
+      console.log("[API] Fetching service providers");
+      const providers = await storage.getServiceProviders();
+      console.log(`[API] Successfully fetched ${providers.length} service providers`);
+      res.json(providers);
+    } catch (error) {
+      console.error("[API] Error fetching service providers:", error);
+      res.status(500).json({ message: "Failed to fetch service providers", error: (error as Error).message });
+    }
+  });
+
+  app.get("/api/service-providers/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      console.log(`[API] Fetching service provider ${id}`);
+      const provider = await storage.getServiceProvider(id);
+
+      if (!provider) {
+        console.log(`[API] Service provider not found: ${id}`);
+        res.status(404).json({ message: "Service provider not found" });
+        return;
+      }
+
+      console.log(`[API] Successfully fetched service provider: ${provider.name}`);
+      res.json(provider);
+    } catch (error) {
+      console.error("[API] Error fetching service provider:", error);
+      res.status(500).json({ message: "Failed to fetch service provider", error: (error as Error).message });
+    }
+  });
+
+  app.get("/api/services/:id/providers", async (req, res) => {
+    try {
+      const serviceId = parseInt(req.params.id);
+      console.log(`[API] Fetching service providers for service ${serviceId}`);
+      const providers = await storage.getServiceProvidersForService(serviceId);
+      console.log(`[API] Successfully fetched ${providers.length} service providers for service ${serviceId}`);
+      res.json(providers);
+    } catch (error) {
+      console.error("[API] Error fetching service providers:", error);
+      res.status(500).json({ message: "Failed to fetch service providers", error: (error as Error).message });
     }
   });
 }
