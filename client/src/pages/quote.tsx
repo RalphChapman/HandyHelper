@@ -79,6 +79,7 @@ export default function Quote() {
       });
       setLocation("/");
     } catch (error) {
+      console.error("Quote submission error:", error);
       toast({
         title: "Error",
         description: "Failed to submit quote request. Please try again.",

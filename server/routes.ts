@@ -139,7 +139,7 @@ export async function registerRoutes(app: Express) {
   // Quote requests routes
   app.post("/api/quote-requests", async (req, res) => {
     try {
-      console.log("[API] Creating new quote request");
+      console.log("[API] Creating new quote request with data:", req.body);
       const quoteRequest = insertQuoteRequestSchema.parse(req.body);
       const service = await storage.getService(quoteRequest.serviceId);
 
@@ -153,14 +153,24 @@ export async function registerRoutes(app: Express) {
 
       // Send email notification
       try {
-        console.log("[API] Sending email notification for quote request");
+        console.log("[API] Sending email notification for quote request with data:", {
+          ...newQuoteRequest,
+          serviceName: service.name,
+          email: quoteRequest.email,
+          description: quoteRequest.description,
+          analysis: req.body.analysis
+        });
+
         await sendQuoteNotification({
           ...newQuoteRequest,
-          serviceName: service.name
+          serviceName: service.name,
+          email: quoteRequest.email,
+          description: quoteRequest.description,
+          analysis: req.body.analysis
         });
+        console.log("[API] Email notification sent successfully");
       } catch (emailError) {
         console.error("[API] Failed to send email notification:", emailError);
-        //Consider logging the error more robustly, perhaps to a dedicated error logging service.
       }
 
       console.log(`[API] Successfully created quote request #${newQuoteRequest.id}`);

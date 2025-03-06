@@ -11,6 +11,13 @@ const transporter = nodemailer.createTransport({
 });
 
 export async function sendQuoteNotification(quoteRequest: any) {
+  console.log("[EMAIL] Sending quote notification with data:", {
+    ...quoteRequest,
+    email: quoteRequest.email,
+    serviceName: quoteRequest.serviceName,
+    description: quoteRequest.description
+  });
+
   // Get AI analysis of the project
   let aiAnalysis = "AI analysis not available";
   try {
@@ -54,5 +61,13 @@ ${aiAnalysis}
     `
   };
 
-  return transporter.sendMail(message);
+  try {
+    console.log("[EMAIL] Attempting to send email to:", message.to);
+    const result = await transporter.sendMail(message);
+    console.log("[EMAIL] Email sent successfully:", result);
+    return result;
+  } catch (error) {
+    console.error("[EMAIL] Failed to send email:", error);
+    throw error;
+  }
 }
