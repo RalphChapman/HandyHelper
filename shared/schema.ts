@@ -2,6 +2,7 @@ import { pgTable, text, serial, integer, varchar, timestamp, boolean } from "dri
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Keep existing tables
 export const services = pgTable("services", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
@@ -35,9 +36,21 @@ export const quoteRequests = pgTable("quote_requests", {
   address: text("address").notNull(),
 });
 
+// Add users table
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: varchar("username", { length: 100 }).notNull().unique(),
+  password: varchar("password", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  role: varchar("role", { length: 20 }).notNull().default("user"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Create schemas and types
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true });
 export const insertQuoteRequestSchema = createInsertSchema(quoteRequests).omit({ id: true });
 export const insertBookingSchema = createInsertSchema(bookings).omit({ id: true });
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 
 export type Service = typeof services.$inferSelect;
 export type InsertService = z.infer<typeof insertServiceSchema>;
@@ -45,3 +58,5 @@ export type QuoteRequest = typeof quoteRequests.$inferSelect;
 export type InsertQuoteRequest = z.infer<typeof insertQuoteRequestSchema>;
 export type Booking = typeof bookings.$inferSelect;
 export type InsertBooking = z.infer<typeof insertBookingSchema>;
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;

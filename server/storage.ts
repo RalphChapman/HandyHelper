@@ -1,4 +1,8 @@
-import { Service, InsertService, QuoteRequest, InsertQuoteRequest, Booking, InsertBooking } from "@shared/schema";
+import { Service, InsertService, QuoteRequest, InsertQuoteRequest, Booking, InsertBooking, User, InsertUser } from "@shared/schema";
+import session from "express-session";
+import createMemoryStore from "memorystore";
+
+const MemoryStore = createMemoryStore(session);
 
 interface Project {
   id: number;
@@ -14,6 +18,9 @@ interface Project {
 export interface IStorage {
   // Add initialize method to interface
   initialize(): Promise<void>;
+
+  // Session store
+  sessionStore: session.Store;
 
   // Services
   getServices(): Promise<Service[]>;
@@ -34,6 +41,11 @@ export interface IStorage {
   // Projects
   getProjects(serviceId: number): Promise<Project[]>;
   createProject(project: Omit<Project, 'id'>): Promise<Project>;
+
+  // Users
+  createUser(user: InsertUser): Promise<User>;
+  getUser(id: number): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -41,11 +53,14 @@ export class MemStorage implements IStorage {
   private quoteRequests: Map<number, QuoteRequest>;
   private bookings: Map<number, Booking>;
   private projects: Map<number, Project>;
+  private users: Map<number, User>;
   private servicesId: number;
   private quoteRequestsId: number;
   private bookingsId: number;
   private projectsId: number;
+  private usersId: number;
   private initialized: boolean;
+  public sessionStore: session.Store;
 
   constructor() {
     console.log("[Storage] Creating new MemStorage instance");
@@ -53,11 +68,16 @@ export class MemStorage implements IStorage {
     this.quoteRequests = new Map();
     this.bookings = new Map();
     this.projects = new Map();
+    this.users = new Map();
     this.servicesId = 1;
     this.quoteRequestsId = 1;
     this.bookingsId = 1;
     this.projectsId = 1;
+    this.usersId = 1;
     this.initialized = false;
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000, // 24 hours
+    });
   }
 
   async initialize(): Promise<void> {
@@ -264,6 +284,28 @@ export class MemStorage implements IStorage {
     this.projects.set(id, newProject);
     console.log(`[Storage] Created new project: ${newProject.title} with ID: ${newProject.id}`);
     return newProject;
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    const id = this.usersId++;
+    const newUser: User = {
+      id,
+      ...user,
+      createdAt: new Date()
+    };
+    this.users.set(id, newUser);
+    console.log(`[Storage] Created new user: ${newUser.username} with ID: ${newUser.id}`);
+    return newUser;
+  }
+
+  async getUser(id: number): Promise<User | undefined> {
+    return this.users.get(id);
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      user => user.username === username
+    );
   }
 }
 

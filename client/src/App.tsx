@@ -9,6 +9,7 @@ import Projects from "@/pages/projects";
 import Quote from "@/pages/quote";
 import Book from "@/pages/book";
 import Dashboard from "@/pages/dashboard";
+import Auth from "@/pages/auth";
 import NotFound from "@/pages/not-found";
 
 export default function App() {
@@ -23,6 +24,7 @@ export default function App() {
           <Route path="/quote" component={Quote} />
           <Route path="/book" component={Book} />
           <Route path="/dashboard" component={Dashboard} />
+          <Route path="/auth" component={Auth} />
           <Route component={NotFound} />
         </Switch>
       </main>

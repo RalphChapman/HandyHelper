@@ -1,11 +1,12 @@
 import type { Express } from "express";
 import multer from "multer";
 import path from "path";
-import express from "express"; // Add express import
+import express from "express";
 import { storage } from "./storage";
 import { insertQuoteRequestSchema, insertBookingSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { sendQuoteNotification } from "./utils/email";
+import { setupAuth } from "./auth";
 
 // Configure multer for handling file uploads
 const upload = multer({
@@ -32,6 +33,9 @@ const upload = multer({
 export async function registerRoutes(app: Express) {
   // Initialize storage before registering routes
   await storage.initialize();
+
+  // Set up authentication
+  setupAuth(app);
 
   // Create uploads directory if it doesn't exist
   const fs = await import("fs");
