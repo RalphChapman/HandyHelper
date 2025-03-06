@@ -26,23 +26,24 @@ export default function Home() {
     {
       image: "https://images.unsplash.com/photo-1595514736526-3091d1b1ac97",
       title: "Kitchen Remodel",
-      description: "Complete kitchen renovation including cabinets and countertops"
+      description:
+        "Complete kitchen renovation including cabinets and countertops",
     },
     {
       image: "https://images.unsplash.com/photo-1565183928294-7063f23ce0f8",
       title: "Bathroom Update",
-      description: "Modern bathroom upgrade with custom tiling"
+      description: "Modern bathroom upgrade with custom tiling",
     },
     {
       image: "https://images.unsplash.com/photo-1513694203232-719a280e022f",
       title: "Custom Carpentry",
-      description: "Built-in bookshelves and storage solutions"
+      description: "Built-in bookshelves and storage solutions",
     },
     {
       image: "https://images.unsplash.com/photo-1556819793-5087447b2d50",
       title: "Deck Construction",
-      description: "Outdoor living space expansion"
-    }
+      description: "Outdoor living space expansion",
+    },
   ];
 
   return (
@@ -53,7 +54,8 @@ export default function Home() {
             Professional Handyman Services
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Quality repairs and maintenance for your home or business, done right the first time.
+            Quality repairs and maintenance for your home or business, done
+            right the first time.
           </p>
           <Link href="/services">
             <Button size="lg" className="text-lg px-8">
@@ -88,13 +90,29 @@ export default function Home() {
             <h2 className="text-3xl font-bold mb-6">Meet Your Handyman</h2>
             <div className="space-y-4 text-left">
               <p className="text-gray-700 leading-relaxed">
-                I'm Ralph Chapman, an electrical engineer with 18 years of professional experience and a dedicated residential remodel hobbyist for over 30 years. My journey began right out of high school as a maintenance mechanic, where I earned journeyman certifications as an electrician, machinist, and welder—skills that laid the foundation for my hands-on expertise.
+                I'm Ralph Chapman, an electrical engineer with 18 years of
+                professional experience and a dedicated residential remodel
+                hobbyist for over 30 years. My journey began right out of high
+                school as a maintenance mechanic, where I worked as a journeyman
+                electrician, machinist, and welder—skills that laid the
+                foundation for my hands-on expertise.
               </p>
               <p className="text-gray-700 leading-relaxed">
-                Over the years, I've slow-flipped two homes across eight years, revamping kitchens, bathrooms, hardwood floors, tile, landscaping, porches, and fences. For three decades, I've also volunteered and taken side jobs, contributing to foundations, concrete, structural work, electrical systems, plumbing, framing, sheetrock, and finish carpentry—all while thriving as an electrical engineer.
+                Over the years, I've slow-flipped two homes across eight years,
+                revamping kitchens, bathrooms, hardwood floors, tile,
+                landscaping, porches, and fences. For three decades, I've also
+                volunteered and taken side jobs, contributing to foundations,
+                concrete, structural work, electrical systems, plumbing,
+                framing, sheetrock, and finish carpentry—all while thriving as
+                an electrical engineer.
               </p>
               <p className="text-gray-700 leading-relaxed">
-                Recently relocated to Charleston, I'm excited to tackle new residential repair and remodel projects. Beyond work, I volunteer at the Greenville Woodworkers Guild, honing my craft on diverse projects like kitchen cabinets, end tables, cutting boards, Adirondack chairs, bowls, candle holders, and bookshelves.
+                Recently relocated to Charleston, I'm excited to tackle new
+                residential repair and remodel projects. Beyond work, I
+                volunteered at the Greenville Woodworkers Guild, honing my craft
+                on diverse projects like kitchen cabinets, end tables, cutting
+                boards, Adirondack chairs, bowls, candle holders, and
+                bookshelves.
               </p>
             </div>
           </div>
@@ -115,7 +133,9 @@ export default function Home() {
                   />
                 </div>
                 <div className="p-4">
-                  <h3 className="font-semibold text-lg mb-2">{project.title}</h3>
+                  <h3 className="font-semibold text-lg mb-2">
+                    {project.title}
+                  </h3>
                   <p className="text-sm text-gray-600">{project.description}</p>
                 </div>
               </div>
@@ -126,10 +146,13 @@ export default function Home() {
 
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-8">Schedule a Service</h2>
+          <h2 className="text-3xl font-bold text-center mb-8">
+            Schedule a Service
+          </h2>
           <div className="max-w-lg mx-auto text-center">
             <p className="text-gray-600 mb-6">
-              Ready to get started? Click below to book a service or request a quote.
+              Ready to get started? Click below to book a service or request a
+              quote.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/book">
@@ -138,7 +161,11 @@ export default function Home() {
                 </Button>
               </Link>
               <Link href="/quote">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                >
                   Request Quote
                 </Button>
               </Link>
@@ -149,7 +176,9 @@ export default function Home() {
 
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-8">Contact Information</h2>
+          <h2 className="text-3xl font-bold text-center mb-8">
+            Contact Information
+          </h2>
           <BusinessCard />
         </div>
       </section>

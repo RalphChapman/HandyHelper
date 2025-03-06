@@ -13,11 +13,13 @@ export function ServiceCard({ service }: ServiceCardProps) {
     <Card className="overflow-hidden">
       <CardHeader>
         <div className="w-full h-48 overflow-hidden rounded-t-lg">
-          <img
-            src={service.imageUrl}
-            alt={service.name}
-            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-          />
+          <Link href={`/services/${service.id}/projects`}>
+            <img
+              src={service.imageUrl}
+              alt={service.name}
+              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300 cursor-pointer"
+            />
+          </Link>
         </div>
         <CardTitle className="mt-4">{service.name}</CardTitle>
         <CardDescription>{service.category}</CardDescription>
@@ -38,9 +40,14 @@ export function ServiceCard({ service }: ServiceCardProps) {
           <p className="text-sm font-medium text-gray-700">- {service.reviewAuthor}</p>
         </div>
 
-        <Link href={`/quote?service=${service.id}`}>
-          <Button className="w-full">Request Quote</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href={`/services/${service.id}/projects`}>
+            <Button variant="outline" className="flex-1">View Projects</Button>
+          </Link>
+          <Link href={`/quote?service=${service.id}`}>
+            <Button className="flex-1">Request Quote</Button>
+          </Link>
+        </div>
       </CardContent>
     </Card>
   );

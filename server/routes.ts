@@ -114,4 +114,39 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ message: "Failed to fetch bookings", error: error.message }); //Improved error response
     }
   });
+
+  // Projects routes
+  app.get("/api/projects", async (req, res) => {
+    try {
+      const serviceId = parseInt(req.query.serviceId as string);
+      console.log(`[API] Fetching projects for service ${serviceId}`);
+      const projects = await storage.getProjects(serviceId);
+      console.log(`[API] Successfully fetched ${projects.length} projects`);
+      res.json(projects);
+    } catch (error) {
+      console.error("[API] Error fetching projects:", error);
+      res.status(500).json({ message: "Failed to fetch projects", error: error.message });
+    }
+  });
+
+  // Individual service route
+  app.get("/api/services/:id", async (req, res) => {
+    try {
+      const serviceId = parseInt(req.params.id);
+      console.log(`[API] Fetching service ${serviceId}`);
+      const service = await storage.getService(serviceId);
+
+      if (!service) {
+        console.log(`[API] Service not found: ${serviceId}`);
+        res.status(404).json({ message: "Service not found" });
+        return;
+      }
+
+      console.log(`[API] Successfully fetched service: ${service.name}`);
+      res.json(service);
+    } catch (error) {
+      console.error("[API] Error fetching service:", error);
+      res.status(500).json({ message: "Failed to fetch service", error: error.message });
+    }
+  });
 }

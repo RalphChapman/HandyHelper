@@ -1,5 +1,16 @@
 import { Service, InsertService, QuoteRequest, InsertQuoteRequest, Booking, InsertBooking } from "@shared/schema";
 
+interface Project {
+  id: number;
+  title: string;
+  description: string;
+  imageUrl: string;
+  comment: string;
+  customerName: string;
+  date: string;
+  serviceId: number;
+}
+
 export interface IStorage {
   // Add initialize method to interface
   initialize(): Promise<void>;
@@ -19,15 +30,20 @@ export interface IStorage {
   getBookings(): Promise<Booking[]>;
   getBookingsByEmail(email: string): Promise<Booking[]>;
   updateBookingStatus(id: number, status: string): Promise<Booking | undefined>;
+
+  // Projects
+  getProjects(serviceId: number): Promise<Project[]>;
 }
 
 export class MemStorage implements IStorage {
   private services: Map<number, Service>;
   private quoteRequests: Map<number, QuoteRequest>;
   private bookings: Map<number, Booking>;
+  private projects: Map<number, Project>;
   private servicesId: number;
   private quoteRequestsId: number;
   private bookingsId: number;
+  private projectsId: number;
   private initialized: boolean;
 
   constructor() {
@@ -35,9 +51,11 @@ export class MemStorage implements IStorage {
     this.services = new Map();
     this.quoteRequests = new Map();
     this.bookings = new Map();
+    this.projects = new Map();
     this.servicesId = 1;
     this.quoteRequestsId = 1;
     this.bookingsId = 1;
+    this.projectsId = 1;
     this.initialized = false;
   }
 
@@ -119,16 +137,56 @@ export class MemStorage implements IStorage {
     console.log("[Storage] Seeding initial services");
     initialServices.forEach(service => {
       const id = this.servicesId++;
-      const newService = { 
-        id, 
+      const newService = {
+        id,
         ...service
       };
       this.services.set(id, newService);
       console.log(`[Storage] Added service: ${newService.name} with ID: ${newService.id}`);
     });
 
+    // Add sample projects
+    const sampleProjects = [
+      {
+        title: "Kitchen Renovation",
+        description: "Complete kitchen remodel with custom cabinets",
+        imageUrl: "https://images.unsplash.com/photo-1556911220-bff31c812dba",
+        comment: "Ralph transformed our outdated kitchen into a modern masterpiece. The attention to detail was incredible.",
+        customerName: "Jennifer Smith",
+        date: "February 2024",
+        serviceId: 1
+      },
+      {
+        title: "Bathroom Update",
+        description: "Modern bathroom renovation with custom tiling",
+        imageUrl: "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14",
+        comment: "The bathroom looks amazing! Ralph's tile work is absolutely perfect.",
+        customerName: "Michael Brown",
+        date: "January 2024",
+        serviceId: 1
+      },
+      {
+        title: "Electrical System Upgrade",
+        description: "Complete house rewiring and panel upgrade",
+        imageUrl: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e",
+        comment: "Professional work from start to finish. Everything was done to code and looks great.",
+        customerName: "Sarah Wilson",
+        date: "March 2024",
+        serviceId: 3
+      },
+      // Add more sample projects as needed
+    ];
+
+    console.log("[Storage] Seeding sample projects");
+    sampleProjects.forEach(project => {
+      const id = this.projectsId++;
+      const newProject = { id, ...project };
+      this.projects.set(id, newProject);
+      console.log(`[Storage] Added project: ${newProject.title} with ID: ${newProject.id}`);
+    });
+
     this.initialized = true;
-    console.log(`[Storage] Initialization complete. Seeded ${this.services.size} services`);
+    console.log(`[Storage] Initialization complete. Seeded ${this.services.size} services and ${this.projects.size} projects`);
   }
 
   async getServices(): Promise<Service[]> {
@@ -149,8 +207,8 @@ export class MemStorage implements IStorage {
 
   async createService(service: InsertService): Promise<Service> {
     const id = this.servicesId++;
-    const newService: Service = { 
-      id, 
+    const newService: Service = {
+      id,
       ...service
     };
     this.services.set(id, newService);
@@ -170,8 +228,8 @@ export class MemStorage implements IStorage {
 
   async createBooking(booking: InsertBooking): Promise<Booking> {
     const id = this.bookingsId++;
-    const newBooking: Booking = { 
-      id, 
+    const newBooking: Booking = {
+      id,
       ...booking
     };
     this.bookings.set(id, newBooking);
@@ -200,6 +258,12 @@ export class MemStorage implements IStorage {
       return updatedBooking;
     }
     return undefined;
+  }
+
+  async getProjects(serviceId: number): Promise<Project[]> {
+    return Array.from(this.projects.values()).filter(
+      project => project.serviceId === serviceId
+    );
   }
 }
 

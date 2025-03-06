@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Navigation } from "@/components/navigation";
 import Home from "@/pages/home";
 import Services from "@/pages/services";
+import Projects from "@/pages/projects";
 import Quote from "@/pages/quote";
 import Book from "@/pages/book";
 import Dashboard from "@/pages/dashboard";
@@ -18,6 +19,7 @@ export default function App() {
         <Switch>
           <Route path="/" component={Home} />
           <Route path="/services" component={Services} />
+          <Route path="/services/:serviceId/projects" component={Projects} />
           <Route path="/quote" component={Quote} />
           <Route path="/book" component={Book} />
           <Route path="/dashboard" component={Dashboard} />
