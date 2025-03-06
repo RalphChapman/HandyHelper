@@ -12,6 +12,17 @@ export const services = pgTable("services", {
   rating: integer("rating").notNull().default(5),
 });
 
+// Add reviews table
+export const reviews = pgTable("reviews", {
+  id: serial("id").primaryKey(),
+  serviceId: integer("service_id").notNull(),
+  userId: integer("user_id").notNull(),
+  rating: integer("rating").notNull(),
+  review: text("review").notNull(),
+  verified: boolean("verified").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Add testimonials table
 export const testimonials = pgTable("testimonials", {
   id: serial("id").primaryKey(),
@@ -77,6 +88,12 @@ export const insertBookingSchema = createInsertSchema(bookings).omit({ id: true 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertTestimonialSchema = createInsertSchema(testimonials).omit({ id: true, approved: true, createdAt: true });
 export const insertServiceProviderSchema = createInsertSchema(serviceProviders).omit({ id: true, rating: true, createdAt: true });
+export const insertReviewSchema = createInsertSchema(reviews)
+  .omit({ id: true, verified: true, createdAt: true })
+  .extend({
+    rating: z.number().min(1).max(5),
+    review: z.string().min(10, "Review must be at least 10 characters long"),
+  });
 
 export type Service = typeof services.$inferSelect;
 export type InsertService = z.infer<typeof insertServiceSchema>;
@@ -90,3 +107,5 @@ export type Testimonial = typeof testimonials.$inferSelect;
 export type InsertTestimonial = z.infer<typeof insertTestimonialSchema>;
 export type ServiceProvider = typeof serviceProviders.$inferSelect;
 export type InsertServiceProvider = z.infer<typeof insertServiceProviderSchema>;
+export type Review = typeof reviews.$inferSelect;
+export type InsertReview = z.infer<typeof insertReviewSchema>;

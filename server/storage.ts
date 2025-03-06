@@ -1,4 +1,4 @@
-import { Service, InsertService, QuoteRequest, InsertQuoteRequest, Booking, InsertBooking, User, InsertUser, Testimonial, InsertTestimonial, ServiceProvider, InsertServiceProvider } from "@shared/schema";
+import { Service, InsertService, QuoteRequest, InsertQuoteRequest, Booking, InsertBooking, User, InsertUser, Testimonial, InsertTestimonial, ServiceProvider, InsertServiceProvider, Review, InsertReview } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import { scrypt, randomBytes } from "crypto";
@@ -60,6 +60,14 @@ export interface IStorage {
   getServiceProviders(): Promise<ServiceProvider[]>;
   getServiceProvidersForService(serviceId: number): Promise<ServiceProvider[]>;
   updateServiceProviderAvailability(id: number, availability: any): Promise<ServiceProvider | undefined>;
+
+  // Review methods
+  createReview(review: InsertReview): Promise<Review>;
+  getReview(id: number): Promise<Review | undefined>;
+  getReviews(): Promise<Review[]>;
+  getReviewsByService(serviceId: number): Promise<Review[]>;
+  getReviewsByUser(userId: number): Promise<Review[]>;
+  updateReviewVerification(id: number, verified: boolean): Promise<Review | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -79,6 +87,8 @@ export class MemStorage implements IStorage {
   public sessionStore: session.Store;
   private serviceProviders: Map<number, ServiceProvider>;
   private serviceProvidersId: number;
+  private reviews: Map<number, Review>;
+  private reviewsId: number;
 
   constructor() {
     console.log("[Storage] Creating new MemStorage instance");
@@ -100,6 +110,8 @@ export class MemStorage implements IStorage {
     });
     this.serviceProviders = new Map();
     this.serviceProvidersId = 1;
+    this.reviews = new Map();
+    this.reviewsId = 1;
   }
 
   async initialize(): Promise<void> {
@@ -465,6 +477,62 @@ export class MemStorage implements IStorage {
       };
       this.serviceProviders.set(id, updatedProvider);
       return updatedProvider;
+    }
+    return undefined;
+  }
+
+  async createReview(review: InsertReview): Promise<Review> {
+    const id = this.reviewsId++;
+    const newReview: Review = {
+      id,
+      verified: false,
+      createdAt: new Date(),
+      ...review
+    };
+    this.reviews.set(id, newReview);
+
+    // Update service rating
+    const serviceReviews = await this.getReviewsByService(review.serviceId);
+    const averageRating = Math.round(
+      serviceReviews.reduce((sum, r) => sum + r.rating, 0) / serviceReviews.length
+    );
+    const service = await this.getService(review.serviceId);
+    if (service) {
+      const updatedService = { ...service, rating: averageRating };
+      this.services.set(service.id, updatedService);
+    }
+
+    console.log(`[Storage] Created new review for service ${review.serviceId}`);
+    return newReview;
+  }
+
+  async getReview(id: number): Promise<Review | undefined> {
+    return this.reviews.get(id);
+  }
+
+  async getReviews(): Promise<Review[]> {
+    return Array.from(this.reviews.values());
+  }
+
+  async getReviewsByService(serviceId: number): Promise<Review[]> {
+    return Array.from(this.reviews.values()).filter(
+      review => review.serviceId === serviceId
+    );
+  }
+
+  async getReviewsByUser(userId: number): Promise<Review[]> {
+    return Array.from(this.reviews.values()).filter(
+      review => review.userId === userId
+    );
+  }
+
+  async updateReviewVerification(id: number, verified: boolean): Promise<Review | undefined> {
+    const review = this.reviews.get(id);
+    if (review) {
+      const updatedReview = { ...review, verified };
+      this.reviews.set(id, updatedReview);
+      console.log(`[Storage] Updated review #${id} verification status to: ${verified}`);
+      return updatedReview;
     }
     return undefined;
   }

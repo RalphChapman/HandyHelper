@@ -4,7 +4,7 @@ import multer from "multer";
 import path from "path";
 import express from "express";
 import { storage } from "./storage";
-import { insertQuoteRequestSchema, insertBookingSchema, insertTestimonialSchema, insertServiceProviderSchema } from "@shared/schema";
+import { insertQuoteRequestSchema, insertBookingSchema, insertTestimonialSchema, insertServiceProviderSchema, insertReviewSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { sendQuoteNotification } from "./utils/email";
 import { setupAuth } from "./auth";
@@ -364,6 +364,87 @@ export async function registerRoutes(app: Express) {
     } catch (error) {
       console.error("[API] Error fetching service providers:", error);
       res.status(500).json({ message: "Failed to fetch service providers", error: (error as Error).message });
+    }
+  });
+
+  // Review routes
+  app.post("/api/reviews", async (req, res) => {
+    try {
+      // Check if user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "You must be logged in to leave a review" });
+      }
+
+      console.log("[API] Creating new review");
+      const reviewData = insertReviewSchema.parse({
+        ...req.body,
+        userId: req.user?.id
+      });
+
+      // Verify service exists
+      const service = await storage.getService(reviewData.serviceId);
+      if (!service) {
+        console.log(`[API] Service not found: ${reviewData.serviceId}`);
+        return res.status(404).json({ message: "Service not found" });
+      }
+
+      const newReview = await storage.createReview(reviewData);
+      console.log(`[API] Successfully created review for service ${service.name}`);
+      res.status(201).json(newReview);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        console.error("[API] Invalid review data:", error.errors);
+        res.status(400).json({ message: "Invalid review data", errors: error.errors });
+        return;
+      }
+      console.error("[API] Error creating review:", error);
+      res.status(500).json({ message: "Failed to create review", error: (error as Error).message });
+    }
+  });
+
+  app.get("/api/reviews", async (req, res) => {
+    try {
+      console.log("[API] Fetching reviews");
+      const reviews = await storage.getReviews();
+      console.log(`[API] Successfully fetched ${reviews.length} reviews`);
+      res.json(reviews);
+    } catch (error) {
+      console.error("[API] Error fetching reviews:", error);
+      res.status(500).json({ message: "Failed to fetch reviews", error: (error as Error).message });
+    }
+  });
+
+  app.get("/api/services/:id/reviews", async (req, res) => {
+    try {
+      const serviceId = parseInt(req.params.id);
+      console.log(`[API] Fetching reviews for service ${serviceId}`);
+      const reviews = await storage.getReviewsByService(serviceId);
+      console.log(`[API] Successfully fetched ${reviews.length} reviews for service ${serviceId}`);
+      res.json(reviews);
+    } catch (error) {
+      console.error("[API] Error fetching service reviews:", error);
+      res.status(500).json({ message: "Failed to fetch service reviews", error: (error as Error).message });
+    }
+  });
+
+  app.patch("/api/reviews/:id/verify", isAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { verified } = req.body;
+      console.log(`[API] Updating review #${id} verification status to: ${verified}`);
+
+      const updatedReview = await storage.updateReviewVerification(id, verified);
+      if (!updatedReview) {
+        console.log(`[API] Review not found: ${id}`);
+        res.status(404).json({ message: "Review not found" });
+        return;
+      }
+
+      console.log(`[API] Successfully updated review #${id}`);
+      res.json(updatedReview);
+    } catch (error) {
+      console.error("[API] Error updating review:", error);
+      res.status(500).json({ message: "Failed to update review", error: (error as Error).message });
     }
   });
 }
