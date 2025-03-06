@@ -24,25 +24,29 @@ export default function Home() {
 
   const pastProjects = [
     {
-      image: "https://images.unsplash.com/photo-1595514736526-3091d1b1ac97",
+      image: "https://images.unsplash.com/photo-1556911220-bff31c812dba",
       title: "Kitchen Remodel",
       description:
         "Complete kitchen renovation including cabinets and countertops",
+      serviceId: 1, // General Home Maintenance
     },
     {
       image: "https://images.unsplash.com/photo-1565183928294-7063f23ce0f8",
       title: "Bathroom Update",
       description: "Modern bathroom upgrade with custom tiling",
+      serviceId: 1, // General Home Maintenance
     },
     {
       image: "https://images.unsplash.com/photo-1513694203232-719a280e022f",
       title: "Custom Carpentry",
       description: "Built-in bookshelves and storage solutions",
+      serviceId: 4, // Carpentry
     },
     {
       image: "https://images.unsplash.com/photo-1556819793-5087447b2d50",
       title: "Deck Construction",
       description: "Outdoor living space expansion",
+      serviceId: 6, // Outdoor Solutions
     },
   ];
 
@@ -124,21 +128,23 @@ export default function Home() {
           <h2 className="text-3xl font-bold text-center mb-8">Past Projects</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {pastProjects.map((project, index) => (
-              <div key={index} className="overflow-hidden rounded-lg shadow-lg">
-                <div className="relative h-48">
-                  <img
-                    src={project.image}
-                    alt={project.title}
-                    className="w-full h-full object-cover"
-                  />
+              <Link key={index} href={`/services/${project.serviceId}/projects`}>
+                <div className="overflow-hidden rounded-lg shadow-lg transition-transform hover:scale-105 cursor-pointer">
+                  <div className="relative h-48">
+                    <img
+                      src={project.image}
+                      alt={project.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-semibold text-lg mb-2">
+                      {project.title}
+                    </h3>
+                    <p className="text-sm text-gray-600">{project.description}</p>
+                  </div>
                 </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-lg mb-2">
-                    {project.title}
-                  </h3>
-                  <p className="text-sm text-gray-600">{project.description}</p>
-                </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
