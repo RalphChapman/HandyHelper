@@ -74,16 +74,18 @@ export default function Book() {
   async function onSubmit(formData: any) {
     setIsSubmitting(true);
     try {
+      console.log("Submitting booking with data:", formData);
+
       const bookingData = {
-        serviceId: formData.serviceId,
+        serviceId: Number(formData.serviceId),
         clientName: formData.clientName,
         clientEmail: formData.clientEmail,
         clientPhone: formData.clientPhone,
-        appointmentDate: formData.appointmentDate,
+        appointmentDate: formData.appointmentDate.toISOString(),
         notes: formData.notes || null,
       };
 
-      console.log("Submitting booking with data:", bookingData);
+      console.log("Sanitized booking data:", bookingData);
 
       const response = await apiRequest("POST", "/api/bookings", bookingData);
       const data = await response.json().catch(() => ({}));
