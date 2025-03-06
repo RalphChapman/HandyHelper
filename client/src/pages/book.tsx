@@ -73,24 +73,29 @@ export default function Book() {
   const selectedDate = form.watch("appointmentDate");
   const timeSlots = getTimeSlots(selectedDate);
 
-  async function onSubmit(data: any) {
+  async function onSubmit(formData: any) {
     setIsSubmitting(true);
     try {
-      console.log("Submitting booking with data:", {
-        ...data,
-        appointmentDate: data.appointmentDate.toISOString(),
-      });
-
-      const service = services?.find(s => s.id === data.serviceId);
+      const service = services?.find(s => s.id === formData.serviceId);
       if (!service) {
         throw new Error("Selected service not found");
       }
 
-      const response = await apiRequest("POST", "/api/bookings", {
-        ...data,
-        appointmentDate: data.appointmentDate.toISOString(),
-        serviceName: service.name
-      });
+      const bookingData = {
+        serviceId: formData.serviceId,
+        serviceName: service.name,
+        clientName: formData.clientName,
+        clientEmail: formData.clientEmail,
+        clientPhone: formData.clientPhone,
+        appointmentDate: formData.appointmentDate.toISOString(),
+        notes: formData.notes || "",
+        status: "pending",
+        confirmed: false
+      };
+
+      console.log("Submitting booking with data:", bookingData);
+
+      const response = await apiRequest("POST", "/api/bookings", bookingData);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -102,7 +107,7 @@ export default function Book() {
         description: "We'll confirm your appointment soon!",
       });
       setLocation("/");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Booking submission error:", error);
       toast({
         title: "Error",
