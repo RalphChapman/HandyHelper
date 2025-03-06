@@ -20,6 +20,7 @@ export default function Quote() {
   const preselectedService = searchParams.get("service");
   const [analysis, setAnalysis] = useState<string>("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: services, isLoading: servicesLoading } = useQuery<Service[]>({
     queryKey: ["/api/services"],
@@ -72,6 +73,7 @@ export default function Quote() {
   }
 
   async function onSubmit(data: any) {
+    setIsSubmitting(true);
     try {
       const service = services?.find(s => s.id === data.serviceId);
       await apiRequest("POST", "/api/quote-requests", {
@@ -92,6 +94,8 @@ export default function Quote() {
         description: "Failed to submit quote request. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -223,8 +227,15 @@ export default function Quote() {
               </div>
             )}
 
-            <Button type="submit" className="w-full">
-              Submit Quote Request
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                'Submit Quote Request'
+              )}
             </Button>
           </form>
         </Form>
