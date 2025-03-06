@@ -210,6 +210,21 @@ export async function registerRoutes(app: Express) {
         return;
       }
 
+      // Create calendar event first to check for conflicts
+      try {
+        await createCalendarEvent({
+          ...booking,
+          serviceName: service.name
+        });
+      } catch (calendarError: any) {
+        if (calendarError.message === 'Time slot is already booked') {
+          res.status(409).json({ message: "This time slot is already booked. Please select a different time." });
+          return;
+        }
+        console.error("[API] Calendar error:", calendarError);
+        // Continue with booking creation even if calendar fails
+      }
+
       const newBooking = await storage.createBooking(booking);
       console.log(`[API] Successfully created booking #${newBooking.id}`);
 
