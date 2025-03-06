@@ -1,8 +1,18 @@
 import { Service, InsertService, QuoteRequest, InsertQuoteRequest, Booking, InsertBooking, User, InsertUser, Testimonial, InsertTestimonial } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import { scrypt, randomBytes } from "crypto";
+import { promisify } from "util";
 
 const MemoryStore = createMemoryStore(session);
+const scryptAsync = promisify(scrypt);
+
+// Add password hashing function
+async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
+}
 
 interface Project {
   id: number;
@@ -16,38 +26,30 @@ interface Project {
 }
 
 export interface IStorage {
-  // Add initialize method to interface
   initialize(): Promise<void>;
 
-  // Session store
   sessionStore: session.Store;
 
-  // Services
   getServices(): Promise<Service[]>;
   getService(id: number): Promise<Service | undefined>;
   createService(service: InsertService): Promise<Service>;
 
-  // Quote Requests
   createQuoteRequest(request: InsertQuoteRequest): Promise<QuoteRequest>;
   getQuoteRequests(): Promise<QuoteRequest[]>;
 
-  // Bookings
   createBooking(booking: InsertBooking): Promise<Booking>;
   getBooking(id: number): Promise<Booking | undefined>;
   getBookings(): Promise<Booking[]>;
   getBookingsByEmail(email: string): Promise<Booking[]>;
   updateBookingStatus(id: number, status: string): Promise<Booking | undefined>;
 
-  // Projects
   getProjects(serviceId: number): Promise<Project[]>;
   createProject(project: Omit<Project, 'id'>): Promise<Project>;
 
-  // Users
   createUser(user: InsertUser): Promise<User>;
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
 
-  // Testimonials
   createTestimonial(testimonial: InsertTestimonial): Promise<Testimonial>;
   getTestimonials(approved?: boolean): Promise<Testimonial[]>;
   updateTestimonialApproval(id: number, approved: boolean): Promise<Testimonial | undefined>;
@@ -97,11 +99,12 @@ export class MemStorage implements IStorage {
 
     console.log("[Storage] Initializing MemStorage");
 
-    // Create admin user
+    // Create admin user with hashed password
     console.log("[Storage] Creating admin user");
+    const hashedPassword = await hashPassword("admin123");
     await this.createUser({
       username: "admin",
-      password: "admin123", // This should be hashed in auth.ts
+      password: hashedPassword,
       email: "admin@example.com",
       role: "admin"
     });
