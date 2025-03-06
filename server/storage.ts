@@ -150,7 +150,7 @@ export class MemStorage implements IStorage {
         name: "Outdoor Solutions",
         description: "Professional deck construction, fence painting/repair and patio installations. Expert craftsmanship for all your outdoor structure needs.",
         category: "Landscaping",
-        imageUrl: "https://images.unsplash.com/photo-1600585152220-90363fe7e115",
+        imageUrl: "https://images.unsplash.com/photo-1621194166672-dae65f90a818",
         rating: 5
       },
     ];
