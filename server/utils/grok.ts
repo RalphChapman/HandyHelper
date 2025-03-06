@@ -14,7 +14,14 @@ export async function analyzeProjectDescription(description: string): Promise<st
 
       Please provide a detailed analysis including:
       1. A comprehensive breakdown of what the project entails
-      2. List at least 3-4 reputable and established companies in Charleston, SC that specialize in this type of work
+      2. List at least 3-4 reputable and established companies in Charleston, SC that specialize in this type of work:
+         For each company include:
+         - Company name
+         - Phone number
+         - Areas of expertise
+         - Years in business
+         - Typical pricing range
+         - Notable projects or specialties in Charleston
       3. Important considerations specific to Charleston's:
          - Historic preservation requirements if applicable
          - Coastal climate challenges
@@ -29,7 +36,7 @@ export async function analyzeProjectDescription(description: string): Promise<st
          - Any potential cost savings opportunities
 
       Format this as a professional assessment that highlights local Charleston expertise and considerations.
-      Be specific about local companies and include their specialties, reputation, and typical pricing in the Charleston area.
+      Be specific about local companies and include their contact information, specialties, reputation, and typical pricing in the Charleston area.
     `;
 
     const response = await openai.chat.completions.create({
