@@ -18,6 +18,7 @@ export async function analyzeProjectDescription(description: string): Promise<st
          For each company include:
          - Company name
          - Phone number
+         - Website URL
          - Areas of expertise
          - Years in business
          - Typical pricing range
@@ -36,7 +37,7 @@ export async function analyzeProjectDescription(description: string): Promise<st
          - Any potential cost savings opportunities
 
       Format this as a professional assessment that highlights local Charleston expertise and considerations.
-      Be specific about local companies and include their contact information, specialties, reputation, and typical pricing in the Charleston area.
+      Be specific about local companies and include their contact information, websites, specialties, reputation, and typical pricing in the Charleston area.
     `;
 
     const response = await openai.chat.completions.create({
