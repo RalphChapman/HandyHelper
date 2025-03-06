@@ -1,8 +1,11 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
+import { Button } from "@/components/ui/button";
 
 export function Navigation() {
   const [location] = useLocation();
+  const { user, logoutMutation } = useAuth();
 
   const links = [
     { href: "/", label: "Home" },
@@ -24,7 +27,7 @@ export function Navigation() {
             </Link>
           </div>
 
-          <div className="hidden sm:flex sm:items-center">
+          <div className="hidden sm:flex sm:items-center space-x-4">
             {links.map((link) => (
               <Link key={link.href} href={link.href}>
                 <a
@@ -39,6 +42,21 @@ export function Navigation() {
                 </a>
               </Link>
             ))}
+            {user ? (
+              <Button
+                variant="ghost"
+                onClick={() => logoutMutation.mutate()}
+                className="text-sm font-medium text-gray-600 hover:text-primary"
+              >
+                Logout
+              </Button>
+            ) : (
+              <Link href="/auth">
+                <a className="px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-primary">
+                  Login
+                </a>
+              </Link>
+            )}
           </div>
         </div>
       </div>
