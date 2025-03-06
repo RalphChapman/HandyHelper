@@ -45,8 +45,6 @@ export default function Book() {
       clientPhone: "",
       appointmentDate: new Date(),
       notes: null,
-      status: "pending",
-      confirmed: false,
     },
   });
 
@@ -82,18 +80,17 @@ export default function Book() {
         clientEmail: formData.clientEmail,
         clientPhone: formData.clientPhone,
         appointmentDate: formData.appointmentDate,
-        notes: formData.notes,
-        status: "pending",
-        confirmed: false
+        notes: formData.notes || null,
       };
 
       console.log("Submitting booking with data:", bookingData);
 
       const response = await apiRequest("POST", "/api/bookings", bookingData);
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "Failed to submit booking");
+        console.error("Server response:", data);
+        throw new Error(data.message || `Failed to submit booking: ${response.status} ${response.statusText}`);
       }
 
       toast({
@@ -246,7 +243,7 @@ export default function Book() {
                 <FormItem>
                   <FormLabel>Additional Notes</FormLabel>
                   <FormControl>
-                    <Textarea {...field} />
+                    <Textarea {...field} value={field.value || ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
