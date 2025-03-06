@@ -104,3 +104,66 @@ ${aiAnalysis}
     throw error;
   }
 }
+
+export async function sendBookingConfirmation(booking: any) {
+  console.log("[EMAIL] Sending booking confirmation with data:", {
+    ...booking,
+    clientEmail: booking.clientEmail,
+    clientName: booking.clientName
+  });
+
+  const message = {
+    from: '"HandyPro Service" <chapman.ralph@gmail.com>',
+    to: [booking.clientEmail, "chapman.ralph@gmail.com"].join(", "),
+    subject: "Booking Confirmation",
+    text: `
+Thank you for your booking!
+
+Booking Details:
+Name: ${booking.clientName}
+Email: ${booking.clientEmail}
+Phone: ${booking.clientPhone}
+Appointment Date: ${new Date(booking.appointmentDate).toLocaleString()}
+${booking.notes ? `\nAdditional Notes: ${booking.notes}` : ''}
+
+We will review your booking and confirm the appointment shortly. If you need to make any changes or have questions, please contact us.
+
+Best regards,
+HandyPro Service Team
+    `,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #2563eb; margin-bottom: 24px;">Thank you for your booking!</h2>
+
+        <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 24px;">
+          <h3 style="color: #1e293b; margin-bottom: 16px;">Booking Details</h3>
+          <p style="margin: 8px 0;"><strong>Name:</strong> ${booking.clientName}</p>
+          <p style="margin: 8px 0;"><strong>Email:</strong> ${booking.clientEmail}</p>
+          <p style="margin: 8px 0;"><strong>Phone:</strong> ${booking.clientPhone}</p>
+          <p style="margin: 8px 0;"><strong>Appointment Date:</strong> ${new Date(booking.appointmentDate).toLocaleString()}</p>
+          ${booking.notes ? `<p style="margin: 8px 0;"><strong>Additional Notes:</strong> ${booking.notes}</p>` : ''}
+        </div>
+
+        <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px;">
+          <p style="margin: 0;">We will review your booking and confirm the appointment shortly. If you need to make any changes or have questions, please contact us.</p>
+        </div>
+
+        <div style="margin-top: 24px; color: #64748b;">
+          <p style="margin: 4px 0;">Best regards,</p>
+          <p style="margin: 4px 0;">HandyPro Service Team</p>
+        </div>
+      </div>
+    `
+  };
+
+  try {
+    await transporter.verify();
+    console.log("[EMAIL] Attempting to send booking confirmation to:", message.to);
+    const result = await transporter.sendMail(message);
+    console.log("[EMAIL] Booking confirmation sent successfully:", result);
+    return result;
+  } catch (error) {
+    console.error("[EMAIL] Failed to send booking confirmation:", error);
+    throw error;
+  }
+}

@@ -6,10 +6,9 @@ import express from "express";
 import { storage } from "./storage";
 import { insertQuoteRequestSchema, insertBookingSchema, insertTestimonialSchema, insertServiceProviderSchema, insertReviewSchema } from "@shared/schema";
 import { ZodError } from "zod";
-import { sendQuoteNotification } from "./utils/email";
+import { sendQuoteNotification, sendBookingConfirmation } from "./utils/email";
 import { setupAuth } from "./auth";
-import { analyzeProjectDescription, estimateProjectCost } from "./utils/grok"; //Corrected import for grok.ts
-
+import { analyzeProjectDescription, estimateProjectCost } from "./utils/grok";
 
 // Configure multer for handling file uploads
 const upload = multer({
@@ -213,6 +212,19 @@ export async function registerRoutes(app: Express) {
 
       const newBooking = await storage.createBooking(booking);
       console.log(`[API] Successfully created booking #${newBooking.id}`);
+
+      // Send email confirmation
+      try {
+        await sendBookingConfirmation({
+          ...newBooking,
+          serviceName: service.name
+        });
+        console.log("[API] Booking confirmation email sent");
+      } catch (emailError) {
+        console.error("[API] Failed to send booking confirmation email:", emailError);
+        // Don't fail the request if email fails
+      }
+
       res.status(201).json(newBooking);
     } catch (error) {
       if (error instanceof ZodError) {
