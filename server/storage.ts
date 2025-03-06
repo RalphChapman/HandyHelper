@@ -110,7 +110,7 @@ export class MemStorage implements IStorage {
         name: "Outdoor Solutions",
         description: "Professional fence painting/repair and patio installations. Expert craftsmanship for all your outdoor structure needs.",
         category: "Landscaping",
-        imageUrl: "https://images.unsplash.com/photo-1598197722123-8549245c4f46",
+        imageUrl: "https://images.unsplash.com/photo-1584467541268-b040f83be3f9",
         rating: 5,
         review: "Ralph repaired and repainted our old fence, and installed a beautiful new patio. The quality of work is outstanding!",
         reviewAuthor: "David Thompson"
@@ -128,7 +128,7 @@ export class MemStorage implements IStorage {
         name: "Sheetrock Repair",
         description: "Expert drywall and sheetrock repair services, from small patches to complete wall restoration.",
         category: "General Repairs",
-        imageUrl: "https://images.unsplash.com/photo-1573557755467-5f7b8ae0ce6d",
+        imageUrl: "https://images.unsplash.com/photo-1517581177684-8fc44d23adc2",
         rating: 5,
         review: "Ralph did an amazing job repairing our damaged walls. You can't even tell where the repairs were made!",
         reviewAuthor: "Michael Anderson"
