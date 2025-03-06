@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 // Business hours: 9 AM to 5 PM
 const BUSINESS_HOURS = Array.from({ length: 9 }, (_, i) => i + 9); // 9 to 17 (5 PM)
@@ -24,8 +25,15 @@ export default function Book() {
   const preselectedService = searchParams.get("service");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: services } = useQuery<Service[]>({
+  const { data: services, isLoading: servicesLoading } = useQuery<Service[]>({
     queryKey: ["/api/services"],
+    queryFn: async () => {
+      const response = await fetch("/api/services");
+      if (!response.ok) {
+        throw new Error(`Failed to fetch services: ${response.statusText}`);
+      }
+      return response.json();
+    }
   });
 
   const form = useForm({
