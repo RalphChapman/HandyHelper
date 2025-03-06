@@ -107,6 +107,15 @@ export class MemStorage implements IStorage {
         reviewAuthor: "Emily Wilson"
       },
       {
+        name: "Interior Projects",
+        description: "Expert interior renovation services including professional painting, drywall/sheetrock repair, and finish trim work. Our attention to detail ensures seamless repairs and beautiful finishes for your home.",
+        category: "Interior",
+        imageUrl: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f",
+        rating: 5,
+        review: "Ralph completely transformed our interior spaces. From drywall repairs to custom trim work and a flawless paint job, his craftsmanship is outstanding. You can't even tell where the repairs were made!",
+        reviewAuthor: "Jennifer Anderson"
+      },
+      {
         name: "Outdoor Solutions",
         description: "Professional fence painting/repair and patio installations. Expert craftsmanship for all your outdoor structure needs.",
         category: "Landscaping",
@@ -115,24 +124,6 @@ export class MemStorage implements IStorage {
         review: "Ralph repaired and repainted our old fence, and installed a beautiful new patio. The quality of work is outstanding!",
         reviewAuthor: "David Thompson"
       },
-      {
-        name: "Interior Painting",
-        description: "Professional interior painting services with attention to detail and clean, precise work.",
-        category: "Painting",
-        imageUrl: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f",
-        rating: 5,
-        review: "Excellent paint job throughout our house. Ralph's prep work and attention to detail made all the difference.",
-        reviewAuthor: "Jennifer Martinez"
-      },
-      {
-        name: "Sheetrock Repair",
-        description: "Expert drywall and sheetrock repair services, from small patches to complete wall restoration.",
-        category: "General Repairs",
-        imageUrl: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f",
-        rating: 5,
-        review: "Ralph did an amazing job repairing our damaged walls. You can't even tell where the repairs were made!",
-        reviewAuthor: "Michael Anderson"
-      }
     ];
 
     console.log("[Storage] Seeding initial services");
