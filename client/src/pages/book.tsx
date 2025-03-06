@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { Loader2 } from "lucide-react";
 
 // Business hours: 9 AM to 5 PM
 const BUSINESS_HOURS = Array.from({ length: 9 }, (_, i) => i + 9); // 9 to 17 (5 PM)
@@ -21,6 +22,7 @@ export default function Book() {
   const { toast } = useToast();
   const searchParams = new URLSearchParams(window.location.search);
   const preselectedService = searchParams.get("service");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: services } = useQuery<Service[]>({
     queryKey: ["/api/services"],
@@ -64,6 +66,7 @@ export default function Book() {
   const timeSlots = getTimeSlots(selectedDate);
 
   async function onSubmit(data: any) {
+    setIsSubmitting(true);
     try {
       await apiRequest("POST", "/api/bookings", {
         ...data,
@@ -75,11 +78,14 @@ export default function Book() {
       });
       setLocation("/");
     } catch (error) {
+      console.error("Booking submission error:", error);
       toast({
         title: "Error",
         description: "Failed to submit booking. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -223,8 +229,15 @@ export default function Book() {
               )}
             />
 
-            <Button type="submit" className="w-full">
-              Book Appointment
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Booking Appointment...
+                </>
+              ) : (
+                'Book Appointment'
+              )}
             </Button>
           </form>
         </Form>
