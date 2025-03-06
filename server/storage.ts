@@ -343,7 +343,9 @@ export class MemStorage implements IStorage {
     const id = this.bookingsId++;
     const newBooking: Booking = {
       id,
-      ...booking
+      ...booking,
+      status: "pending",
+      confirmed: false
     };
     this.bookings.set(id, newBooking);
     return newBooking;
