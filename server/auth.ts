@@ -7,9 +7,10 @@ import { promisify } from "util";
 import { storage } from "./storage";
 import { User } from "@shared/schema";
 
+// Extend Express.User to include our User type
 declare global {
   namespace Express {
-    interface User extends User {}
+    interface User extends Omit<User, 'password'> {}
   }
 }
 
@@ -52,7 +53,9 @@ export function setupAuth(app: Express) {
         if (!user || !(await comparePasswords(password, user.password))) {
           return done(null, false);
         }
-        return done(null, user);
+        // Remove password from user object before serializing
+        const { password: _, ...userWithoutPassword } = user;
+        return done(null, userWithoutPassword);
       } catch (error) {
         return done(error);
       }
@@ -66,7 +69,10 @@ export function setupAuth(app: Express) {
   passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUser(id);
-      done(null, user);
+      if (!user) return done(null, false);
+      // Remove password from user object
+      const { password: _, ...userWithoutPassword } = user;
+      done(null, userWithoutPassword);
     } catch (error) {
       done(error);
     }
@@ -89,12 +95,15 @@ export function setupAuth(app: Express) {
         role: "user"
       });
 
+      // Remove password before sending response
+      const { password: _, ...userWithoutPassword } = user;
+
       // Log the user in after registration
-      req.login(user, (err) => {
+      req.login(userWithoutPassword, (err) => {
         if (err) {
           return res.status(500).json({ message: "Failed to login after registration" });
         }
-        return res.status(201).json(user);
+        return res.status(201).json(userWithoutPassword);
       });
     } catch (error) {
       console.error("[Auth] Registration error:", error);
@@ -103,7 +112,7 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", (err: Error | null, user: Express.User | false) => {
       if (err) {
         return next(err);
       }

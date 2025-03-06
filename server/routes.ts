@@ -1,3 +1,4 @@
+import type { Request, Response, NextFunction } from "express";
 import type { Express } from "express";
 import multer from "multer";
 import path from "path";
@@ -31,10 +32,15 @@ const upload = multer({
 });
 
 // Middleware to check if user is admin
-const isAdmin = (req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
-  if (!req.isAuthenticated() || req.user?.role !== 'admin') {
+const isAdmin = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+
+  if (req.user?.role !== 'admin') {
     return res.status(403).json({ message: "Access denied. Admin privileges required." });
   }
+
   next();
 };
 
