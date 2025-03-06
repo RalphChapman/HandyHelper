@@ -18,7 +18,6 @@ export async function analyzeProjectDescription(description: string): Promise<st
          For each company include:
          - Company name
          - Phone number
-         - Website URL
          - Areas of expertise
          - Years in business
          - Typical pricing range
