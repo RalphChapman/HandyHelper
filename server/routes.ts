@@ -447,4 +447,23 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ message: "Failed to update review", error: (error as Error).message });
     }
   });
+
+  // AI Analysis route
+  app.post("/api/analyze-project", async (req, res) => {
+    try {
+      console.log("[API] Analyzing project description");
+      const { description } = req.body;
+
+      if (!description) {
+        return res.status(400).json({ message: "Project description is required" });
+      }
+
+      const analysis = await analyzeProjectDescription(description);
+      console.log("[API] Successfully analyzed project description");
+      res.json({ analysis });
+    } catch (error) {
+      console.error("[API] Error analyzing project:", error);
+      res.status(500).json({ message: "Failed to analyze project", error: (error as Error).message });
+    }
+  });
 }
