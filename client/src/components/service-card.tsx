@@ -1,24 +1,34 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Star } from "lucide-react";
+import { Star, ImageIcon } from "lucide-react";
 import { Link } from "wouter";
 import type { Service } from "@shared/schema";
+import { useState } from "react";
 
 interface ServiceCardProps {
   service: Service;
 }
 
 export function ServiceCard({ service }: ServiceCardProps) {
+  const [imageError, setImageError] = useState(false);
+
   return (
     <Card className="overflow-hidden">
       <CardHeader>
         <div className="w-full h-48 overflow-hidden rounded-t-lg">
           <Link href={`/services/${service.id}/projects`}>
-            <img
-              src={service.imageUrl}
-              alt={service.name}
-              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300 cursor-pointer"
-            />
+            {!imageError ? (
+              <img
+                src={service.imageUrl}
+                alt={service.name}
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300 cursor-pointer"
+                onError={() => setImageError(true)}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                <ImageIcon className="w-12 h-12 text-gray-400" />
+              </div>
+            )}
           </Link>
         </div>
         <CardTitle className="mt-4">{service.name}</CardTitle>
