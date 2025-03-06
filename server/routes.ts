@@ -3,7 +3,7 @@ import multer from "multer";
 import path from "path";
 import express from "express";
 import { storage } from "./storage";
-import { insertQuoteRequestSchema, insertBookingSchema } from "@shared/schema";
+import { insertQuoteRequestSchema, insertBookingSchema, insertTestimonialSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { sendQuoteNotification } from "./utils/email";
 import { setupAuth } from "./auth";
@@ -30,6 +30,14 @@ const upload = multer({
   }
 });
 
+// Middleware to check if user is admin
+const isAdmin = (req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
+  if (!req.isAuthenticated() || req.user?.role !== 'admin') {
+    return res.status(403).json({ message: "Access denied. Admin privileges required." });
+  }
+  next();
+};
+
 export async function registerRoutes(app: Express) {
   // Initialize storage before registering routes
   await storage.initialize();
@@ -45,6 +53,67 @@ export async function registerRoutes(app: Express) {
 
   // Serve uploaded files
   app.use("/uploads", express.static("uploads"));
+
+  // Testimonial routes
+  app.post("/api/testimonials", async (req, res) => {
+    try {
+      console.log("[API] Creating new testimonial");
+      const testimonial = insertTestimonialSchema.parse(req.body);
+      const service = await storage.getService(testimonial.serviceId);
+
+      if (!service) {
+        console.log(`[API] Service not found: ${testimonial.serviceId}`);
+        res.status(404).json({ message: "Service not found" });
+        return;
+      }
+
+      const newTestimonial = await storage.createTestimonial(testimonial);
+      console.log(`[API] Successfully created testimonial from ${newTestimonial.authorName}`);
+      res.status(201).json(newTestimonial);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        console.error("[API] Invalid testimonial data:", error.errors);
+        res.status(400).json({ message: "Invalid testimonial data", errors: error.errors });
+        return;
+      }
+      console.error("[API] Error creating testimonial:", error);
+      res.status(500).json({ message: "Failed to create testimonial", error: (error as Error).message });
+    }
+  });
+
+  app.get("/api/testimonials", async (req, res) => {
+    try {
+      const approved = req.query.approved === 'true' ? true : req.query.approved === 'false' ? false : undefined;
+      console.log(`[API] Fetching testimonials${approved !== undefined ? ` (approved: ${approved})` : ''}`);
+      const testimonials = await storage.getTestimonials(approved);
+      console.log(`[API] Successfully fetched ${testimonials.length} testimonials`);
+      res.json(testimonials);
+    } catch (error) {
+      console.error("[API] Error fetching testimonials:", error);
+      res.status(500).json({ message: "Failed to fetch testimonials", error: (error as Error).message });
+    }
+  });
+
+  app.patch("/api/testimonials/:id/approve", isAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { approved } = req.body;
+      console.log(`[API] Updating testimonial #${id} approval status to: ${approved}`);
+
+      const updatedTestimonial = await storage.updateTestimonialApproval(id, approved);
+      if (!updatedTestimonial) {
+        console.log(`[API] Testimonial not found: ${id}`);
+        res.status(404).json({ message: "Testimonial not found" });
+        return;
+      }
+
+      console.log(`[API] Successfully updated testimonial #${id}`);
+      res.json(updatedTestimonial);
+    } catch (error) {
+      console.error("[API] Error updating testimonial:", error);
+      res.status(500).json({ message: "Failed to update testimonial", error: (error as Error).message });
+    }
+  });
 
   // Services routes
   app.get("/api/services", async (_req, res) => {

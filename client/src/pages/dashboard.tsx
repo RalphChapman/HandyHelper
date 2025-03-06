@@ -1,16 +1,42 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
-import type { Booking, QuoteRequest } from "@shared/schema";
+import { useAuth } from "@/hooks/use-auth";
+import { queryClient } from "@/lib/queryClient";
+import type { Booking, QuoteRequest, Testimonial } from "@shared/schema";
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+
   const { data: bookings } = useQuery<Booking[]>({
     queryKey: ["/api/bookings"],
   });
 
   const { data: quotes } = useQuery<QuoteRequest[]>({
     queryKey: ["/api/quote-requests"],
+  });
+
+  const { data: testimonials } = useQuery<Testimonial[]>({
+    queryKey: ["/api/testimonials"],
+    enabled: isAdmin,
+  });
+
+  const approveTestimonialMutation = useMutation({
+    mutationFn: async ({ id, approved }: { id: number; approved: boolean }) => {
+      const response = await fetch(`/api/testimonials/${id}/approve`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ approved }),
+      });
+      if (!response.ok) throw new Error("Failed to update testimonial");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/testimonials"] });
+    },
   });
 
   return (
@@ -22,6 +48,7 @@ export default function Dashboard() {
           <TabsList>
             <TabsTrigger value="bookings">My Bookings</TabsTrigger>
             <TabsTrigger value="quotes">Quote Requests</TabsTrigger>
+            {isAdmin && <TabsTrigger value="testimonials">Testimonials</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="bookings">
@@ -82,6 +109,52 @@ export default function Dashboard() {
               )}
             </div>
           </TabsContent>
+
+          {isAdmin && (
+            <TabsContent value="testimonials">
+              <div className="grid gap-6">
+                {!testimonials?.length ? (
+                  <Card>
+                    <CardContent className="p-6 text-center text-gray-500">
+                      No testimonials found
+                    </CardContent>
+                  </Card>
+                ) : (
+                  testimonials?.map((testimonial) => (
+                    <Card key={testimonial.id}>
+                      <CardHeader>
+                        <CardTitle>
+                          Testimonial from {testimonial.authorName}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <p className="text-gray-600">{testimonial.content}</p>
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm text-gray-500">
+                              Status: {testimonial.approved ? "Approved" : "Pending"}
+                            </p>
+                            <Button
+                              variant={testimonial.approved ? "outline" : "default"}
+                              onClick={() =>
+                                approveTestimonialMutation.mutate({
+                                  id: testimonial.id,
+                                  approved: !testimonial.approved,
+                                })
+                              }
+                              disabled={approveTestimonialMutation.isPending}
+                            >
+                              {testimonial.approved ? "Unapprove" : "Approve"}
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </div>

@@ -10,8 +10,16 @@ export const services = pgTable("services", {
   category: varchar("category", { length: 50 }).notNull(),
   imageUrl: text("image_url").notNull(),
   rating: integer("rating").notNull().default(5),
-  review: text("review").notNull().default(""),
-  reviewAuthor: varchar("review_author", { length: 100 }).notNull().default(""),
+});
+
+// Add testimonials table
+export const testimonials = pgTable("testimonials", {
+  id: serial("id").primaryKey(),
+  serviceId: integer("service_id").notNull(),
+  content: text("content").notNull(),
+  authorName: varchar("author_name", { length: 100 }).notNull(),
+  approved: boolean("approved").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const bookings = pgTable("bookings", {
@@ -36,7 +44,7 @@ export const quoteRequests = pgTable("quote_requests", {
   address: text("address").notNull(),
 });
 
-// Add users table
+// Users table with role support
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: varchar("username", { length: 100 }).notNull().unique(),
@@ -51,6 +59,7 @@ export const insertServiceSchema = createInsertSchema(services).omit({ id: true 
 export const insertQuoteRequestSchema = createInsertSchema(quoteRequests).omit({ id: true });
 export const insertBookingSchema = createInsertSchema(bookings).omit({ id: true });
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
+export const insertTestimonialSchema = createInsertSchema(testimonials).omit({ id: true, approved: true, createdAt: true });
 
 export type Service = typeof services.$inferSelect;
 export type InsertService = z.infer<typeof insertServiceSchema>;
@@ -60,3 +69,5 @@ export type Booking = typeof bookings.$inferSelect;
 export type InsertBooking = z.infer<typeof insertBookingSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type Testimonial = typeof testimonials.$inferSelect;
+export type InsertTestimonial = z.infer<typeof insertTestimonialSchema>;
