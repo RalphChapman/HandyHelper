@@ -84,7 +84,16 @@ export const serviceProviders = pgTable("service_providers", {
 // Create schemas and types
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true });
 export const insertQuoteRequestSchema = createInsertSchema(quoteRequests).omit({ id: true });
-export const insertBookingSchema = createInsertSchema(bookings).omit({ id: true });
+export const insertBookingSchema = createInsertSchema(bookings)
+  .omit({ id: true, status: true, confirmed: true })
+  .extend({
+    serviceId: z.number().int().positive(),
+    clientName: z.string().min(1, "Name is required"),
+    clientEmail: z.string().email("Invalid email address"),
+    clientPhone: z.string().min(10, "Phone number is required"),
+    appointmentDate: z.date(),
+    notes: z.string().nullable(),
+  });
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertTestimonialSchema = createInsertSchema(testimonials).omit({ id: true, approved: true, createdAt: true });
 export const insertServiceProviderSchema = createInsertSchema(serviceProviders).omit({ id: true, rating: true, createdAt: true });

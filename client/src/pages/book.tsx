@@ -74,7 +74,7 @@ export default function Book() {
   async function onSubmit(formData: any) {
     setIsSubmitting(true);
     try {
-      console.log("Submitting booking with data:", formData);
+      console.log("Raw form data:", formData);
 
       const bookingData = {
         serviceId: Number(formData.serviceId),
@@ -82,7 +82,7 @@ export default function Book() {
         clientEmail: formData.clientEmail,
         clientPhone: formData.clientPhone,
         appointmentDate: formData.appointmentDate.toISOString(),
-        notes: formData.notes || null,
+        notes: formData.notes === "" ? null : formData.notes,
       };
 
       console.log("Sanitized booking data:", bookingData);
@@ -96,7 +96,7 @@ export default function Book() {
       }
 
       toast({
-        title: "Booking submitted",
+        title: "Success",
         description: "We'll confirm your appointment soon!",
       });
       setLocation("/");
