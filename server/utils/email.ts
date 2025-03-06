@@ -1,12 +1,25 @@
 import nodemailer from "nodemailer";
 import { analyzeProjectDescription } from "./grok";
 
+if (!process.env.EMAIL_APP_PASSWORD) {
+  throw new Error("EMAIL_APP_PASSWORD environment variable must be set");
+}
+
 // Create reusable transporter
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: "chapman.ralph@gmail.com",
     pass: process.env.EMAIL_APP_PASSWORD
+  }
+});
+
+// Verify transporter connection
+transporter.verify(function(error, success) {
+  if (error) {
+    console.error("[EMAIL] SMTP Connection Error:", error);
+  } else {
+    console.log("[EMAIL] Server is ready to send messages");
   }
 });
 
@@ -62,6 +75,8 @@ ${aiAnalysis}
   };
 
   try {
+    // Verify connection before sending
+    await transporter.verify();
     console.log("[EMAIL] Attempting to send email to:", message.to);
     const result = await transporter.sendMail(message);
     console.log("[EMAIL] Email sent successfully:", result);
