@@ -5,8 +5,8 @@ import { ZodError } from "zod";
 import { sendQuoteNotification } from "./utils/email";
 
 export async function registerRoutes(app: Express) {
-  // Initialize storage before registering routes.  This is an assumption based on best practices.
-  await storage.initialize(); // Add storage initialization
+  // Initialize storage before registering routes
+  await storage.initialize();
 
   // Services routes
   app.get("/api/services", async (_req, res) => {
@@ -17,7 +17,7 @@ export async function registerRoutes(app: Express) {
       res.json(services);
     } catch (error) {
       console.error("[API] Error fetching services:", error);
-      res.status(500).json({ message: "Failed to fetch services", error: error.message }); //Improved error response
+      res.status(500).json({ message: "Failed to fetch services", error: (error as Error).message }); //Improved error response
     }
   });
 
@@ -57,7 +57,7 @@ export async function registerRoutes(app: Express) {
         return;
       }
       console.error("[API] Error creating quote request:", error);
-      res.status(500).json({ message: "Failed to create quote request", error: error.message }); //Improved error response
+      res.status(500).json({ message: "Failed to create quote request", error: (error as Error).message }); //Improved error response
     }
   });
 
@@ -69,7 +69,7 @@ export async function registerRoutes(app: Express) {
       res.json(quoteRequests);
     } catch (error) {
       console.error("[API] Error fetching quote requests:", error);
-      res.status(500).json({ message: "Failed to fetch quote requests", error: error.message }); //Improved error response
+      res.status(500).json({ message: "Failed to fetch quote requests", error: (error as Error).message }); //Improved error response
     }
   });
 
@@ -96,7 +96,7 @@ export async function registerRoutes(app: Express) {
         return;
       }
       console.error("[API] Error creating booking:", error);
-      res.status(500).json({ message: "Failed to create booking", error: error.message }); //Improved error response
+      res.status(500).json({ message: "Failed to create booking", error: (error as Error).message }); //Improved error response
     }
   });
 
@@ -111,7 +111,7 @@ export async function registerRoutes(app: Express) {
       res.json(bookings);
     } catch (error) {
       console.error("[API] Error fetching bookings:", error);
-      res.status(500).json({ message: "Failed to fetch bookings", error: error.message }); //Improved error response
+      res.status(500).json({ message: "Failed to fetch bookings", error: (error as Error).message }); //Improved error response
     }
   });
 
@@ -125,7 +125,29 @@ export async function registerRoutes(app: Express) {
       res.json(projects);
     } catch (error) {
       console.error("[API] Error fetching projects:", error);
-      res.status(500).json({ message: "Failed to fetch projects", error: error.message });
+      res.status(500).json({ message: "Failed to fetch projects", error: (error as Error).message });
+    }
+  });
+
+  app.post("/api/projects", async (req, res) => {
+    try {
+      console.log("[API] Creating new project");
+      const project = req.body;
+
+      // Validate service exists
+      const service = await storage.getService(project.serviceId);
+      if (!service) {
+        console.log(`[API] Service not found: ${project.serviceId}`);
+        res.status(404).json({ message: "Service not found" });
+        return;
+      }
+
+      const newProject = await storage.createProject(project);
+      console.log(`[API] Successfully created project #${newProject.id}`);
+      res.status(201).json(newProject);
+    } catch (error) {
+      console.error("[API] Error creating project:", error);
+      res.status(500).json({ message: "Failed to create project", error: (error as Error).message });
     }
   });
 
@@ -146,7 +168,7 @@ export async function registerRoutes(app: Express) {
       res.json(service);
     } catch (error) {
       console.error("[API] Error fetching service:", error);
-      res.status(500).json({ message: "Failed to fetch service", error: error.message });
+      res.status(500).json({ message: "Failed to fetch service", error: (error as Error).message });
     }
   });
 }

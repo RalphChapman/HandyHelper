@@ -33,6 +33,7 @@ export interface IStorage {
 
   // Projects
   getProjects(serviceId: number): Promise<Project[]>;
+  createProject(project: Omit<Project, 'id'>): Promise<Project>;
 }
 
 export class MemStorage implements IStorage {
@@ -264,6 +265,14 @@ export class MemStorage implements IStorage {
     return Array.from(this.projects.values()).filter(
       project => project.serviceId === serviceId
     );
+  }
+
+  async createProject(project: Omit<Project, 'id'>): Promise<Project> {
+    const id = this.projectsId++;
+    const newProject = { id, ...project };
+    this.projects.set(id, newProject);
+    console.log(`[Storage] Created new project: ${newProject.title} with ID: ${newProject.id}`);
+    return newProject;
   }
 }
 

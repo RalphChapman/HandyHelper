@@ -2,6 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams } from "wouter";
 import { Service } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useToast } from "@/hooks/use-toast";
 
 interface Project {
   id: number;
@@ -14,9 +23,21 @@ interface Project {
   serviceId: number;
 }
 
+// Form schema for project submission
+const projectFormSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().min(1, "Description is required"),
+  imageUrl: z.string().url("Please provide a valid image URL"),
+  comment: z.string().min(1, "Please share your experience"),
+  customerName: z.string().min(1, "Name is required"),
+});
+
+type ProjectFormValues = z.infer<typeof projectFormSchema>;
+
 export default function Projects() {
   const params = useParams();
   const serviceId = parseInt(params.serviceId as string);
+  const { toast } = useToast();
 
   const { data: service, isLoading: serviceLoading } = useQuery<Service>({
     queryKey: ["/api/services", serviceId],
@@ -40,6 +61,49 @@ export default function Projects() {
     },
   });
 
+  const form = useForm<ProjectFormValues>({
+    resolver: zodResolver(projectFormSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      imageUrl: "",
+      comment: "",
+      customerName: "",
+    },
+  });
+
+  async function onSubmit(data: ProjectFormValues) {
+    try {
+      const response = await fetch("/api/projects", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...data,
+          serviceId,
+          date: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to submit project");
+      }
+
+      toast({
+        title: "Success",
+        description: "Your project has been submitted for review!",
+      });
+      form.reset();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to submit project. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }
+
   if (serviceLoading || projectsLoading) {
     return (
       <div className="py-12">
@@ -62,8 +126,98 @@ export default function Projects() {
   return (
     <div className="py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">{service?.name} Projects</h1>
-        <p className="text-gray-600 mb-8">Customer projects and testimonials</p>
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{service?.name} Projects</h1>
+            <p className="text-gray-600">Customer projects and testimonials</p>
+          </div>
+
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button>Share Your Project</Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Share Your Project</DialogTitle>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Project Title</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Project Description</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="imageUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Image URL</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="url" placeholder="https://example.com/image.jpg" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="comment"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Your Experience</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="customerName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Your Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button type="submit" className="w-full">Submit Project</Button>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects?.map((project) => (
