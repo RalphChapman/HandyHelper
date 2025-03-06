@@ -466,4 +466,23 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ message: "Failed to analyze project", error: (error as Error).message });
     }
   });
+  // Add this new route along with the existing AI analysis route
+  app.post("/api/estimate-cost", async (req, res) => {
+    try {
+      console.log("[API] Estimating project cost");
+      const { description, parameters } = req.body;
+
+      if (!description) {
+        return res.status(400).json({ message: "Project description is required" });
+      }
+
+      const estimate = await estimateProjectCost(description, parameters);
+      console.log("[API] Successfully estimated project cost");
+      res.json(estimate);
+    } catch (error) {
+      console.error("[API] Error estimating project cost:", error);
+      res.status(500).json({ message: "Failed to estimate project cost", error: (error as Error).message });
+    }
+  });
+
 }
