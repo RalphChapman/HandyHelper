@@ -22,9 +22,14 @@ export async function analyzeProjectDescription(description: string): Promise<st
          - Architectural style compatibility with Charleston's historic character
       4. Estimated timeline, including permit processing times in Charleston
       5. Local material availability and recommendations from Charleston suppliers
+      6. Cost considerations:
+         - Estimated cost range based on Charleston market rates
+         - Factors that could affect the final cost
+         - Typical payment schedules in Charleston
+         - Any potential cost savings opportunities
 
       Format this as a professional assessment that highlights local Charleston expertise and considerations.
-      Be specific about local companies and include their specialties and reputation in the Charleston area.
+      Be specific about local companies and include their specialties, reputation, and typical pricing in the Charleston area.
     `;
 
     const response = await openai.chat.completions.create({
