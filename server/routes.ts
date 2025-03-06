@@ -8,6 +8,8 @@ import { insertQuoteRequestSchema, insertBookingSchema, insertTestimonialSchema,
 import { ZodError } from "zod";
 import { sendQuoteNotification } from "./utils/email";
 import { setupAuth } from "./auth";
+import { analyzeProjectDescription, estimateProjectCost } from "./utils/grok"; //Corrected import for grok.ts
+
 
 // Configure multer for handling file uploads
 const upload = multer({
