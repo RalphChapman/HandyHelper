@@ -61,16 +61,34 @@ AI Analysis:
 ${aiAnalysis}
     `,
     html: `
-      <h2>New Quote Request</h2>
-      <p><strong>Name:</strong> ${quoteRequest.name}</p>
-      <p><strong>Email:</strong> ${quoteRequest.email}</p>
-      <p><strong>Phone:</strong> ${quoteRequest.phone}</p>
-      <p><strong>${serviceInfo}</strong></p>
-      <p><strong>Address:</strong> ${quoteRequest.address}</p>
-      <h3>Project Description:</h3>
-      <p>${quoteRequest.description}</p>
-      <h3>AI Analysis:</h3>
-      <p>${aiAnalysis}</p>
+      <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #2563eb; margin-bottom: 24px;">New Quote Request</h2>
+
+        <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 24px;">
+          <h3 style="color: #1e293b; margin-bottom: 16px;">Customer Information</h3>
+          <p style="margin: 8px 0;"><strong>Name:</strong> ${quoteRequest.name}</p>
+          <p style="margin: 8px 0;"><strong>Email:</strong> ${quoteRequest.email}</p>
+          <p style="margin: 8px 0;"><strong>Phone:</strong> ${quoteRequest.phone}</p>
+          <p style="margin: 8px 0;"><strong>${serviceInfo}</strong></p>
+          <p style="margin: 8px 0;"><strong>Address:</strong> ${quoteRequest.address}</p>
+        </div>
+
+        <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 24px;">
+          <h3 style="color: #1e293b; margin-bottom: 16px;">Project Description</h3>
+          <p style="line-height: 1.6; white-space: pre-wrap;">${quoteRequest.description}</p>
+        </div>
+
+        <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px;">
+          <h3 style="color: #1e293b; margin-bottom: 16px;">Professional Analysis</h3>
+          <div style="line-height: 1.6; white-space: pre-wrap;">${aiAnalysis.split('\n').map(line => 
+            line.trim().startsWith('-') ? 
+              `<p style="margin: 4px 0 4px 20px;">• ${line.substring(1)}</p>` : 
+              line.trim().startsWith('*') ? 
+                `<p style="margin: 4px 0 4px 20px;">• ${line.substring(1)}</p>` :
+                `<p style="margin: 8px 0;">${line}</p>`
+          ).join('')}</div>
+        </div>
+      </div>
     `
   };
 
