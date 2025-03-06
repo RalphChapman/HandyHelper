@@ -1,12 +1,46 @@
 import type { Express } from "express";
+import multer from "multer";
+import path from "path";
+import express from "express"; // Add express import
 import { storage } from "./storage";
 import { insertQuoteRequestSchema, insertBookingSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { sendQuoteNotification } from "./utils/email";
 
+// Configure multer for handling file uploads
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: "./uploads",
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1E9);
+      cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
+    }
+  }),
+  fileFilter: (req, file, cb) => {
+    // Accept only image files
+    if (file.mimetype.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Please upload only images"));
+    }
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
+
 export async function registerRoutes(app: Express) {
   // Initialize storage before registering routes
   await storage.initialize();
+
+  // Create uploads directory if it doesn't exist
+  const fs = await import("fs");
+  if (!fs.existsSync("./uploads")) {
+    fs.mkdirSync("./uploads");
+  }
+
+  // Serve uploaded files
+  app.use("/uploads", express.static("uploads"));
 
   // Services routes
   app.get("/api/services", async (_req, res) => {
@@ -17,7 +51,7 @@ export async function registerRoutes(app: Express) {
       res.json(services);
     } catch (error) {
       console.error("[API] Error fetching services:", error);
-      res.status(500).json({ message: "Failed to fetch services", error: (error as Error).message }); //Improved error response
+      res.status(500).json({ message: "Failed to fetch services", error: (error as Error).message });
     }
   });
 
@@ -57,7 +91,7 @@ export async function registerRoutes(app: Express) {
         return;
       }
       console.error("[API] Error creating quote request:", error);
-      res.status(500).json({ message: "Failed to create quote request", error: (error as Error).message }); //Improved error response
+      res.status(500).json({ message: "Failed to create quote request", error: (error as Error).message });
     }
   });
 
@@ -69,7 +103,7 @@ export async function registerRoutes(app: Express) {
       res.json(quoteRequests);
     } catch (error) {
       console.error("[API] Error fetching quote requests:", error);
-      res.status(500).json({ message: "Failed to fetch quote requests", error: (error as Error).message }); //Improved error response
+      res.status(500).json({ message: "Failed to fetch quote requests", error: (error as Error).message });
     }
   });
 
@@ -96,7 +130,7 @@ export async function registerRoutes(app: Express) {
         return;
       }
       console.error("[API] Error creating booking:", error);
-      res.status(500).json({ message: "Failed to create booking", error: (error as Error).message }); //Improved error response
+      res.status(500).json({ message: "Failed to create booking", error: (error as Error).message });
     }
   });
 
@@ -111,7 +145,7 @@ export async function registerRoutes(app: Express) {
       res.json(bookings);
     } catch (error) {
       console.error("[API] Error fetching bookings:", error);
-      res.status(500).json({ message: "Failed to fetch bookings", error: (error as Error).message }); //Improved error response
+      res.status(500).json({ message: "Failed to fetch bookings", error: (error as Error).message });
     }
   });
 
@@ -129,18 +163,36 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  app.post("/api/projects", async (req, res) => {
+  app.post("/api/projects", upload.single("image"), async (req, res) => {
     try {
       console.log("[API] Creating new project");
-      const project = req.body;
+      const { title, description, comment, customerName, serviceId, date } = req.body;
+
+      if (!req.file) {
+        res.status(400).json({ message: "No image file uploaded" });
+        return;
+      }
+
+      // Create the image URL
+      const imageUrl = `/uploads/${req.file.filename}`;
 
       // Validate service exists
-      const service = await storage.getService(project.serviceId);
+      const service = await storage.getService(parseInt(serviceId));
       if (!service) {
-        console.log(`[API] Service not found: ${project.serviceId}`);
+        console.log(`[API] Service not found: ${serviceId}`);
         res.status(404).json({ message: "Service not found" });
         return;
       }
+
+      const project = {
+        title,
+        description,
+        imageUrl,
+        comment,
+        customerName,
+        date,
+        serviceId: parseInt(serviceId)
+      };
 
       const newProject = await storage.createProject(project);
       console.log(`[API] Successfully created project #${newProject.id}`);

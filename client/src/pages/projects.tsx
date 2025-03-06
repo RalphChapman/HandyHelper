@@ -11,6 +11,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
+import { ImageIcon } from "lucide-react";
 
 interface Project {
   id: number;
@@ -27,7 +28,7 @@ interface Project {
 const projectFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
-  imageUrl: z.string().url("Please provide a valid image URL"),
+  imageFile: z.instanceof(File, { message: "Please select an image" }),
   comment: z.string().min(1, "Please share your experience"),
   customerName: z.string().min(1, "Name is required"),
 });
@@ -66,7 +67,6 @@ export default function Projects() {
     defaultValues: {
       title: "",
       description: "",
-      imageUrl: "",
       comment: "",
       customerName: "",
     },
@@ -74,16 +74,19 @@ export default function Projects() {
 
   async function onSubmit(data: ProjectFormValues) {
     try {
+      // Create form data for file upload
+      const formData = new FormData();
+      formData.append("title", data.title);
+      formData.append("description", data.description);
+      formData.append("comment", data.comment);
+      formData.append("customerName", data.customerName);
+      formData.append("serviceId", serviceId.toString());
+      formData.append("date", new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }));
+      formData.append("image", data.imageFile);
+
       const response = await fetch("/api/projects", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...data,
-          serviceId,
-          date: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
-        }),
+        body: formData,
       });
 
       if (!response.ok) {
@@ -172,12 +175,26 @@ export default function Projects() {
 
                   <FormField
                     control={form.control}
-                    name="imageUrl"
-                    render={({ field }) => (
+                    name="imageFile"
+                    render={({ field: { onChange, value, ...field } }) => (
                       <FormItem>
-                        <FormLabel>Image URL</FormLabel>
+                        <FormLabel>Project Image</FormLabel>
                         <FormControl>
-                          <Input {...field} type="url" placeholder="https://example.com/image.jpg" />
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  onChange(file);
+                                }
+                              }}
+                              {...field}
+                              className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                            />
+                            <ImageIcon className="w-5 h-5 text-gray-500" />
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
