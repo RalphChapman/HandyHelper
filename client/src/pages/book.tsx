@@ -76,10 +76,27 @@ export default function Book() {
   async function onSubmit(data: any) {
     setIsSubmitting(true);
     try {
-      await apiRequest("POST", "/api/bookings", {
+      console.log("Submitting booking with data:", {
         ...data,
         appointmentDate: data.appointmentDate.toISOString(),
       });
+
+      const service = services?.find(s => s.id === data.serviceId);
+      if (!service) {
+        throw new Error("Selected service not found");
+      }
+
+      const response = await apiRequest("POST", "/api/bookings", {
+        ...data,
+        appointmentDate: data.appointmentDate.toISOString(),
+        serviceName: service.name
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to submit booking");
+      }
+
       toast({
         title: "Booking submitted",
         description: "We'll confirm your appointment soon!",
@@ -89,7 +106,7 @@ export default function Book() {
       console.error("Booking submission error:", error);
       toast({
         title: "Error",
-        description: "Failed to submit booking. Please try again.",
+        description: error.message || "Failed to submit booking. Please try again.",
         variant: "destructive",
       });
     } finally {
