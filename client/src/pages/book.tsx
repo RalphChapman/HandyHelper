@@ -44,7 +44,7 @@ export default function Book() {
       clientEmail: "",
       clientPhone: "",
       appointmentDate: new Date(),
-      notes: "",
+      notes: null,
       status: "pending",
       confirmed: false,
     },
@@ -76,19 +76,13 @@ export default function Book() {
   async function onSubmit(formData: any) {
     setIsSubmitting(true);
     try {
-      const service = services?.find(s => s.id === formData.serviceId);
-      if (!service) {
-        throw new Error("Selected service not found");
-      }
-
       const bookingData = {
         serviceId: formData.serviceId,
-        serviceName: service.name,
         clientName: formData.clientName,
         clientEmail: formData.clientEmail,
         clientPhone: formData.clientPhone,
-        appointmentDate: formData.appointmentDate.toISOString(),
-        notes: formData.notes || "",
+        appointmentDate: formData.appointmentDate,
+        notes: formData.notes,
         status: "pending",
         confirmed: false
       };
