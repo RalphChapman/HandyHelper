@@ -43,9 +43,9 @@ export default function Home() {
       serviceId: 4, // Carpentry
     },
     {
-      image: "https://images.unsplash.com/photo-1556819793-5087447b2d50",
-      title: "Deck Construction",
-      description: "Outdoor living space expansion",
+      image: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6",
+      title: "Outdoor Solutions",
+      description: "Custom deck and patio installations",
       serviceId: 6, // Outdoor Solutions
     },
   ];
