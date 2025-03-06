@@ -194,15 +194,6 @@ export class MemStorage implements IStorage {
         customerName: "Sarah Wilson",
         date: "March 2024",
         serviceId: 3
-      },
-      {
-        title: "Deck Construction",
-        description: "Beautiful custom deck with pergola",
-        imageUrl: "https://images.unsplash.com/photo-1580227974546-fbd48825d991",
-        comment: "Our new deck is absolutely stunning! Perfect for outdoor entertaining.",
-        customerName: "David Thompson",
-        date: "March 2024",
-        serviceId: 6
       }
     ];
 
