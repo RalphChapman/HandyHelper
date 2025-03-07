@@ -3,6 +3,9 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
+import { reviews, services, type Review, type InsertReview } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 const MemoryStore = createMemoryStore(session);
 const scryptAsync = promisify(scrypt);
@@ -70,48 +73,32 @@ export interface IStorage {
   updateReviewVerification(id: number, verified: boolean): Promise<Review | undefined>;
 }
 
-export class MemStorage implements IStorage {
-  private services: Map<number, Service>;
-  private quoteRequests: Map<number, QuoteRequest>;
-  private bookings: Map<number, Booking>;
-  private projects: Map<number, Project>;
-  private users: Map<number, User>;
-  private testimonials: Map<number, Testimonial>;
-  private servicesId: number;
-  private quoteRequestsId: number;
-  private bookingsId: number;
-  private projectsId: number;
-  private usersId: number;
-  private testimonialsId: number;
-  private initialized: boolean;
+export class DatabaseStorage implements IStorage {
+  private servicesId: number = 1;
+  private quoteRequestsId: number = 1;
+  private bookingsId: number = 1;
+  private projectsId: number = 1;
+  private usersId: number = 1;
+  private testimonialsId: number = 1;
+  private serviceProvidersId: number = 1;
+  private reviewsId: number = 1;
+  private initialized: boolean = false;
   public sessionStore: session.Store;
-  private serviceProviders: Map<number, ServiceProvider>;
-  private serviceProvidersId: number;
-  private reviews: Map<number, Review>;
-  private reviewsId: number;
+
+  private services: Map<number, Service> = new Map();
+  private quoteRequests: Map<number, QuoteRequest> = new Map();
+  private bookings: Map<number, Booking> = new Map();
+  private projects: Map<number, Project> = new Map();
+  private users: Map<number, User> = new Map();
+  private testimonials: Map<number, Testimonial> = new Map();
+  private serviceProviders: Map<number, ServiceProvider> = new Map();
+  private reviews: Map<number, Review> = new Map();
+
 
   constructor() {
-    console.log("[Storage] Creating new MemStorage instance");
-    this.services = new Map();
-    this.quoteRequests = new Map();
-    this.bookings = new Map();
-    this.projects = new Map();
-    this.users = new Map();
-    this.testimonials = new Map();
-    this.servicesId = 1;
-    this.quoteRequestsId = 1;
-    this.bookingsId = 1;
-    this.projectsId = 1;
-    this.usersId = 1;
-    this.testimonialsId = 1;
-    this.initialized = false;
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000, // 24 hours
     });
-    this.serviceProviders = new Map();
-    this.serviceProvidersId = 1;
-    this.reviews = new Map();
-    this.reviewsId = 1;
   }
 
   async initialize(): Promise<void> {
@@ -302,6 +289,7 @@ export class MemStorage implements IStorage {
     console.log(`[Storage] Initialization complete. Seeded ${this.services.size} services, ${this.projects.size} projects, ${this.testimonials.size} testimonials, and ${this.serviceProviders.size} service providers`);
   }
 
+
   async getServices(): Promise<Service[]> {
     if (!this.initialized) {
       console.log("[Storage] Storage not initialized, initializing now");
@@ -484,62 +472,65 @@ export class MemStorage implements IStorage {
   }
 
   async createReview(review: InsertReview): Promise<Review> {
-    const id = this.reviewsId++;
-    const newReview: Review = {
-      id,
-      verified: false,
-      createdAt: new Date(),
-      ...review
-    };
-    this.reviews.set(id, newReview);
+    const [newReview] = await db
+      .insert(reviews)
+      .values({
+        ...review,
+        verified: false,
+        createdAt: new Date()
+      })
+      .returning();
 
     // Update service rating
     const serviceReviews = await this.getReviewsByService(review.serviceId);
     const averageRating = Math.round(
       serviceReviews.reduce((sum, r) => sum + r.rating, 0) / serviceReviews.length
     );
-    const service = await this.getService(review.serviceId);
-    if (service) {
-      const updatedService = { ...service, rating: averageRating };
-      this.services.set(service.id, updatedService);
-    }
 
-    console.log(`[Storage] Created new review for service ${review.serviceId}`);
+    await db
+      .update(services)
+      .set({ rating: averageRating })
+      .where(eq(services.id, review.serviceId));
+
     return newReview;
   }
 
   async getReview(id: number): Promise<Review | undefined> {
-    return this.reviews.get(id);
+    const [review] = await db
+      .select()
+      .from(reviews)
+      .where(eq(reviews.id, id));
+    return review;
   }
 
   async getReviews(): Promise<Review[]> {
-    return Array.from(this.reviews.values());
+    return await db.select().from(reviews);
   }
 
   async getReviewsByService(serviceId: number): Promise<Review[]> {
-    return Array.from(this.reviews.values()).filter(
-      review => review.serviceId === serviceId
-    );
+    return await db
+      .select()
+      .from(reviews)
+      .where(eq(reviews.serviceId, serviceId));
   }
 
   async getReviewsByUser(userId: number): Promise<Review[]> {
-    return Array.from(this.reviews.values()).filter(
-      review => review.userId === userId
-    );
+    return await db
+      .select()
+      .from(reviews)
+      .where(eq(reviews.userId, userId));
   }
 
   async updateReviewVerification(id: number, verified: boolean): Promise<Review | undefined> {
-    const review = this.reviews.get(id);
-    if (review) {
-      const updatedReview = { ...review, verified };
-      this.reviews.set(id, updatedReview);
-      console.log(`[Storage] Updated review #${id} verification status to: ${verified}`);
-      return updatedReview;
-    }
-    return undefined;
+    const [updatedReview] = await db
+      .update(reviews)
+      .set({ verified })
+      .where(eq(reviews.id, id))
+      .returning();
+    return updatedReview;
   }
 }
 
-// Initialize storage
-console.log("[Storage] Creating storage instance");
-export const storage = new MemStorage();
+// Initialize storage with database implementation
+console.log("[Storage] Creating database storage instance");
+export const storage = new DatabaseStorage();
