@@ -200,22 +200,24 @@ export default function Quote() {
                     <Textarea {...field} className="min-h-[100px]" />
                   </FormControl>
                   <FormMessage />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="mt-2"
-                    onClick={analyzeProject}
-                    disabled={isAnalyzing}
-                  >
-                    {isAnalyzing ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Analyzing...
-                      </>
-                    ) : (
-                      'Analyze Project'
-                    )}
-                  </Button>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={analyzeProject}
+                      disabled={isAnalyzing}
+                    >
+                      {isAnalyzing ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Analyzing...
+                        </>
+                      ) : (
+                        'Analyze Project'
+                      )}
+                    </Button>
+                    <span className="text-sm text-gray-500">This will display the analysis results below</span>
+                  </div>
                 </FormItem>
               )}
             />
@@ -227,16 +229,19 @@ export default function Quote() {
               </div>
             )}
 
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                'Submit Quote Request'
-              )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button type="submit" className="w-auto" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  'Submit Quote Request'
+                )}
+              </Button>
+              <span className="text-sm text-gray-500">This will analyze and email the results to you</span>
+            </div>
           </form>
         </Form>
       </div>
