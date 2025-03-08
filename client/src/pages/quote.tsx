@@ -203,7 +203,6 @@ export default function Quote() {
                   <div className="flex items-center gap-2 mt-2">
                     <Button
                       type="button"
-                      variant="outline"
                       onClick={analyzeProject}
                       disabled={isAnalyzing}
                     >
