@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import { AddressAutocomplete } from "@/components/address-autocomplete";
 
 export default function Quote() {
   const [, setLocation] = useLocation();
@@ -48,7 +49,7 @@ export default function Quote() {
   // Set default service to "General Home Maintenance" if no service is selected
   useEffect(() => {
     if (services && !form.getValues("serviceId")) {
-      const generalService = services.find(service => 
+      const generalService = services.find(service =>
         service.name.toLowerCase() === "general home maintenance"
       );
       if (generalService) {
@@ -195,7 +196,17 @@ export default function Quote() {
                 <FormItem>
                   <FormLabel>Address</FormLabel>
                   <FormControl>
-                    <Textarea {...field} />
+                    <AddressAutocomplete
+                      value={field.value}
+                      onChange={field.onChange}
+                      onError={(error) => {
+                        toast({
+                          title: "Address Verification Error",
+                          description: error,
+                          variant: "destructive",
+                        });
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
