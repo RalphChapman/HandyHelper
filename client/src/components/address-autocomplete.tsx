@@ -8,12 +8,14 @@ interface AddressAutocompleteProps {
   onError?: (error: string) => void;
 }
 
+const libraries: ("places")[] = ["places"];
+
 export function AddressAutocomplete({ value, onChange, onError }: AddressAutocompleteProps) {
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
 
   const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string,
-    libraries: ["places"],
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+    libraries,
   });
 
   const onLoad = (autocomplete: google.maps.places.Autocomplete) => {
