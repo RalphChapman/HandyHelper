@@ -14,6 +14,24 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
 
+// Helper function to extract city and state from address
+function extractLocationFromAddress(address: string): string {
+  try {
+    // Split address by commas and get the last two parts (usually city, state zip)
+    const parts = address.split(',').map(part => part.trim());
+    if (parts.length >= 2) {
+      // Get the city from the second-to-last part
+      const cityPart = parts[parts.length - 2];
+      // Get the state from the last part (remove zip code if present)
+      const statePart = parts[parts.length - 1].split(' ')[0];
+      return `${cityPart}, ${statePart}`;
+    }
+  } catch (error) {
+    console.error('Error parsing address:', error);
+  }
+  return "Charleston, South Carolina"; // Default if parsing fails
+}
+
 export default function Quote() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -72,8 +90,9 @@ export default function Quote() {
 
     setIsAnalyzing(true);
     try {
-      // Use address for both address and location if provided
-      const location = address ? address : "Charleston, South Carolina";
+      // Extract location from address if available, otherwise use default
+      const location = address ? extractLocationFromAddress(address) : "Charleston, South Carolina";
+      console.log("Using location for analysis:", location); // Debug log
 
       const response = await apiRequest("POST", "/api/analyze-project", { 
         description,
