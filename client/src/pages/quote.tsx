@@ -17,19 +17,32 @@ import { AddressAutocomplete } from "@/components/address-autocomplete";
 // Helper function to extract city and state from address
 function extractLocationFromAddress(address: string): string {
   try {
-    // Split address by commas and get the last two parts (usually city, state zip)
+    if (!address) return "Charleston, South Carolina";
+
+    console.log("Raw address:", address); // Debug log
+
+    // Split address by commas
     const parts = address.split(',').map(part => part.trim());
+
+    // Address format is typically: "Street, City, State ZIP"
     if (parts.length >= 2) {
-      // Get the city from the second-to-last part
-      const cityPart = parts[parts.length - 2];
-      // Get the state from the last part (remove zip code if present)
-      const statePart = parts[parts.length - 1].split(' ')[0];
-      return `${cityPart}, ${statePart}`;
+      // Get state and ZIP from last part
+      const stateZipPart = parts[parts.length - 1].trim().split(' ');
+      const state = stateZipPart[0]; // State abbreviation
+
+      // Get city from second to last part
+      const city = parts[parts.length - 2].trim();
+
+      console.log("Extracted location:", `${city}, ${state}`); // Debug log
+      return `${city}, ${state}`;
     }
+
+    console.log("Could not parse address, using default"); // Debug log
+    return "Charleston, South Carolina";
   } catch (error) {
     console.error('Error parsing address:', error);
+    return "Charleston, South Carolina";
   }
-  return "Charleston, South Carolina"; // Default if parsing fails
 }
 
 export default function Quote() {
@@ -91,8 +104,7 @@ export default function Quote() {
     setIsAnalyzing(true);
     try {
       // Extract location from address if available, otherwise use default
-      const location = address ? extractLocationFromAddress(address) : "Charleston, South Carolina";
-      console.log("Using location for analysis:", location); // Debug log
+      const location = extractLocationFromAddress(address);
 
       const response = await apiRequest("POST", "/api/analyze-project", { 
         description,
