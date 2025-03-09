@@ -17,7 +17,7 @@ export function BusinessCard() {
         <div className="flex justify-between items-start">
           <div className="space-y-4">
             <h2 className="text-2xl font-bold text-primary">{contactInfo.name}</h2>
-            
+
             <div className="space-y-2">
               <a 
                 href={`tel:${contactInfo.phone}`} 
@@ -26,7 +26,7 @@ export function BusinessCard() {
                 <Phone className="h-4 w-4" />
                 {contactInfo.phone}
               </a>
-              
+
               <a 
                 href={`mailto:${contactInfo.email}`}
                 className="flex items-center gap-2 text-gray-600 hover:text-primary"
@@ -34,7 +34,7 @@ export function BusinessCard() {
                 <Mail className="h-4 w-4" />
                 {contactInfo.email}
               </a>
-              
+
               <a 
                 href={`https://${contactInfo.linkedin}`}
                 target="_blank"
@@ -52,7 +52,7 @@ export function BusinessCard() {
                 className="flex items-center gap-2 text-gray-600 hover:text-primary"
               >
                 <Globe className="h-4 w-4" />
-                Website
+                {websiteUrl.replace(/^https?:\/\//, '')}
               </a>
             </div>
           </div>
