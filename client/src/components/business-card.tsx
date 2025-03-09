@@ -3,7 +3,7 @@ import { LinkedinIcon, Mail, Phone, Globe } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 export function BusinessCard() {
-  const websiteUrl = window.location.origin;
+  const websiteUrl = "https://handyhelper.replit.app";
   const contactInfo = {
     name: "Ralph Chapman",
     phone: "(864) 361-3730",
