@@ -72,10 +72,13 @@ export default function Quote() {
 
     setIsAnalyzing(true);
     try {
+      // Use address for both address and location if provided
+      const location = address ? address : "Charleston, South Carolina";
+
       const response = await apiRequest("POST", "/api/analyze-project", { 
         description,
-        address, 
-        location: address || "Charleston, South Carolina" 
+        address,
+        location
       });
       const data = await response.json();
       setAnalysis(data.analysis);
