@@ -75,7 +75,7 @@ export default function Quote() {
       const response = await apiRequest("POST", "/api/analyze-project", { 
         description,
         address, 
-        location: "Charleston, South Carolina" 
+        location: address || "Charleston, South Carolina" 
       });
       const data = await response.json();
       setAnalysis(data.analysis);
