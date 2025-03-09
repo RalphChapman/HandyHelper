@@ -37,7 +37,7 @@ export default function Quote() {
   const form = useForm({
     resolver: zodResolver(insertQuoteRequestSchema),
     defaultValues: {
-      serviceId: undefined, // Initially undefined, set by useEffect
+      serviceId: undefined, 
       name: "",
       email: "",
       phone: "",
@@ -46,7 +46,6 @@ export default function Quote() {
     },
   });
 
-  // Set default service to "General Home Maintenance" if no service is selected
   useEffect(() => {
     if (services && !form.getValues("serviceId")) {
       const generalService = services.find(service =>
@@ -60,6 +59,8 @@ export default function Quote() {
 
   async function analyzeProject() {
     const description = form.getValues("description");
+    const address = form.getValues("address");
+
     if (!description) {
       toast({
         title: "Error",
@@ -71,7 +72,11 @@ export default function Quote() {
 
     setIsAnalyzing(true);
     try {
-      const response = await apiRequest("POST", "/api/analyze-project", { description });
+      const response = await apiRequest("POST", "/api/analyze-project", { 
+        description,
+        address, 
+        location: "Charleston, South Carolina" 
+      });
       const data = await response.json();
       setAnalysis(data.analysis);
     } catch (error) {
