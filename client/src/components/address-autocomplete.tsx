@@ -1,6 +1,6 @@
 import { useLoadScript, Autocomplete } from "@react-google-maps/api";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface AddressAutocompleteProps {
   value: string;
@@ -12,6 +12,11 @@ const libraries: ("places")[] = ["places"];
 
 export function AddressAutocomplete({ value, onChange, onError }: AddressAutocompleteProps) {
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+
+  // Log the API key availability (not the actual key)
+  useEffect(() => {
+    console.log("Google Maps API Key available:", !!import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
+  }, []);
 
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
@@ -38,6 +43,7 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
   };
 
   if (loadError) {
+    console.error("Google Maps load error:", loadError);
     onError?.("Error loading Google Maps API");
     return <Input value={value} onChange={(e) => onChange(e.target.value)} />;
   }
