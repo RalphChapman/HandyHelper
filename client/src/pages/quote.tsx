@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -36,7 +36,7 @@ export default function Quote() {
   const form = useForm({
     resolver: zodResolver(insertQuoteRequestSchema),
     defaultValues: {
-      serviceId: preselectedService ? Number(preselectedService) : undefined,
+      serviceId: undefined, // Initially undefined, set by useEffect
       name: "",
       email: "",
       phone: "",
@@ -44,6 +44,18 @@ export default function Quote() {
       address: "",
     },
   });
+
+  // Set default service to "General Home Maintenance" if no service is selected
+  useEffect(() => {
+    if (services && !form.getValues("serviceId")) {
+      const generalService = services.find(service => 
+        service.name.toLowerCase() === "general home maintenance"
+      );
+      if (generalService) {
+        form.setValue("serviceId", generalService.id);
+      }
+    }
+  }, [services, form]);
 
   async function analyzeProject() {
     const description = form.getValues("description");
@@ -87,11 +99,11 @@ export default function Quote() {
         description: "We'll get back to you soon!",
       });
       setLocation("/");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Quote submission error:", error);
       toast({
         title: "Error",
-        description: "Failed to submit quote request. Please try again.",
+        description: error.message || "Failed to submit quote request. Please try again.",
         variant: "destructive",
       });
     } finally {
