@@ -3,7 +3,7 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
-import { reviews, services, type Review, type InsertReview } from "@shared/schema";
+import { services, reviews } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 
