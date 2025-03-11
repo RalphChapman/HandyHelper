@@ -96,12 +96,27 @@ export default function Dashboard() {
                       <CardTitle>Quote Request #{quote.id}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-2">
-                        <p>Service ID: {quote.serviceId}</p>
-                        <p>Name: {quote.name}</p>
-                        <p>Phone: {quote.phone}</p>
-                        <p>Address: {quote.address}</p>
-                        <p>Description: {quote.description}</p>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <h3 className="font-semibold">Service Details</h3>
+                          <p>Service: {quote.serviceName || `ID: ${quote.serviceId}`}</p>
+                          <p>Description: {quote.description}</p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <h3 className="font-semibold">Contact Information</h3>
+                          <p>Name: {quote.name}</p>
+                          <p>Email: {quote.email}</p>
+                          <p>Phone: {quote.phone}</p>
+                          <p>Address: {quote.address}</p>
+                        </div>
+
+                        {quote.analysis && (
+                          <div className="space-y-2">
+                            <h3 className="font-semibold">Project Analysis</h3>
+                            <p className="text-sm text-gray-600">{quote.analysis}</p>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
