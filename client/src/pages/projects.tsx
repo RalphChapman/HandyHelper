@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useParams } from "wouter";
+import { useParams, Link } from "wouter";
 import { Service } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import { ReviewForm } from "@/components/review-form";
 import { ReviewsSection } from "@/components/reviews-section";
 import { useAuth } from "@/hooks/use-auth";
 import { useState } from 'react';
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -27,7 +27,7 @@ interface Project {
   imageUrl: string;
   comment: string;
   customerName: string;
-  projectDate: Date; // Changed to Date
+  projectDate: Date; 
   serviceId: number;
 }
 
@@ -72,7 +72,7 @@ export default function Projects() {
       const data = await response.json();
       return data.map((project: any) => ({
         ...project,
-        projectDate: project.projectDate ? new Date(project.projectDate) : null, // Parse date string
+        projectDate: project.projectDate ? new Date(project.projectDate) : null, 
       }));
     },
   });
@@ -99,7 +99,6 @@ export default function Projects() {
       formData.append("serviceId", serviceId.toString());
       formData.append("projectDate", data.projectDate.toISOString());
 
-      // Ensure we're appending the file with the correct field name
       formData.append("image", data.imageFile);
 
       const response = await fetch("/api/projects", {
@@ -328,7 +327,7 @@ export default function Projects() {
                       <div className="flex justify-between items-center text-sm">
                         <span className="font-medium">{project.customerName}</span>
                         <span className="text-gray-500">
-                          {project.projectDate ? format(project.projectDate, "PPP") : "N/A"} {/*Added error handling*/}
+                          {project.projectDate ? format(project.projectDate, "PPP") : "N/A"} 
                         </span>
                       </div>
                     </div>
