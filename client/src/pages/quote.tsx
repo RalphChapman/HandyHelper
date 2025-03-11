@@ -20,8 +20,6 @@ function extractLocationFromAddress(address: string): string {
   try {
     if (!address) return "Charleston, South Carolina";
 
-    console.log("Raw address:", address); // Debug log
-
     // Split address by commas
     const parts = address.split(',').map(part => part.trim());
 
@@ -34,11 +32,9 @@ function extractLocationFromAddress(address: string): string {
       // Get city from second to last part
       const city = parts[parts.length - 2].trim();
 
-      console.log("Extracted location:", `${city}, ${state}`); // Debug log
       return `${city}, ${state}`;
     }
 
-    console.log("Could not parse address, using default"); // Debug log
     return "Charleston, South Carolina";
   } catch (error) {
     console.error('Error parsing address:', error);
@@ -52,6 +48,10 @@ export default function Quote() {
   const { user } = useAuth(); // Get user info for pre-filling
   const searchParams = new URLSearchParams(window.location.search);
   const preselectedService = searchParams.get("service");
+  const prefilledName = searchParams.get("name");
+  const prefilledEmail = searchParams.get("email");
+  const prefilledPhone = searchParams.get("phone");
+  const prefilledAddress = searchParams.get("address");
   const [analysis, setAnalysis] = useState<string>("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,16 +71,21 @@ export default function Quote() {
     resolver: zodResolver(insertQuoteRequestSchema),
     defaultValues: {
       serviceId: undefined,
-      name: user?.username || "",
-      email: user?.email || "",
-      phone: "",
+      name: prefilledName || user?.username || "",
+      email: prefilledEmail || user?.email || "",
+      phone: prefilledPhone || "",
       description: "",
-      address: "",
+      address: prefilledAddress || "",
     },
   });
 
   useEffect(() => {
-    if (services && !form.getValues("serviceId")) {
+    if (services && preselectedService) {
+      const service = services.find(s => s.id === parseInt(preselectedService));
+      if (service) {
+        form.setValue("serviceId", service.id);
+      }
+    } else if (services && !form.getValues("serviceId")) {
       const generalService = services.find(service =>
         service.name.toLowerCase() === "general home maintenance"
       );
@@ -88,7 +93,7 @@ export default function Quote() {
         form.setValue("serviceId", generalService.id);
       }
     }
-  }, [services, form]);
+  }, [services, form, preselectedService]);
 
   async function analyzeProject() {
     const description = form.getValues("description");
@@ -113,6 +118,11 @@ export default function Quote() {
         address,
         location
       });
+
+      if (!response.ok) {
+        throw new Error("Failed to analyze project");
+      }
+
       const data = await response.json();
       setAnalysis(data.analysis);
     } catch (error) {
