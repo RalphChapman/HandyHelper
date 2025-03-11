@@ -101,8 +101,8 @@ export default function Projects() {
       formData.append("projectDate", data.projectDate.toISOString());
 
       // Append all selected files
-      Array.from(data.imageFiles).forEach((file, index) => {
-        formData.append(`images`, file);
+      Array.from(data.imageFiles).forEach((file) => {
+        formData.append("images", file);
       });
 
       const response = await fetch("/api/projects", {
