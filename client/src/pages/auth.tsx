@@ -7,9 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2, Wrench, Shield, Clock } from "lucide-react";
+import { ForgotPasswordForm } from "@/components/forgot-password-form";
 
 const authSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -118,20 +120,34 @@ export default function AuthPage() {
                           )}
                         />
 
-                        <Button 
-                          type="submit" 
-                          className="w-full"
-                          disabled={loginMutation.isPending}
-                        >
-                          {loginMutation.isPending ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Logging in...
-                            </>
-                          ) : (
-                            'Login'
-                          )}
-                        </Button>
+                        <div className="flex items-center justify-between">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="link" className="px-0">Forgot Password?</Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Reset Your Password</DialogTitle>
+                              </DialogHeader>
+                              <ForgotPasswordForm />
+                            </DialogContent>
+                          </Dialog>
+
+                          <Button
+                            type="submit"
+                            className="w-32"
+                            disabled={loginMutation.isPending}
+                          >
+                            {loginMutation.isPending ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Logging in...
+                              </>
+                            ) : (
+                              'Login'
+                            )}
+                          </Button>
+                        </div>
                       </form>
                     </Form>
                   </TabsContent>
@@ -181,8 +197,8 @@ export default function AuthPage() {
                           )}
                         />
 
-                        <Button 
-                          type="submit" 
+                        <Button
+                          type="submit"
                           className="w-full"
                           disabled={registerMutation.isPending}
                         >
