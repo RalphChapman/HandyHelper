@@ -10,6 +10,7 @@ import { type User } from "@shared/schema";
 // Extend Express.User to include our User type
 declare global {
   namespace Express {
+    // Use type alias to avoid recursive reference
     interface User extends Omit<User, 'password'> {}
   }
 }
@@ -50,9 +51,15 @@ export function setupAuth(app: Express) {
     new LocalStrategy(async (username, password, done) => {
       try {
         const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePasswords(password, user.password))) {
-          return done(null, false);
+        if (!user) {
+          return done(null, false, { message: "Invalid username or password" });
         }
+
+        const isValid = await comparePasswords(password, user.password);
+        if (!isValid) {
+          return done(null, false, { message: "Invalid username or password" });
+        }
+
         // Remove password from user object before serializing
         const { password: _, ...userWithoutPassword } = user;
         return done(null, userWithoutPassword);
@@ -81,6 +88,10 @@ export function setupAuth(app: Express) {
   app.post("/api/register", async (req, res) => {
     try {
       const { username, password, email } = req.body;
+
+      if (!username || !password || !email) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
 
       const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
@@ -112,16 +123,16 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err: Error | null, user: Express.User | false) => {
+    passport.authenticate("local", (err: Error | null, user: Express.User | false, info: any) => {
       if (err) {
-        return next(err);
+        return res.status(500).json({ message: "Authentication error" });
       }
       if (!user) {
-        return res.status(401).json({ message: "Invalid username or password" });
+        return res.status(401).json({ message: info?.message || "Invalid username or password" });
       }
       req.login(user, (err) => {
         if (err) {
-          return next(err);
+          return res.status(500).json({ message: "Login failed" });
         }
         return res.json(user);
       });
