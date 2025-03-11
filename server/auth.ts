@@ -10,8 +10,14 @@ import { type User } from "@shared/schema";
 // Extend Express.User to include our User type
 declare global {
   namespace Express {
-    // Use type alias to avoid recursive reference
-    interface User extends Omit<User, 'password'> {}
+    // Use interface merging instead of extension to avoid recursive reference
+    interface User {
+      id: number;
+      username: string;
+      email: string;
+      role: string;
+      createdAt: Date;
+    }
   }
 }
 
