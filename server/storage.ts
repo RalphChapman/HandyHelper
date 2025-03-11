@@ -278,14 +278,14 @@ export class DatabaseStorage implements IStorage {
     }
 
     console.log("[Storage] Getting all services");
-    const services = await db.select().from(services);
-    console.log(`[Storage] Found ${services.length} services`);
-    return services;
+    const allServices = await db.select().from(services);
+    console.log(`[Storage] Found ${allServices.length} services`);
+    return allServices;
   }
 
   async getService(id: number): Promise<Service | undefined> {
-    const [service] = await db.select().from(services).where(eq(services.id, id));
-    return service;
+    const [foundService] = await db.select().from(services).where(eq(services.id, id));
+    return foundService;
   }
 
   async createService(service: InsertService): Promise<Service> {
