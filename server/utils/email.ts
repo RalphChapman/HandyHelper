@@ -255,3 +255,65 @@ HandyPro Service Team
     throw error;
   }
 }
+
+export async function sendPasswordResetEmail(email: string, resetToken: string) {
+  console.log("[EMAIL] Sending password reset email to:", email);
+
+  const resetLink = `https://handyhelper.replit.app/reset-password?token=${resetToken}`;
+
+  const message = {
+    from: '"HandyPro Service" <chapman.ralph@gmail.com>',
+    to: email,
+    subject: "Password Reset Request",
+    text: `
+Hello,
+
+You recently requested to reset your password for your HandyPro Service account. Click the link below to reset it:
+
+${resetLink}
+
+If you did not request a password reset, please ignore this email or contact us if you have concerns.
+
+This password reset link is only valid for 1 hour.
+
+Best regards,
+HandyPro Service Team
+    `,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #2563eb; margin-bottom: 24px;">Password Reset Request</h2>
+
+        <p style="margin-bottom: 16px;">Hello,</p>
+
+        <p style="margin-bottom: 16px;">You recently requested to reset your password for your HandyPro Service account. Click the button below to reset it:</p>
+
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${resetLink}" 
+             style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+            Reset Your Password
+          </a>
+        </div>
+
+        <p style="margin-bottom: 16px; color: #64748b;">If you did not request a password reset, please ignore this email or contact us if you have concerns.</p>
+
+        <p style="margin-bottom: 16px; color: #64748b;">This password reset link is only valid for 1 hour.</p>
+
+        <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+          <p style="margin: 4px 0; color: #64748b;">Best regards,</p>
+          <p style="margin: 4px 0; color: #64748b;">HandyPro Service Team</p>
+        </div>
+      </div>
+    `
+  };
+
+  try {
+    await transporter.verify();
+    console.log("[EMAIL] Attempting to send password reset email to:", email);
+    const result = await transporter.sendMail(message);
+    console.log("[EMAIL] Password reset email sent successfully:", result);
+    return result;
+  } catch (error) {
+    console.error("[EMAIL] Failed to send password reset email:", error);
+    throw error;
+  }
+}

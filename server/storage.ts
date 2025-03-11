@@ -70,6 +70,10 @@ export interface IStorage {
   listUsers(): Promise<User[]>;
   validateUserCredentials(username: string, password: string): Promise<User | undefined>;
   updateUserPassword(id: number, hashedPassword: string): Promise<User | undefined>;
+  // Add new methods for password reset
+  setPasswordResetToken(email: string, resetToken: string, resetTokenExpiry: Date): Promise<User | undefined>;
+  getUserByResetToken(token: string): Promise<User | undefined>;
+  updatePasswordAndClearResetToken(id: number, hashedPassword: string): Promise<User | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -627,6 +631,67 @@ export class DatabaseStorage implements IStorage {
       return updatedUser;
     } catch (error) {
       console.error("[Storage] Error updating user password for:", id, error);
+      throw error;
+    }
+  }
+  async setPasswordResetToken(email: string, resetToken: string, resetTokenExpiry: Date): Promise<User | undefined> {
+    try {
+      console.log("[Storage] Setting password reset token for email:", email);
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          resetToken,
+          resetTokenExpiry
+        })
+        .where(eq(users.email, email))
+        .returning();
+
+      if (!updatedUser) {
+        console.log("[Storage] No user found with email:", email);
+        return undefined;
+      }
+
+      console.log("[Storage] Reset token set for user:", updatedUser.id);
+      return updatedUser;
+    } catch (error) {
+      console.error("[Storage] Error setting reset token:", error);
+      throw error;
+    }
+  }
+
+  async getUserByResetToken(token: string): Promise<User | undefined> {
+    try {
+      console.log("[Storage] Finding user by reset token");
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.resetToken, token));
+
+      console.log("[Storage] User lookup result:", user ? "Found" : "Not found");
+      return user;
+    } catch (error) {
+      console.error("[Storage] Error finding user by reset token:", error);
+      throw error;
+    }
+  }
+
+  async updatePasswordAndClearResetToken(id: number, hashedPassword: string): Promise<User | undefined> {
+    try {
+      console.log("[Storage] Updating password and clearing reset token for user:", id);
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          password: hashedPassword,
+          resetToken: null,
+          resetTokenExpiry: null
+        })
+        .where(eq(users.id, id))
+        .returning();
+
+      console.log("[Storage] Password updated and reset token cleared for user:", id);
+      return updatedUser;
+    } catch (error) {
+      console.error("[Storage] Error updating password and clearing reset token:", error);
       throw error;
     }
   }

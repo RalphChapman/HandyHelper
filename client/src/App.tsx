@@ -11,6 +11,7 @@ import Quote from "@/pages/quote";
 import Book from "@/pages/book";
 import Dashboard from "@/pages/dashboard";
 import Auth from "@/pages/auth";
+import ResetPassword from "@/pages/reset-password";
 import NotFound from "@/pages/not-found";
 
 export default function App() {
@@ -27,6 +28,7 @@ export default function App() {
             <Route path="/book" component={Book} />
             <Route path="/dashboard" component={Dashboard} />
             <Route path="/auth" component={Auth} />
+            <Route path="/reset-password" component={ResetPassword} />
             <Route component={NotFound} />
           </Switch>
         </main>
