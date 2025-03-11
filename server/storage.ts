@@ -8,6 +8,7 @@ import {
   type ServiceProvider, type InsertServiceProvider,
   type Review, type InsertReview,
   type Project, type InsertProject,
+  users,
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -27,41 +28,30 @@ async function hashPassword(password: string) {
 
 export interface IStorage {
   initialize(): Promise<void>;
-
   sessionStore: session.Store;
-
   getServices(): Promise<Service[]>;
   getService(id: number): Promise<Service | undefined>;
   createService(service: InsertService): Promise<Service>;
-
   createQuoteRequest(request: InsertQuoteRequest): Promise<QuoteRequest>;
   getQuoteRequests(): Promise<QuoteRequest[]>;
-
   createBooking(booking: InsertBooking): Promise<Booking>;
   getBooking(id: number): Promise<Booking | undefined>;
   getBookings(): Promise<Booking[]>;
   getBookingsByEmail(email: string): Promise<Booking[]>;
   updateBookingStatus(id: number, status: string): Promise<Booking | undefined>;
-
   getProjects(serviceId: number): Promise<Project[]>;
   createProject(project: Omit<Project, 'id' | 'createdAt'>): Promise<Project>;
-
   createUser(user: InsertUser): Promise<User>;
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
-
   createTestimonial(testimonial: InsertTestimonial): Promise<Testimonial>;
   getTestimonials(approved?: boolean): Promise<Testimonial[]>;
   updateTestimonialApproval(id: number, approved: boolean): Promise<Testimonial | undefined>;
-
-  // Service Provider methods
   createServiceProvider(provider: InsertServiceProvider): Promise<ServiceProvider>;
   getServiceProvider(id: number): Promise<ServiceProvider | undefined>;
   getServiceProviders(): Promise<ServiceProvider[]>;
   getServiceProvidersForService(serviceId: number): Promise<ServiceProvider[]>;
   updateServiceProviderAvailability(id: number, availability: any): Promise<ServiceProvider | undefined>;
-
-  // Review methods
   createReview(review: InsertReview): Promise<Review>;
   getReview(id: number): Promise<Review | undefined>;
   getReviews(): Promise<Review[]>;
@@ -73,6 +63,31 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   private initialized: boolean = false;
   public sessionStore: session.Store;
+
+  // Initial services data
+  private readonly initialServices: InsertService[] = [
+    {
+      name: "General Home Maintenance",
+      description: "Comprehensive home maintenance and repairs including door repairs, window maintenance, gutter cleaning, small fixes, and other miscellaneous tasks to keep your home in top condition.",
+      category: "General Repairs",
+      imageUrl: "https://images.unsplash.com/photo-1581783898377-1c85bf937427",
+      rating: 5
+    },
+    {
+      name: "Plumbing Repairs",
+      description: "Expert plumbing services including leak repairs, pipe maintenance, and fixture installations.",
+      category: "Plumbing",
+      imageUrl: "https://images.unsplash.com/photo-1607472586893-edb57bdc0e39",
+      rating: 5
+    },
+    {
+      name: "Electrical Work",
+      description: "Professional electrical services including wiring, lighting installation, and electrical repairs.",
+      category: "Electrical",
+      imageUrl: "https://images.unsplash.com/photo-1621905252507-b35492cc74b4",
+      rating: 5
+    }
+  ];
 
   constructor() {
     this.sessionStore = new MemoryStore({
@@ -86,183 +101,32 @@ export class DatabaseStorage implements IStorage {
       return;
     }
 
-    console.log("[Storage] Initializing database storage");
+    console.log("[Storage] Initializing storage");
 
     try {
-      // Only seed data in development mode
-      if (process.env.NODE_ENV !== 'production') {
-        console.log("[Storage] Development mode detected, seeding data");
-        await this.seedData();
-        console.log("[Storage] Data seeding completed");
-      } else {
-        console.log("[Storage] Production mode detected, skipping data seeding");
+      // Insert initial services
+      console.log("[Storage] Seeding initial services");
+      for (const service of this.initialServices) {
+        try {
+          console.log("[Storage] Creating service:", service.name);
+          const [newService] = await db.insert(services).values(service).returning();
+          console.log(`[Storage] Successfully created service: ${newService.name} with ID: ${newService.id}`);
+        } catch (error) {
+          console.error(`[Storage] Failed to create service ${service.name}:`, error);
+          throw error;
+        }
       }
 
       this.initialized = true;
-      console.log(`[Storage] Initialization complete.`);
+      console.log("[Storage] Initialization complete");
     } catch (error) {
       console.error("[Storage] Initialization failed:", error);
       throw error;
     }
   }
 
-  private async seedData(): Promise<void> {
-    console.log("[Storage] Seeding initial data");
-
-    // Create admin user with hashed password
-    console.log("[Storage] Creating admin user");
-    const hashedPassword = await hashPassword("admin123");
-    await this.createUser({
-      username: "admin",
-      password: hashedPassword,
-      email: "admin@example.com",
-      role: "admin"
-    });
-
-    // Seed initial services
-    const initialServices = [
-      {
-        name: "General Home Maintenance",
-        description: "Comprehensive home maintenance and repairs including door repairs, window maintenance, gutter cleaning, small fixes, and other miscellaneous tasks to keep your home in top condition.",
-        category: "General Repairs",
-        imageUrl: "https://images.unsplash.com/photo-1581783898377-1c85bf937427",
-        rating: 5
-      },
-      {
-        name: "Plumbing Repairs",
-        description: "Expert plumbing services including leak repairs, pipe maintenance, and fixture installations.",
-        category: "Plumbing",
-        imageUrl: "https://images.unsplash.com/photo-1607472586893-edb57bdc0e39",
-        rating: 5
-      },
-      {
-        name: "Electrical Work",
-        description: "Professional electrical services including wiring, lighting installation, and electrical repairs.",
-        category: "Electrical",
-        imageUrl: "https://images.unsplash.com/photo-1621905252507-b35492cc74b4",
-        rating: 5
-      }
-    ];
-
-    console.log("[Storage] Seeding initial services");
-    for (const service of initialServices) {
-      try {
-        console.log("[Storage] Attempting to create service:", service.name);
-        const [newService] = await db.insert(services).values(service).returning();
-        console.log(`[Storage] Successfully added service: ${newService.name} with ID: ${newService.id}`);
-      } catch (error) {
-        console.error(`[Storage] Failed to create service ${service.name}:`, error);
-      }
-    }
-    // Add sample projects
-    const sampleProjects = [
-      {
-        title: "Kitchen Renovation",
-        description: "Complete kitchen remodel with custom cabinets",
-        imageUrl: "https://images.unsplash.com/photo-1556911220-bff31c812dba",
-        comment: "Ralph transformed our outdated kitchen into a modern masterpiece. The attention to detail was incredible.",
-        customerName: "Jennifer Smith",
-        date: "February 2024",
-        serviceId: 1
-      },
-      {
-        title: "Bathroom Update",
-        description: "Modern bathroom renovation with custom tiling",
-        imageUrl: "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14",
-        comment: "The bathroom looks amazing! Ralph's tile work is absolutely perfect.",
-        customerName: "Michael Brown",
-        date: "January 2024",
-        serviceId: 1
-      },
-      {
-        title: "Electrical System Upgrade",
-        description: "Complete house rewiring and panel upgrade",
-        imageUrl: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e",
-        comment: "Professional work from start to finish. Everything was done to code and looks great.",
-        customerName: "Sarah Wilson",
-        date: "March 2024",
-        serviceId: 3
-      }
-    ];
-
-    console.log("[Storage] Seeding sample projects");
-    for (const project of sampleProjects) {
-      await this.createProject({...project, createdAt: new Date()});
-      console.log(`[Storage] Added project: ${project.title}`);
-    }
-
-    // Add initial testimonials
-    const initialTestimonials = [
-      {
-        serviceId: 1,
-        content: "Ralph is our go-to handyman for all home repairs. He's fixed everything from sticky doors to loose gutters. His versatility and reliability are outstanding!",
-        authorName: "Robert Chen",
-        approved: true,
-        createdAt: new Date()
-      },
-      {
-        serviceId: 2,
-        content: "Ralph fixed our leaky faucet and replaced some old pipes. He was professional, quick, and the price was very reasonable. Highly recommend!",
-        authorName: "Sarah Johnson",
-        approved: true,
-        createdAt: new Date()
-      }
-    ];
-
-    console.log("[Storage] Seeding initial testimonials");
-    for (const testimonial of initialTestimonials) {
-      await this.createTestimonial(testimonial);
-      console.log(`[Storage] Added testimonial from: ${testimonial.authorName}`);
-    }
-
-    // Add initial service providers
-    console.log("[Storage] Seeding initial service providers");
-    const initialServiceProviders = [
-      {
-        userId: 1,
-        name: "John Smith",
-        bio: "Master carpenter with 15 years of experience in custom woodworking and home renovations. Specializing in custom cabinetry and built-ins.",
-        specialties: ["Custom Carpentry", "Cabinet Installation", "Wood Restoration"],
-        yearsOfExperience: 15,
-        availabilitySchedule: {
-          monday: ["9:00-17:00"],
-          tuesday: ["9:00-17:00"],
-          wednesday: ["9:00-17:00"],
-          thursday: ["9:00-17:00"],
-          friday: ["9:00-17:00"]
-        },
-        profileImage: "https://images.unsplash.com/photo-1600486913747-55e5470d6f40",
-        contactPhone: "843-555-0123",
-        servicesOffered: [1, 4] // General Home Maintenance and Carpentry
-      },
-      {
-        userId: 1,
-        name: "Michael Rodriguez",
-        bio: "Licensed electrician with expertise in residential and commercial electrical systems. Certified in modern smart home installations.",
-        specialties: ["Electrical Repairs", "Smart Home Installation", "Lighting Systems"],
-        yearsOfExperience: 12,
-        availabilitySchedule: {
-          monday: ["8:00-16:00"],
-          tuesday: ["8:00-16:00"],
-          wednesday: ["8:00-16:00"],
-          thursday: ["8:00-16:00"],
-          friday: ["8:00-16:00"]
-        },
-        profileImage: "https://images.unsplash.com/photo-1556157382-97eda2d62296",
-        contactPhone: "843-555-0124",
-        servicesOffered: [3] // Electrical Work
-      }
-    ];
-
-    for (const provider of initialServiceProviders) {
-      await this.createServiceProvider(provider);
-      console.log(`[Storage] Added service provider: ${provider.name}`);
-    }
-  }
-
   async getServices(): Promise<Service[]> {
     if (!this.initialized) {
-      console.log("[Storage] Storage not initialized, initializing now");
       await this.initialize();
     }
 
