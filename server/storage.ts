@@ -472,46 +472,86 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createReview(review: InsertReview): Promise<Review> {
-    const [newReview] = await db
-      .insert(reviews)
-      .values({
-        ...review,
-        verified: false,
-        createdAt: new Date()
-      })
-      .returning();
+    try {
+      console.log('Creating review:', review);
+      const [newReview] = await db
+        .insert(reviews)
+        .values({
+          ...review,
+          verified: false,
+          createdAt: new Date()
+        })
+        .returning();
 
-    // Update service rating
-    const serviceReviews = await this.getReviewsByService(review.serviceId);
-    const averageRating = Math.round(
-      serviceReviews.reduce((sum, r) => sum + r.rating, 0) / serviceReviews.length
-    );
+      console.log('Review created successfully:', newReview);
 
-    await db
-      .update(services)
-      .set({ rating: averageRating })
-      .where(eq(services.id, review.serviceId));
+      // Update service rating
+      try {
+        const serviceReviews = await this.getReviewsByService(review.serviceId);
+        const averageRating = Math.round(
+          serviceReviews.reduce((sum, r) => sum + r.rating, 0) / serviceReviews.length
+        );
 
-    return newReview;
+        await db
+          .update(services)
+          .set({ rating: averageRating })
+          .where(eq(services.id, review.serviceId));
+
+        console.log('Service rating updated successfully');
+      } catch (error) {
+        console.error('Error updating service rating:', error);
+        // Don't throw here, as the review was still created successfully
+      }
+
+      return newReview;
+    } catch (error) {
+      console.error('Error creating review:', error);
+      throw error;
+    }
   }
 
   async getReview(id: number): Promise<Review | undefined> {
-    const [review] = await db
-      .select()
-      .from(reviews)
-      .where(eq(reviews.id, id));
-    return review;
+    try {
+      console.log('Fetching review:', id);
+      const [review] = await db
+        .select()
+        .from(reviews)
+        .where(eq(reviews.id, id));
+
+      console.log('Review fetch result:', review);
+      return review;
+    } catch (error) {
+      console.error('Error fetching review:', error);
+      throw error;
+    }
   }
 
   async getReviews(): Promise<Review[]> {
-    return await db.select().from(reviews);
+    try {
+      console.log('Fetching all reviews');
+      const allReviews = await db.select().from(reviews);
+      console.log('Found reviews:', allReviews.length);
+      return allReviews;
+    } catch (error) {
+      console.error('Error fetching all reviews:', error);
+      throw error;
+    }
   }
 
   async getReviewsByService(serviceId: number): Promise<Review[]> {
-    return await db
-      .select()
-      .from(reviews)
-      .where(eq(reviews.serviceId, serviceId));
+    try {
+      console.log('Fetching reviews for service:', serviceId);
+      const serviceReviews = await db
+        .select()
+        .from(reviews)
+        .where(eq(reviews.serviceId, serviceId));
+
+      console.log('Found service reviews:', serviceReviews.length);
+      return serviceReviews;
+    } catch (error) {
+      console.error('Error fetching service reviews:', error);
+      throw error;
+    }
   }
 
   async getReviewsByUser(userId: number): Promise<Review[]> {
