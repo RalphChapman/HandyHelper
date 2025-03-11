@@ -286,7 +286,7 @@ export async function registerRoutes(app: Express) {
 
   app.post("/api/projects", upload.array("images", 10), async (req, res) => {
     try {
-      console.log("[API] Creating new project", {
+      console.log("[API] Creating new project with data:", {
         body: req.body,
         files: req.files ? req.files.map(file => ({
           filename: file.filename,
@@ -323,19 +323,26 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ message: "Invalid project date format" });
       }
 
-      const project = {
+      console.log("[API] Creating project with data:", {
         title: req.body.title,
         description: req.body.description,
-        imageUrls: imageUrls,
+        imageUrls,
         comment: req.body.comment,
         customerName: req.body.customerName,
-        projectDate: projectDate,
+        projectDate,
         serviceId: parseInt(req.body.serviceId)
-      };
+      });
 
-      console.log("[API] Creating project with data:", project);
+      const newProject = await storage.createProject({
+        title: req.body.title,
+        description: req.body.description,
+        imageUrls,
+        comment: req.body.comment,
+        customerName: req.body.customerName,
+        projectDate,
+        serviceId: parseInt(req.body.serviceId)
+      });
 
-      const newProject = await storage.createProject(project);
       console.log(`[API] Successfully created project #${newProject.id}`);
       res.status(201).json(newProject);
     } catch (error) {
