@@ -1,21 +1,20 @@
 import { 
+  users, type User, type InsertUser,
   services, testimonials, reviews, projects, 
   type Service, type InsertService, 
   type QuoteRequest, type InsertQuoteRequest,
   type Booking, type InsertBooking,
-  type User, type InsertUser,
   type Testimonial, type InsertTestimonial,
   type ServiceProvider, type InsertServiceProvider,
   type Review, type InsertReview,
   type Project, type InsertProject,
-  users,
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
 import { db } from "./db";
-import { eq, asc, desc } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 const MemoryStore = createMemoryStore(session);
 const scryptAsync = promisify(scrypt);
@@ -58,6 +57,10 @@ export interface IStorage {
   getReviewsByService(serviceId: number): Promise<Review[]>;
   getReviewsByUser(userId: number): Promise<Review[]>;
   updateReviewVerification(id: number, verified: boolean): Promise<Review | undefined>;
+  updateUser(id: number, data: Partial<User>): Promise<User | undefined>;
+  deleteUser(id: number): Promise<boolean>;
+  listUsers(): Promise<User[]>;
+  validateUserCredentials(username: string, password: string): Promise<User | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -236,9 +239,33 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    const [newUser] = await db.insert(User).values({...user, createdAt: new Date()}).returning();
-    console.log(`[Storage] Created new user: ${newUser.username} with ID: ${newUser.id}`);
-    return newUser;
+    try {
+      console.log("[Storage] Creating new user:", user.username);
+
+      // First check if username already exists
+      const existingUser = await this.getUserByUsername(user.username);
+      if (existingUser) {
+        throw new Error("Username already exists");
+      }
+
+      // Hash password before storing
+      const hashedPassword = await hashPassword(user.password);
+
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          ...user,
+          password: hashedPassword,
+          createdAt: new Date()
+        })
+        .returning();
+
+      console.log(`[Storage] Created new user: ${newUser.username} with ID: ${newUser.id}`);
+      return newUser;
+    } catch (error) {
+      console.error("[Storage] Error creating user:", error);
+      throw error;
+    }
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -457,6 +484,86 @@ export class DatabaseStorage implements IStorage {
       return updatedReview;
     } catch (error) {
       console.error('Error updating review verification:', error);
+      throw error;
+    }
+  }
+
+  async updateUser(id: number, data: Partial<User>): Promise<User | undefined> {
+    try {
+      console.log(`[Storage] Updating user ${id}`);
+
+      // If updating username, check if new username is available
+      if (data.username) {
+        const existingUser = await this.getUserByUsername(data.username);
+        if (existingUser && existingUser.id !== id) {
+          throw new Error("Username already taken");
+        }
+      }
+
+      // If updating password, hash it
+      if (data.password) {
+        data.password = await hashPassword(data.password);
+      }
+
+      const [updatedUser] = await db
+        .update(users)
+        .set(data)
+        .where(eq(users.id, id))
+        .returning();
+
+      return updatedUser;
+    } catch (error) {
+      console.error(`[Storage] Error updating user ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async deleteUser(id: number): Promise<boolean> {
+    try {
+      console.log(`[Storage] Deleting user ${id}`);
+      const [deletedUser] = await db
+        .delete(users)
+        .where(eq(users.id, id))
+        .returning();
+
+      return !!deletedUser;
+    } catch (error) {
+      console.error(`[Storage] Error deleting user ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async listUsers(): Promise<User[]> {
+    try {
+      console.log("[Storage] Fetching all users");
+      const allUsers = await db
+        .select()
+        .from(users)
+        .orderBy(users.createdAt);
+
+      return allUsers;
+    } catch (error) {
+      console.error("[Storage] Error fetching users:", error);
+      throw error;
+    }
+  }
+
+  async validateUserCredentials(username: string, password: string): Promise<User | undefined> {
+    try {
+      const user = await this.getUserByUsername(username);
+      if (!user) return undefined;
+
+      const [hashedPassword, salt] = user.password.split(".");
+      const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+      const suppliedHash = buf.toString("hex");
+
+      if (hashedPassword === suppliedHash) {
+        return user;
+      }
+
+      return undefined;
+    } catch (error) {
+      console.error("[Storage] Error validating credentials:", error);
       throw error;
     }
   }
