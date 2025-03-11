@@ -128,11 +128,16 @@ export default function Quote() {
     setIsSubmitting(true);
     try {
       const service = services?.find(s => s.id === data.serviceId);
-      await apiRequest("POST", "/api/quote-requests", {
+      const response = await apiRequest("POST", "/api/quote-requests", {
         ...data,
         serviceName: service?.name,
         analysis
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to submit quote request');
+      }
 
       toast({
         title: "Quote request submitted",

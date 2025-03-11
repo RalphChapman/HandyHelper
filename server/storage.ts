@@ -1,6 +1,6 @@
 import { 
   users, type User, type InsertUser,
-  services, testimonials, reviews, projects, 
+  services, testimonials, reviews, projects, quoteRequests,
   type Service, type InsertService, 
   type QuoteRequest, type InsertQuoteRequest,
   type Booking, type InsertBooking,
@@ -179,12 +179,33 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createQuoteRequest(request: InsertQuoteRequest): Promise<QuoteRequest> {
-    const [newRequest] = await db.insert(QuoteRequest).values(request).returning();
-    return newRequest;
+    try {
+      console.log("[Storage] Creating quote request:", request);
+      const [newRequest] = await db
+        .insert(quoteRequests)
+        .values({
+          ...request,
+          createdAt: new Date()
+        })
+        .returning();
+      console.log("[Storage] Created quote request:", newRequest);
+      return newRequest;
+    } catch (error) {
+      console.error("[Storage] Error creating quote request:", error);
+      throw error;
+    }
   }
 
   async getQuoteRequests(): Promise<QuoteRequest[]> {
-    return await db.select().from(QuoteRequest);
+    try {
+      console.log("[Storage] Fetching quote requests");
+      const requests = await db.select().from(quoteRequests).orderBy(desc(quoteRequests.createdAt));
+      console.log("[Storage] Found quote requests:", requests.length);
+      return requests;
+    } catch (error) {
+      console.error("[Storage] Error fetching quote requests:", error);
+      throw error;
+    }
   }
 
   async createBooking(booking: InsertBooking): Promise<Booking> {
