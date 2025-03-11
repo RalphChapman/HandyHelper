@@ -333,11 +333,19 @@ export async function registerRoutes(app: Express) {
         serviceId: parseInt(req.body.serviceId)
       };
 
-      console.log("[API] Creating project with data:", projectData);
+      console.log("[API] Creating project with data:", JSON.stringify(projectData, null, 2));
 
-      const newProject = await storage.createProject(projectData);
-      console.log(`[API] Successfully created project #${newProject.id}`);
-      res.status(201).json(newProject);
+      try {
+        const newProject = await storage.createProject(projectData);
+        console.log(`[API] Successfully created project #${newProject.id}`);
+        res.status(201).json(newProject);
+      } catch (storageError) {
+        console.error("[API] Storage error creating project:", storageError);
+        if (storageError instanceof Error) {
+          console.error("[API] Storage error stack:", storageError.stack);
+        }
+        throw storageError;
+      }
     } catch (error) {
       console.error("[API] Error creating project:", error);
       if (error instanceof Error) {
