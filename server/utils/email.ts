@@ -65,6 +65,11 @@ Visit our website: https://handyhelper.replit.app/
 Contact Information:
 Ralph Chapman
 Phone: (864) 361-3730
+Email: chapman.ralph@gmail.com
+LinkedIn: linkedin.com/in/ralph-chapman
+
+Best regards,
+HandyPro Service Team
     `,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
@@ -95,13 +100,42 @@ Phone: (864) 361-3730
           ).join('')}</div>
         </div>
 
-        <div style="margin-top: 24px; padding: 20px; border-top: 1px solid #e2e8f0;">
-          <p style="margin: 8px 0;"><strong>Visit our website:</strong> <a href="https://handyhelper.replit.app/" style="color: #2563eb;">https://handyhelper.replit.app/</a></p>
-          <div style="margin-top: 16px;">
-            <h4 style="color: #1e293b; margin-bottom: 8px;">Contact Information:</h4>
-            <p style="margin: 4px 0;">Ralph Chapman</p>
-            <p style="margin: 4px 0;">Phone: (864) 361-3730</p>
+        <!-- Digital Business Card Section -->
+        <div style="margin-top: 24px; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: white;">
+          <h3 style="color: #1e293b; margin-bottom: 16px;">Your Professional Handyman</h3>
+
+          <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 250px;">
+              <h4 style="color: #2563eb; margin: 0 0 16px 0;">Ralph Chapman</h4>
+
+              <div style="margin-bottom: 16px;">
+                <p style="margin: 8px 0; display: flex; align-items: center;">
+                  <span style="color: #64748b; margin-right: 8px;">📞</span>
+                  <a href="tel:(864) 361-3730" style="color: #2563eb; text-decoration: none;">(864) 361-3730</a>
+                </p>
+
+                <p style="margin: 8px 0; display: flex; align-items: center;">
+                  <span style="color: #64748b; margin-right: 8px;">✉️</span>
+                  <a href="mailto:chapman.ralph@gmail.com" style="color: #2563eb; text-decoration: none;">chapman.ralph@gmail.com</a>
+                </p>
+
+                <p style="margin: 8px 0; display: flex; align-items: center;">
+                  <span style="color: #64748b; margin-right: 8px;">🔗</span>
+                  <a href="https://linkedin.com/in/ralph-chapman" style="color: #2563eb; text-decoration: none;">linkedin.com/in/ralph-chapman</a>
+                </p>
+
+                <p style="margin: 8px 0; display: flex; align-items: center;">
+                  <span style="color: #64748b; margin-right: 8px;">🌐</span>
+                  <a href="https://handyhelper.replit.app" style="color: #2563eb; text-decoration: none;">handyhelper.replit.app</a>
+                </p>
+              </div>
+            </div>
           </div>
+        </div>
+
+        <div style="margin-top: 24px; color: #64748b; text-align: center; padding-top: 24px; border-top: 1px solid #e2e8f0;">
+          <p style="margin: 4px 0;">Best regards,</p>
+          <p style="margin: 4px 0;">HandyPro Service Team</p>
         </div>
       </div>
     `
@@ -145,6 +179,8 @@ We will review your booking and confirm the appointment shortly. If you need to 
 
 Ralph Chapman
 Phone: (864) 361-3730
+Email: chapman.ralph@gmail.com
+LinkedIn: linkedin.com/in/ralph-chapman
 Website: https://handyhelper.replit.app/
 
 Best regards,
@@ -167,14 +203,40 @@ HandyPro Service Team
           <p style="margin: 0;">We will review your booking and confirm the appointment shortly. If you need to make any changes or have questions, please contact us.</p>
         </div>
 
-        <div style="margin-top: 24px; padding: 20px; border-top: 1px solid #e2e8f0;">
-          <h4 style="color: #1e293b; margin-bottom: 8px;">Contact Information:</h4>
-          <p style="margin: 4px 0;">Ralph Chapman</p>
-          <p style="margin: 4px 0;">Phone: (864) 361-3730</p>
-          <p style="margin: 8px 0;"><strong>Visit our website:</strong> <a href="https://handyhelper.replit.app/" style="color: #2563eb;">https://handyhelper.replit.app/</a></p>
+        <!-- Digital Business Card Section -->
+        <div style="margin-top: 24px; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: white;">
+          <h3 style="color: #1e293b; margin-bottom: 16px;">Your Professional Handyman</h3>
+
+          <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 250px;">
+              <h4 style="color: #2563eb; margin: 0 0 16px 0;">Ralph Chapman</h4>
+
+              <div style="margin-bottom: 16px;">
+                <p style="margin: 8px 0; display: flex; align-items: center;">
+                  <span style="color: #64748b; margin-right: 8px;">📞</span>
+                  <a href="tel:(864) 361-3730" style="color: #2563eb; text-decoration: none;">(864) 361-3730</a>
+                </p>
+
+                <p style="margin: 8px 0; display: flex; align-items: center;">
+                  <span style="color: #64748b; margin-right: 8px;">✉️</span>
+                  <a href="mailto:chapman.ralph@gmail.com" style="color: #2563eb; text-decoration: none;">chapman.ralph@gmail.com</a>
+                </p>
+
+                <p style="margin: 8px 0; display: flex; align-items: center;">
+                  <span style="color: #64748b; margin-right: 8px;">🔗</span>
+                  <a href="https://linkedin.com/in/ralph-chapman" style="color: #2563eb; text-decoration: none;">linkedin.com/in/ralph-chapman</a>
+                </p>
+
+                <p style="margin: 8px 0; display: flex; align-items: center;">
+                  <span style="color: #64748b; margin-right: 8px;">🌐</span>
+                  <a href="https://handyhelper.replit.app" style="color: #2563eb; text-decoration: none;">handyhelper.replit.app</a>
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div style="margin-top: 24px; color: #64748b;">
+        <div style="margin-top: 24px; color: #64748b; text-align: center; padding-top: 24px; border-top: 1px solid #e2e8f0;">
           <p style="margin: 4px 0;">Best regards,</p>
           <p style="margin: 4px 0;">HandyPro Service Team</p>
         </div>
