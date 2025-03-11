@@ -69,6 +69,7 @@ export interface IStorage {
   deleteUser(id: number): Promise<boolean>;
   listUsers(): Promise<User[]>;
   validateUserCredentials(username: string, password: string): Promise<User | undefined>;
+  updateUserPassword(id: number, hashedPassword: string): Promise<User | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -611,6 +612,21 @@ export class DatabaseStorage implements IStorage {
       return undefined;
     } catch (error) {
       console.error("[Storage] Error validating credentials:", error);
+      throw error;
+    }
+  }
+  async updateUserPassword(id: number, hashedPassword: string): Promise<User | undefined> {
+    try {
+      console.log("[Storage] Updating user password for:", id);
+      const [updatedUser] = await db
+        .update(users)
+        .set({ password: hashedPassword })
+        .where(eq(users.id, id))
+        .returning();
+      console.log("[Storage] Password updated for user:", id);
+      return updatedUser;
+    } catch (error) {
+      console.error("[Storage] Error updating user password for:", id, error);
       throw error;
     }
   }

@@ -528,4 +528,44 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  app.post("/api/update-password", async (req, res) => {
+    try {
+      // Check if user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      console.log("[API] Password update request for user:", req.user?.id);
+      const { currentPassword, newPassword } = req.body;
+
+      if (!currentPassword || !newPassword) {
+        console.log("[API] Missing password fields");
+        return res.status(400).json({ message: "Current password and new password are required" });
+      }
+
+      // Verify current password
+      const user = await storage.getUser(req.user.id);
+      if (!user) {
+        console.log("[API] User not found:", req.user.id);
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const isValid = await comparePasswords(currentPassword, user.password);
+      if (!isValid) {
+        console.log("[API] Invalid current password for user:", req.user.id);
+        return res.status(401).json({ message: "Current password is incorrect" });
+      }
+
+      // Update password
+      const hashedPassword = await hashPassword(newPassword);
+      await storage.updateUserPassword(req.user.id, hashedPassword);
+
+      console.log("[API] Password updated successfully for user:", req.user.id);
+      res.json({ message: "Password updated successfully" });
+    } catch (error) {
+      console.error("[API] Error updating password:", error);
+      res.status(500).json({ message: "Failed to update password", error: (error as Error).message });
+    }
+  });
+
 }

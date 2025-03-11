@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
 import { queryClient } from "@/lib/queryClient";
 import type { Booking, QuoteRequest, Testimonial } from "@shared/schema";
+import { UpdatePasswordForm } from "@/components/update-password-form";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -49,6 +50,7 @@ export default function Dashboard() {
             <TabsTrigger value="bookings">My Bookings</TabsTrigger>
             <TabsTrigger value="quotes">Quote Requests</TabsTrigger>
             {isAdmin && <TabsTrigger value="testimonials">Testimonials</TabsTrigger>}
+            <TabsTrigger value="security">Security Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="bookings">
@@ -170,6 +172,17 @@ export default function Dashboard() {
               </div>
             </TabsContent>
           )}
+
+          <TabsContent value="security">
+            <Card>
+              <CardHeader>
+                <CardTitle>Change Password</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <UpdatePasswordForm />
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
     </div>
