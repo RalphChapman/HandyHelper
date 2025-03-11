@@ -14,15 +14,23 @@ import createMemoryStore from "memorystore";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 const MemoryStore = createMemoryStore(session);
 const scryptAsync = promisify(scrypt);
 
 async function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
+  try {
+    console.log("[Storage] Generating password hash");
+    const salt = randomBytes(16).toString("hex");
+    const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+    const hashedPassword = `${buf.toString("hex")}.${salt}`;
+    console.log("[Storage] Password hash generated successfully");
+    return hashedPassword;
+  } catch (error) {
+    console.error("[Storage] Error generating password hash:", error);
+    throw new Error("Failed to hash password");
+  }
 }
 
 export interface IStorage {
@@ -245,17 +253,21 @@ export class DatabaseStorage implements IStorage {
       // First check if username already exists
       const existingUser = await this.getUserByUsername(user.username);
       if (existingUser) {
+        console.log("[Storage] Username already exists:", user.username);
         throw new Error("Username already exists");
       }
 
       // Hash password before storing
+      console.log("[Storage] Hashing password for new user");
       const hashedPassword = await hashPassword(user.password);
 
       const [newUser] = await db
         .insert(users)
         .values({
-          ...user,
+          username: user.username,
           password: hashedPassword,
+          email: user.email,
+          role: user.role || "user",
           createdAt: new Date()
         })
         .returning();
@@ -269,13 +281,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(User).where(eq(User.id, id));
-    return user;
+    try {
+      console.log("[Storage] Fetching user by ID:", id);
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      console.log("[Storage] User fetch result:", user ? "Found" : "Not found");
+      return user;
+    } catch (error) {
+      console.error("[Storage] Error fetching user:", error);
+      throw error;
+    }
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(User).where(eq(User.username, username));
-    return user;
+    try {
+      console.log("[Storage] Fetching user by username:", username);
+      const [user] = await db.select().from(users).where(eq(users.username, username));
+      console.log("[Storage] User fetch result:", user ? "Found" : "Not found");
+      return user;
+    } catch (error) {
+      console.error("[Storage] Error fetching user by username:", error);
+      throw error;
+    }
   }
 
   async createTestimonial(testimonial: InsertTestimonial): Promise<Testimonial> {
