@@ -19,21 +19,22 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
     if (!apiKey) {
       setIsKeyMissing(true);
       console.warn("Google Maps API key is not configured");
-      onError?.("Address verification is temporarily unavailable");
+      // Don't show error to user, just fallback to manual input
     }
-  }, [apiKey, onError]);
+  }, [apiKey]);
 
   const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: apiKey || "",
+    googleMapsApiKey: apiKey || "", // Provide empty string as fallback
     libraries,
   });
 
   useEffect(() => {
     if (loadError) {
       console.error("Google Maps load error:", loadError);
-      onError?.("Address verification service is currently unavailable");
+      // Don't show error to user, just fallback to manual input
+      setIsKeyMissing(true);
     }
-  }, [loadError, onError]);
+  }, [loadError]);
 
   const onPlaceChanged = () => {
     if (autocomplete) {
@@ -42,18 +43,18 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
         onChange(place.formatted_address);
       } else {
         console.warn("No address returned from place selection");
-        onError?.("Could not verify this address");
+        // Don't show error, just keep current value
       }
     }
   };
 
-  // If API key is missing or there's a load error, return a basic input
+  // Return basic input if API key is missing or there's an error
   if (isKeyMissing || loadError) {
     return (
       <Input 
         value={value} 
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Enter your address manually"
+        placeholder="Enter your address"
       />
     );
   }
