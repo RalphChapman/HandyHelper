@@ -4,10 +4,13 @@ import { useLocation } from "wouter";
 
 export default function ResetPasswordPage() {
   const [location] = useLocation();
-  const searchParams = new URLSearchParams(location.split('?')[1]);
-  const token = searchParams.get('token');
+  const params = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
+  const token = params.get('token');
 
-  if (!token) {
+  // Validate token format (should be a 64-character hex string)
+  const isValidToken = token && /^[a-f0-9]{64}$/.test(token);
+
+  if (!isValidToken) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card className="max-w-md mx-auto">
