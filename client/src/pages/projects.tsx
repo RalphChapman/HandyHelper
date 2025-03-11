@@ -174,7 +174,7 @@ export default function Projects() {
             <DialogTrigger asChild>
               <Button>Share Your Project</Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Share Your Project</DialogTitle>
               </DialogHeader>
@@ -313,16 +313,18 @@ export default function Projects() {
                     )}
                   />
 
-                  <Button type="submit" disabled={isSubmitting} className="w-full">
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Submitting...
-                      </>
-                    ) : (
-                      "Submit Project"
-                    )}
-                  </Button>
+                  <div className="sticky bottom-0 bg-background pt-4">
+                    <Button type="submit" disabled={isSubmitting} className="w-full">
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Submitting...
+                        </>
+                      ) : (
+                        "Submit Project"
+                      )}
+                    </Button>
+                  </div>
                 </form>
               </Form>
             </DialogContent>
