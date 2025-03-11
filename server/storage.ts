@@ -86,6 +86,20 @@ export class DatabaseStorage implements IStorage {
       category: "Electrical",
       imageUrl: "https://images.unsplash.com/photo-1621905252507-b35492cc74b4",
       rating: 5
+    },
+    {
+      name: "Interior Projects",
+      description: "Expert interior renovation services including professional painting, drywall/sheetrock repair, and finish trim work. Our attention to detail ensures seamless repairs and beautiful finishes for your home.",
+      category: "Interior",
+      imageUrl: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f",
+      rating: 5
+    },
+    {
+      name: "Outdoor Solutions",
+      description: "Professional deck construction, fence painting/repair and patio installations. Expert craftsmanship for all your outdoor structure needs.",
+      category: "Landscaping",
+      imageUrl: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6",
+      rating: 5
     }
   ];
 
