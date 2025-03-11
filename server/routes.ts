@@ -148,18 +148,20 @@ export async function registerRoutes(app: Express) {
         return;
       }
 
-      const newQuoteRequest = await storage.createQuoteRequest(quoteRequest);
+      // Create the quote request with contact information
+      const newQuoteRequest = await storage.createQuoteRequest({
+        ...quoteRequest,
+        contactInfo: {
+          name: quoteRequest.name,
+          email: quoteRequest.email,
+          phone: quoteRequest.phone,
+          address: quoteRequest.address
+        }
+      });
 
       // Send email notification
       try {
-        console.log("[API] Sending email notification for quote request with data:", {
-          ...newQuoteRequest,
-          serviceName: service.name,
-          email: quoteRequest.email,
-          description: quoteRequest.description,
-          analysis: req.body.analysis
-        });
-
+        console.log("[API] Sending email notification for quote request");
         await sendQuoteNotification({
           ...newQuoteRequest,
           serviceName: service.name,

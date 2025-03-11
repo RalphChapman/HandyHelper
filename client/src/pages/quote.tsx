@@ -13,6 +13,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
+import { useAuth } from "@/hooks/use-auth";
 
 // Helper function to extract city and state from address
 function extractLocationFromAddress(address: string): string {
@@ -48,6 +49,7 @@ function extractLocationFromAddress(address: string): string {
 export default function Quote() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { user } = useAuth(); // Get user info for pre-filling
   const searchParams = new URLSearchParams(window.location.search);
   const preselectedService = searchParams.get("service");
   const [analysis, setAnalysis] = useState<string>("");
@@ -68,9 +70,9 @@ export default function Quote() {
   const form = useForm({
     resolver: zodResolver(insertQuoteRequestSchema),
     defaultValues: {
-      serviceId: undefined, 
-      name: "",
-      email: "",
+      serviceId: undefined,
+      name: user?.username || "",
+      email: user?.email || "",
       phone: "",
       description: "",
       address: "",
@@ -106,7 +108,7 @@ export default function Quote() {
       // Extract location from address if available, otherwise use default
       const location = extractLocationFromAddress(address);
 
-      const response = await apiRequest("POST", "/api/analyze-project", { 
+      const response = await apiRequest("POST", "/api/analyze-project", {
         description,
         address,
         location
@@ -131,7 +133,13 @@ export default function Quote() {
       const response = await apiRequest("POST", "/api/quote-requests", {
         ...data,
         serviceName: service?.name,
-        analysis
+        analysis,
+        contactInfo: {
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          address: data.address
+        }
       });
 
       if (!response.ok) {
