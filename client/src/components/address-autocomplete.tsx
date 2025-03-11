@@ -19,7 +19,7 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
     if (!apiKey) {
       setIsKeyMissing(true);
       console.warn("Google Maps API key is not configured");
-      // Don't show error to user, just fallback to manual input
+      // Silently fall back to manual input
     }
   }, [apiKey]);
 
@@ -31,7 +31,6 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
   useEffect(() => {
     if (loadError) {
       console.error("Google Maps load error:", loadError);
-      // Don't show error to user, just fallback to manual input
       setIsKeyMissing(true);
     }
   }, [loadError]);
@@ -43,7 +42,6 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
         onChange(place.formatted_address);
       } else {
         console.warn("No address returned from place selection");
-        // Don't show error, just keep current value
       }
     }
   };
