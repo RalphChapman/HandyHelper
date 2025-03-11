@@ -318,7 +318,7 @@ export async function registerRoutes(app: Express) {
         imageUrl: finalImageUrl,
         comment: req.body.comment,
         customerName: req.body.customerName,
-        date: req.body.date,
+        projectDate: new Date(req.body.projectDate),
         serviceId: parseInt(req.body.serviceId)
       };
 

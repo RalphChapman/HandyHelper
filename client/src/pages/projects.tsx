@@ -11,11 +11,14 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { ImageIcon, Loader2 } from "lucide-react";
+import { ImageIcon, Loader2, Calendar } from "lucide-react";
 import { ReviewForm } from "@/components/review-form";
 import { ReviewsSection } from "@/components/reviews-section";
 import { useAuth } from "@/hooks/use-auth";
 import { useState } from 'react';
+import { format } from "date-fns";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface Project {
   id: number;
@@ -25,6 +28,7 @@ interface Project {
   comment: string;
   customerName: string;
   date: string;
+  projectDate: Date;
   serviceId: number;
 }
 
@@ -34,6 +38,9 @@ const projectFormSchema = z.object({
   imageFile: z.instanceof(File, { message: "Please select an image" }),
   comment: z.string().min(1, "Please share your experience"),
   customerName: z.string().min(1, "Name is required"),
+  projectDate: z.date({
+    required_error: "Please select a project date",
+  }),
 });
 
 type ProjectFormValues = z.infer<typeof projectFormSchema>;
@@ -74,6 +81,7 @@ export default function Projects() {
       description: "",
       comment: "",
       customerName: "",
+      projectDate: new Date(),
     },
   });
 
@@ -86,7 +94,7 @@ export default function Projects() {
       formData.append("comment", data.comment);
       formData.append("customerName", data.customerName);
       formData.append("serviceId", serviceId.toString());
-      formData.append("date", new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }));
+      formData.append("projectDate", data.projectDate.toISOString());
 
       // Ensure we're appending the file with the correct field name
       formData.append("image", data.imageFile);
@@ -187,6 +195,45 @@ export default function Projects() {
 
                   <FormField
                     control={form.control}
+                    name="projectDate"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Project Date</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={"outline"}
+                                className={`w-full pl-3 text-left font-normal ${!field.value && "text-muted-foreground"}`}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP")
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
+                                <Calendar className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <CalendarComponent
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              disabled={(date) =>
+                                date > new Date() || date < new Date("1900-01-01")
+                              }
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
                     name="imageFile"
                     render={({ field: { onChange, value, ...field } }) => (
                       <FormItem>
@@ -277,7 +324,7 @@ export default function Projects() {
                       <p className="text-gray-600 italic mb-2">"{project.comment}"</p>
                       <div className="flex justify-between items-center text-sm">
                         <span className="font-medium">{project.customerName}</span>
-                        <span className="text-gray-500">{project.date}</span>
+                        <span className="text-gray-500">{format(new Date(project.projectDate), "PPP")}</span>
                       </div>
                     </div>
                   </div>
