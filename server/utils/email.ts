@@ -303,7 +303,7 @@ export async function sendPasswordResetEmail(email: string, resetToken: string) 
   console.log("[EMAIL] Initiating password reset email to:", email);
 
   try {
-    const resetLink = `https://handyhelper.replit.app/reset-password?token=${resetToken}`;
+    const resetLink = `https://handyhelper.replit.app/password-reset?token=${resetToken}`;
 
     const message = {
       from: '"HandyPro Service" <chapman.ralph@gmail.com>',

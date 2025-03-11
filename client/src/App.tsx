@@ -29,6 +29,7 @@ export default function App() {
             <Route path="/dashboard" component={Dashboard} />
             <Route path="/auth" component={Auth} />
             <Route path="/reset-password" component={ResetPassword} />
+            <Route path="/password-reset" component={ResetPassword} />
             <Route component={NotFound} />
           </Switch>
         </main>
