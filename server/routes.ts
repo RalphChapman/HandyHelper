@@ -286,36 +286,43 @@ export async function registerRoutes(app: Express) {
 
   app.post("/api/projects", upload.single("image"), async (req, res) => {
     try {
-      console.log("[API] Creating new project");
-      const { title, description, comment, customerName, serviceId, date, imageUrl } = req.body;
+      console.log("[API] Creating new project", {
+        body: req.body,
+        file: req.file ? {
+          filename: req.file.filename,
+          mimetype: req.file.mimetype,
+          size: req.file.size
+        } : 'No file uploaded'
+      });
 
-      // Create the image URL either from uploaded file or provided URL
-      const finalImageUrl = req.file
-        ? `/uploads/${req.file.filename}`
-        : imageUrl;
-
-      if (!finalImageUrl) {
-        res.status(400).json({ message: "Image URL or file upload is required" });
-        return;
+      if (!req.file && !req.body.imageUrl) {
+        console.log("[API] No image provided");
+        return res.status(400).json({ message: "Image file or URL is required" });
       }
 
+      // Create the image URL from uploaded file
+      const finalImageUrl = req.file
+        ? `/uploads/${req.file.filename}`
+        : req.body.imageUrl;
+
       // Validate service exists
-      const service = await storage.getService(parseInt(serviceId));
+      const service = await storage.getService(parseInt(req.body.serviceId));
       if (!service) {
-        console.log(`[API] Service not found: ${serviceId}`);
-        res.status(404).json({ message: "Service not found" });
-        return;
+        console.log(`[API] Service not found: ${req.body.serviceId}`);
+        return res.status(404).json({ message: "Service not found" });
       }
 
       const project = {
-        title,
-        description,
+        title: req.body.title,
+        description: req.body.description,
         imageUrl: finalImageUrl,
-        comment,
-        customerName,
-        date,
-        serviceId: parseInt(serviceId)
+        comment: req.body.comment,
+        customerName: req.body.customerName,
+        date: req.body.date,
+        serviceId: parseInt(req.body.serviceId)
       };
+
+      console.log("[API] Creating project with data:", project);
 
       const newProject = await storage.createProject(project);
       console.log(`[API] Successfully created project #${newProject.id}`);

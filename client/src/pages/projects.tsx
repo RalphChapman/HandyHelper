@@ -87,6 +87,8 @@ export default function Projects() {
       formData.append("customerName", data.customerName);
       formData.append("serviceId", serviceId.toString());
       formData.append("date", new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }));
+
+      // Ensure we're appending the file with the correct field name
       formData.append("image", data.imageFile);
 
       const response = await fetch("/api/projects", {
@@ -94,19 +96,22 @@ export default function Projects() {
         body: formData,
       });
 
+      const result = await response.json();
+
       if (!response.ok) {
-        throw new Error("Failed to submit project");
+        throw new Error(result.message || "Failed to submit project");
       }
 
       toast({
         title: "Success",
-        description: "Your project has been submitted for review!",
+        description: "Your project has been submitted successfully!",
       });
       form.reset();
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Project submission error:", error);
       toast({
         title: "Error",
-        description: "Failed to submit project. Please try again.",
+        description: error.message || "Failed to submit project. Please try again.",
         variant: "destructive",
       });
     } finally {
