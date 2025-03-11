@@ -27,8 +27,7 @@ interface Project {
   imageUrl: string;
   comment: string;
   customerName: string;
-  date: string;
-  projectDate: Date;
+  projectDate: string;
   serviceId: number;
 }
 
@@ -324,7 +323,9 @@ export default function Projects() {
                       <p className="text-gray-600 italic mb-2">"{project.comment}"</p>
                       <div className="flex justify-between items-center text-sm">
                         <span className="font-medium">{project.customerName}</span>
-                        <span className="text-gray-500">{format(new Date(project.projectDate), "PPP")}</span>
+                        <span className="text-gray-500">
+                          {format(new Date(project.projectDate), "PPP")}
+                        </span>
                       </div>
                     </div>
                   </div>
