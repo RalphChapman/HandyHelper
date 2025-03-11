@@ -12,14 +12,14 @@ const libraries: ("places")[] = ["places"];
 
 export function AddressAutocomplete({ value, onChange, onError }: AddressAutocompleteProps) {
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+  const [isKeyMissing, setIsKeyMissing] = useState(false);
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
-  // Log API key status and initialization
   useEffect(() => {
-    console.log("Initializing Google Maps with API key:", !!apiKey);
     if (!apiKey) {
-      onError?.("Google Maps API key is not configured");
-      console.error("Google Maps API key is missing");
+      setIsKeyMissing(true);
+      console.warn("Google Maps API key is not configured");
+      onError?.("Address verification is temporarily unavailable");
     }
   }, [apiKey, onError]);
 
@@ -31,7 +31,7 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
   useEffect(() => {
     if (loadError) {
       console.error("Google Maps load error:", loadError);
-      onError?.(`Error loading Google Maps: ${loadError.message}`);
+      onError?.("Address verification service is currently unavailable");
     }
   }, [loadError, onError]);
 
@@ -39,21 +39,27 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
     if (autocomplete) {
       const place = autocomplete.getPlace();
       if (place.formatted_address) {
-        console.log("Selected address:", place.formatted_address);
         onChange(place.formatted_address);
       } else {
-        console.error("No address returned from place selection");
-        onError?.("Failed to get address details");
+        console.warn("No address returned from place selection");
+        onError?.("Could not verify this address");
       }
     }
   };
 
-  if (!isLoaded) {
-    return <Input value={value} disabled placeholder="Loading address verification..." />;
+  // If API key is missing or there's a load error, return a basic input
+  if (isKeyMissing || loadError) {
+    return (
+      <Input 
+        value={value} 
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Enter your address manually"
+      />
+    );
   }
 
-  if (loadError) {
-    return <Input value={value} onChange={(e) => onChange(e.target.value)} />;
+  if (!isLoaded) {
+    return <Input value={value} disabled placeholder="Loading address verification..." />;
   }
 
   return (
@@ -69,7 +75,7 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
       <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Enter your address"
+        placeholder="Start typing your address..."
       />
     </Autocomplete>
   );
