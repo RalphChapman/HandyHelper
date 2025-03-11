@@ -474,6 +474,17 @@ export class DatabaseStorage implements IStorage {
   async createReview(review: InsertReview): Promise<Review> {
     try {
       console.log('Creating review:', review);
+      // First verify that the service exists
+      const [service] = await db
+        .select()
+        .from(services)
+        .where(eq(services.id, review.serviceId));
+
+      if (!service) {
+        throw new Error(`Service with ID ${review.serviceId} not found`);
+      }
+
+      // Create the review
       const [newReview] = await db
         .insert(reviews)
         .values({
@@ -541,10 +552,21 @@ export class DatabaseStorage implements IStorage {
   async getReviewsByService(serviceId: number): Promise<Review[]> {
     try {
       console.log('Fetching reviews for service:', serviceId);
+      // First verify that the service exists
+      const [service] = await db
+        .select()
+        .from(services)
+        .where(eq(services.id, serviceId));
+
+      if (!service) {
+        throw new Error(`Service with ID ${serviceId} not found`);
+      }
+
       const serviceReviews = await db
         .select()
         .from(reviews)
-        .where(eq(reviews.serviceId, serviceId));
+        .where(eq(reviews.serviceId, serviceId))
+        .orderBy(reviews.createdAt, 'desc');
 
       console.log('Found service reviews:', serviceReviews.length);
       return serviceReviews;
@@ -562,12 +584,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateReviewVerification(id: number, verified: boolean): Promise<Review | undefined> {
-    const [updatedReview] = await db
-      .update(reviews)
-      .set({ verified })
-      .where(eq(reviews.id, id))
-      .returning();
-    return updatedReview;
+    try {
+      console.log(`Updating review verification for ID ${id} to ${verified}`);
+      const [updatedReview] = await db
+        .update(reviews)
+        .set({ verified })
+        .where(eq(reviews.id, id))
+        .returning();
+
+      console.log('Review verification updated:', updatedReview);
+      return updatedReview;
+    } catch (error) {
+      console.error('Error updating review verification:', error);
+      throw error;
+    }
   }
 }
 
