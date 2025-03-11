@@ -1,31 +1,28 @@
-import { Service, InsertService, QuoteRequest, InsertQuoteRequest, Booking, InsertBooking, User, InsertUser, Testimonial, InsertTestimonial, ServiceProvider, InsertServiceProvider, Review, InsertReview } from "@shared/schema";
+import { 
+  services, testimonials, reviews, projects, 
+  type Service, type InsertService, 
+  type QuoteRequest, type InsertQuoteRequest,
+  type Booking, type InsertBooking,
+  type User, type InsertUser,
+  type Testimonial, type InsertTestimonial,
+  type ServiceProvider, type InsertServiceProvider,
+  type Review, type InsertReview,
+  type Project, type InsertProject,
+} from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
-import { services, reviews } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, asc, desc } from "drizzle-orm";
 
 const MemoryStore = createMemoryStore(session);
 const scryptAsync = promisify(scrypt);
 
-// Add password hashing function
 async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
   return `${buf.toString("hex")}.${salt}`;
-}
-
-interface Project {
-  id: number;
-  title: string;
-  description: string;
-  imageUrl: string;
-  comment: string;
-  customerName: string;
-  date: string;
-  serviceId: number;
 }
 
 export interface IStorage {
@@ -47,7 +44,7 @@ export interface IStorage {
   updateBookingStatus(id: number, status: string): Promise<Booking | undefined>;
 
   getProjects(serviceId: number): Promise<Project[]>;
-  createProject(project: Omit<Project, 'id'>): Promise<Project>;
+  createProject(project: Omit<Project, 'id' | 'createdAt'>): Promise<Project>;
 
   createUser(user: InsertUser): Promise<User>;
   getUser(id: number): Promise<User | undefined>;
@@ -74,26 +71,8 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  private servicesId: number = 1;
-  private quoteRequestsId: number = 1;
-  private bookingsId: number = 1;
-  private projectsId: number = 1;
-  private usersId: number = 1;
-  private testimonialsId: number = 1;
-  private serviceProvidersId: number = 1;
-  private reviewsId: number = 1;
   private initialized: boolean = false;
   public sessionStore: session.Store;
-
-  private services: Map<number, Service> = new Map();
-  private quoteRequests: Map<number, QuoteRequest> = new Map();
-  private bookings: Map<number, Booking> = new Map();
-  private projects: Map<number, Project> = new Map();
-  private users: Map<number, User> = new Map();
-  private testimonials: Map<number, Testimonial> = new Map();
-  private serviceProviders: Map<number, ServiceProvider> = new Map();
-  private reviews: Map<number, Review> = new Map();
-
 
   constructor() {
     this.sessionStore = new MemoryStore({
@@ -107,7 +86,19 @@ export class DatabaseStorage implements IStorage {
       return;
     }
 
-    console.log("[Storage] Initializing MemStorage");
+    console.log("[Storage] Initializing database storage");
+
+    // Only seed data in development mode
+    if (process.env.NODE_ENV !== 'production') {
+      await this.seedData();
+    }
+
+    this.initialized = true;
+    console.log(`[Storage] Initialization complete.`);
+  }
+
+  private async seedData(): Promise<void> {
+    console.log("[Storage] Seeding initial data");
 
     // Create admin user with hashed password
     console.log("[Storage] Creating admin user");
@@ -167,13 +158,11 @@ export class DatabaseStorage implements IStorage {
 
     console.log("[Storage] Seeding initial services");
     for (const service of initialServices) {
-      const id = this.servicesId++;
       const newService = {
-        id,
         ...service
       };
-      this.services.set(id, newService);
-      console.log(`[Storage] Added service: ${newService.name} with ID: ${newService.id}`);
+      await db.insert(services).values(newService).returning();
+      console.log(`[Storage] Added service: ${newService.name}`);
     }
 
     // Add sample projects
@@ -209,10 +198,8 @@ export class DatabaseStorage implements IStorage {
 
     console.log("[Storage] Seeding sample projects");
     for (const project of sampleProjects) {
-      const id = this.projectsId++;
-      const newProject = { id, ...project };
-      this.projects.set(id, newProject);
-      console.log(`[Storage] Added project: ${newProject.title} with ID: ${newProject.id}`);
+      await this.createProject({...project, createdAt: new Date()});
+      console.log(`[Storage] Added project: ${project.title}`);
     }
 
     // Add initial testimonials
@@ -235,10 +222,8 @@ export class DatabaseStorage implements IStorage {
 
     console.log("[Storage] Seeding initial testimonials");
     for (const testimonial of initialTestimonials) {
-      const id = this.testimonialsId++;
-      const newTestimonial = { id, ...testimonial };
-      this.testimonials.set(id, newTestimonial);
-      console.log(`[Storage] Added testimonial from: ${newTestimonial.authorName}`);
+      await this.createTestimonial(testimonial);
+      console.log(`[Storage] Added testimonial from: ${testimonial.authorName}`);
     }
 
     // Add initial service providers
@@ -284,11 +269,7 @@ export class DatabaseStorage implements IStorage {
       await this.createServiceProvider(provider);
       console.log(`[Storage] Added service provider: ${provider.name}`);
     }
-
-    this.initialized = true;
-    console.log(`[Storage] Initialization complete. Seeded ${this.services.size} services, ${this.projects.size} projects, ${this.testimonials.size} testimonials, and ${this.serviceProviders.size} service providers`);
   }
-
 
   async getServices(): Promise<Service[]> {
     if (!this.initialized) {
@@ -297,178 +278,184 @@ export class DatabaseStorage implements IStorage {
     }
 
     console.log("[Storage] Getting all services");
-    const services = Array.from(this.services.values());
+    const services = await db.select().from(services);
     console.log(`[Storage] Found ${services.length} services`);
     return services;
   }
 
   async getService(id: number): Promise<Service | undefined> {
-    return this.services.get(id);
+    const [service] = await db.select().from(services).where(eq(services.id, id));
+    return service;
   }
 
   async createService(service: InsertService): Promise<Service> {
-    const id = this.servicesId++;
-    const newService: Service = {
-      id,
-      ...service
-    };
-    this.services.set(id, newService);
+    const [newService] = await db.insert(services).values(service).returning();
     return newService;
   }
 
   async createQuoteRequest(request: InsertQuoteRequest): Promise<QuoteRequest> {
-    const id = this.quoteRequestsId++;
-    const newRequest: QuoteRequest = { id, ...request };
-    this.quoteRequests.set(id, newRequest);
+    const [newRequest] = await db.insert(QuoteRequest).values(request).returning();
     return newRequest;
   }
 
   async getQuoteRequests(): Promise<QuoteRequest[]> {
-    return Array.from(this.quoteRequests.values());
+    return await db.select().from(QuoteRequest);
   }
 
   async createBooking(booking: InsertBooking): Promise<Booking> {
-    const id = this.bookingsId++;
-    const newBooking: Booking = {
-      id,
-      ...booking,
-      status: "pending",
-      confirmed: false
-    };
-    this.bookings.set(id, newBooking);
+    const [newBooking] = await db.insert(Booking).values({...booking, status: "pending", confirmed: false}).returning();
     return newBooking;
   }
 
   async getBooking(id: number): Promise<Booking | undefined> {
-    return this.bookings.get(id);
+    const [booking] = await db.select().from(Booking).where(eq(Booking.id, id));
+    return booking;
   }
 
   async getBookings(): Promise<Booking[]> {
-    return Array.from(this.bookings.values());
+    return await db.select().from(Booking);
   }
 
   async getBookingsByEmail(email: string): Promise<Booking[]> {
-    return Array.from(this.bookings.values()).filter(
-      booking => booking.clientEmail === email
-    );
+    return await db.select().from(Booking).where(eq(Booking.clientEmail, email));
   }
 
   async updateBookingStatus(id: number, status: string): Promise<Booking | undefined> {
-    const booking = this.bookings.get(id);
-    if (booking) {
-      const updatedBooking = { ...booking, status };
-      this.bookings.set(id, updatedBooking);
-      return updatedBooking;
-    }
-    return undefined;
+    const [updatedBooking] = await db.update(Booking).set({status}).where(eq(Booking.id, id)).returning();
+    return updatedBooking;
   }
 
   async getProjects(serviceId: number): Promise<Project[]> {
-    return Array.from(this.projects.values()).filter(
-      project => project.serviceId === serviceId
-    );
+    try {
+      console.log(`Fetching projects for service ${serviceId}`);
+      const serviceProjects = await db
+        .select()
+        .from(projects)
+        .where(eq(projects.serviceId, serviceId))
+        .orderBy(projects.createdAt, 'desc');
+
+      console.log(`Found ${serviceProjects.length} projects for service ${serviceId}`);
+      return serviceProjects;
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      throw error;
+    }
   }
 
-  async createProject(project: Omit<Project, 'id'>): Promise<Project> {
-    const id = this.projectsId++;
-    const newProject = { id, ...project };
-    this.projects.set(id, newProject);
-    console.log(`[Storage] Created new project: ${newProject.title} with ID: ${newProject.id}`);
-    return newProject;
+  async createProject(project: Omit<Project, 'id' | 'createdAt'>): Promise<Project> {
+    try {
+      console.log('Creating project:', project);
+      const [newProject] = await db
+        .insert(projects)
+        .values({
+          ...project,
+          createdAt: new Date()
+        })
+        .returning();
+
+      console.log('Project created successfully:', newProject);
+      return newProject;
+    } catch (error) {
+      console.error('Error creating project:', error);
+      throw error;
+    }
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    const id = this.usersId++;
-    const newUser: User = {
-      id,
-      ...user,
-      createdAt: new Date()
-    };
-    this.users.set(id, newUser);
+    const [newUser] = await db.insert(User).values({...user, createdAt: new Date()}).returning();
     console.log(`[Storage] Created new user: ${newUser.username} with ID: ${newUser.id}`);
     return newUser;
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(User).where(eq(User.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      user => user.username === username
-    );
+    const [user] = await db.select().from(User).where(eq(User.username, username));
+    return user;
   }
 
   async createTestimonial(testimonial: InsertTestimonial): Promise<Testimonial> {
-    const id = this.testimonialsId++;
-    const newTestimonial: Testimonial = {
-      id,
-      ...testimonial,
-      approved: false,
-      createdAt: new Date()
-    };
-    this.testimonials.set(id, newTestimonial);
-    console.log(`[Storage] Created new testimonial from: ${newTestimonial.authorName}`);
-    return newTestimonial;
+    try {
+      console.log('Creating testimonial:', testimonial);
+      const [newTestimonial] = await db
+        .insert(testimonials)
+        .values({
+          ...testimonial,
+          approved: false,
+          createdAt: new Date()
+        })
+        .returning();
+
+      console.log('Testimonial created successfully:', newTestimonial);
+      return newTestimonial;
+    } catch (error) {
+      console.error('Error creating testimonial:', error);
+      throw error;
+    }
   }
 
   async getTestimonials(approved?: boolean): Promise<Testimonial[]> {
-    const testimonials = Array.from(this.testimonials.values());
-    if (approved !== undefined) {
-      return testimonials.filter(t => t.approved === approved);
+    try {
+      console.log(`Fetching testimonials${approved !== undefined ? ` (approved: ${approved})` : ''}`);
+      let query = db.select().from(testimonials);
+
+      if (approved !== undefined) {
+        query = query.where(eq(testimonials.approved, approved));
+      }
+
+      const results = await query;
+      console.log(`Found ${results.length} testimonials`);
+      return results;
+    } catch (error) {
+      console.error('Error fetching testimonials:', error);
+      throw error;
     }
-    return testimonials;
   }
 
   async updateTestimonialApproval(id: number, approved: boolean): Promise<Testimonial | undefined> {
-    const testimonial = this.testimonials.get(id);
-    if (testimonial) {
-      const updatedTestimonial = { ...testimonial, approved };
-      this.testimonials.set(id, updatedTestimonial);
-      console.log(`[Storage] Updated testimonial #${id} approval status to: ${approved}`);
+    try {
+      console.log(`Updating testimonial #${id} approval status to: ${approved}`);
+      const [updatedTestimonial] = await db
+        .update(testimonials)
+        .set({ approved })
+        .where(eq(testimonials.id, id))
+        .returning();
+
+      console.log('Testimonial approval updated:', updatedTestimonial);
       return updatedTestimonial;
+    } catch (error) {
+      console.error('Error updating testimonial approval:', error);
+      throw error;
     }
-    return undefined;
   }
 
   async createServiceProvider(provider: InsertServiceProvider): Promise<ServiceProvider> {
-    const id = this.serviceProvidersId++;
-    const newProvider: ServiceProvider = {
-      id,
-      rating: 5,
-      createdAt: new Date(),
-      ...provider
-    };
-    this.serviceProviders.set(id, newProvider);
+    const [newProvider] = await db.insert(ServiceProvider).values({...provider, rating: 5, createdAt: new Date()}).returning();
     console.log(`[Storage] Created new service provider: ${newProvider.name} with ID: ${newProvider.id}`);
     return newProvider;
   }
 
   async getServiceProvider(id: number): Promise<ServiceProvider | undefined> {
-    return this.serviceProviders.get(id);
+    const [provider] = await db.select().from(ServiceProvider).where(eq(ServiceProvider.id, id));
+    return provider;
   }
 
   async getServiceProviders(): Promise<ServiceProvider[]> {
-    return Array.from(this.serviceProviders.values());
+    return await db.select().from(ServiceProvider);
   }
 
   async getServiceProvidersForService(serviceId: number): Promise<ServiceProvider[]> {
-    return Array.from(this.serviceProviders.values()).filter(
-      provider => provider.servicesOffered.includes(serviceId)
+    return await db.select().from(ServiceProvider).where(
+      eq(ServiceProvider.servicesOffered, serviceId)
     );
   }
 
   async updateServiceProviderAvailability(id: number, availability: any): Promise<ServiceProvider | undefined> {
-    const provider = this.serviceProviders.get(id);
-    if (provider) {
-      const updatedProvider = {
-        ...provider,
-        availabilitySchedule: availability
-      };
-      this.serviceProviders.set(id, updatedProvider);
-      return updatedProvider;
-    }
-    return undefined;
+    const [updatedProvider] = await db.update(ServiceProvider).set({availabilitySchedule: availability}).where(eq(ServiceProvider.id, id)).returning();
+    return updatedProvider;
   }
 
   async createReview(review: InsertReview): Promise<Review> {
@@ -601,6 +588,4 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Initialize storage with database implementation
-console.log("[Storage] Creating database storage instance");
 export const storage = new DatabaseStorage();

@@ -284,15 +284,17 @@ export async function registerRoutes(app: Express) {
   app.post("/api/projects", upload.single("image"), async (req, res) => {
     try {
       console.log("[API] Creating new project");
-      const { title, description, comment, customerName, serviceId, date } = req.body;
+      const { title, description, comment, customerName, serviceId, date, imageUrl } = req.body;
 
-      if (!req.file) {
-        res.status(400).json({ message: "No image file uploaded" });
+      // Create the image URL either from uploaded file or provided URL
+      const finalImageUrl = req.file
+        ? `/uploads/${req.file.filename}`
+        : imageUrl;
+
+      if (!finalImageUrl) {
+        res.status(400).json({ message: "Image URL or file upload is required" });
         return;
       }
-
-      // Create the image URL
-      const imageUrl = `/uploads/${req.file.filename}`;
 
       // Validate service exists
       const service = await storage.getService(parseInt(serviceId));
@@ -305,7 +307,7 @@ export async function registerRoutes(app: Express) {
       const project = {
         title,
         description,
-        imageUrl,
+        imageUrl: finalImageUrl,
         comment,
         customerName,
         date,
