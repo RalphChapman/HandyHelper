@@ -312,13 +312,25 @@ export async function registerRoutes(app: Express) {
         return res.status(404).json({ message: "Service not found" });
       }
 
+      // Parse and validate the project date
+      let projectDate: Date;
+      try {
+        projectDate = new Date(req.body.projectDate);
+        if (isNaN(projectDate.getTime())) {
+          throw new Error("Invalid date");
+        }
+      } catch (error) {
+        console.error("[API] Invalid project date:", req.body.projectDate);
+        return res.status(400).json({ message: "Invalid project date format" });
+      }
+
       const project = {
         title: req.body.title,
         description: req.body.description,
         imageUrl: finalImageUrl,
         comment: req.body.comment,
         customerName: req.body.customerName,
-        projectDate: new Date(req.body.projectDate),
+        projectDate: projectDate,
         serviceId: parseInt(req.body.serviceId)
       };
 

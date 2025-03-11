@@ -12,7 +12,7 @@ export const services = pgTable("services", {
   rating: integer("rating").notNull().default(5),
 });
 
-// Add projects table
+// Update projects table with projectDate
 export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
   title: varchar("title", { length: 200 }).notNull(),
@@ -20,7 +20,7 @@ export const projects = pgTable("projects", {
   imageUrl: text("image_url").notNull(),
   comment: text("comment").notNull(),
   customerName: varchar("customer_name", { length: 100 }).notNull(),
-  date: varchar("date", { length: 50 }).notNull(),
+  projectDate: timestamp("project_date").notNull(),
   serviceId: integer("service_id").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -118,7 +118,12 @@ export const insertReviewSchema = createInsertSchema(reviews)
     rating: z.number().min(1).max(5),
     review: z.string().min(10, "Review must be at least 10 characters long"),
   });
-export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true });
+// Update insertProjectSchema
+export const insertProjectSchema = createInsertSchema(projects)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    projectDate: z.string().transform((str) => new Date(str)),
+  });
 
 export type Service = typeof services.$inferSelect;
 export type InsertService = z.infer<typeof insertServiceSchema>;

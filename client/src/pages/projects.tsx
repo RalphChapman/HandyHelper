@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useParams, Link } from "wouter";
+import { useParams } from "wouter";
 import { Service } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import { ReviewForm } from "@/components/review-form";
 import { ReviewsSection } from "@/components/reviews-section";
 import { useAuth } from "@/hooks/use-auth";
 import { useState } from 'react';
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -27,7 +27,7 @@ interface Project {
   imageUrl: string;
   comment: string;
   customerName: string;
-  projectDate: string;
+  projectDate: Date; // Changed to Date
   serviceId: number;
 }
 
@@ -69,7 +69,11 @@ export default function Projects() {
       if (!response.ok) {
         throw new Error(`Failed to fetch projects: ${response.statusText}`);
       }
-      return response.json();
+      const data = await response.json();
+      return data.map((project: any) => ({
+        ...project,
+        projectDate: project.projectDate ? new Date(project.projectDate) : null, // Parse date string
+      }));
     },
   });
 
@@ -324,7 +328,7 @@ export default function Projects() {
                       <div className="flex justify-between items-center text-sm">
                         <span className="font-medium">{project.customerName}</span>
                         <span className="text-gray-500">
-                          {format(new Date(project.projectDate), "PPP")}
+                          {project.projectDate ? format(project.projectDate, "PPP") : "N/A"} {/*Added error handling*/}
                         </span>
                       </div>
                     </div>
