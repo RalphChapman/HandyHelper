@@ -118,17 +118,24 @@ export class DatabaseStorage implements IStorage {
     console.log("[Storage] Initializing storage");
 
     try {
-      // Insert initial services
-      console.log("[Storage] Seeding initial services");
-      for (const service of this.initialServices) {
-        try {
-          console.log("[Storage] Creating service:", service.name);
-          const [newService] = await db.insert(services).values(service).returning();
-          console.log(`[Storage] Successfully created service: ${newService.name} with ID: ${newService.id}`);
-        } catch (error) {
-          console.error(`[Storage] Failed to create service ${service.name}:`, error);
-          throw error;
+      // Check if services already exist
+      const existingServices = await db.select().from(services);
+
+      if (existingServices.length === 0) {
+        // Only insert services if none exist
+        console.log("[Storage] No services found, seeding initial services");
+        for (const service of this.initialServices) {
+          try {
+            console.log("[Storage] Creating service:", service.name);
+            const [newService] = await db.insert(services).values(service).returning();
+            console.log(`[Storage] Successfully created service: ${newService.name} with ID: ${newService.id}`);
+          } catch (error) {
+            console.error(`[Storage] Failed to create service ${service.name}:`, error);
+            throw error;
+          }
         }
+      } else {
+        console.log(`[Storage] Found ${existingServices.length} existing services, skipping seeding`);
       }
 
       this.initialized = true;
