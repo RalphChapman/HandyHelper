@@ -3,6 +3,7 @@ import { LinkedinIcon, Mail, Phone, Globe, Share2, Twitter } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { SiFacebook } from "react-icons/si";
 
 export function BusinessCard() {
   const websiteUrl = "https://handyhelper.replit.app";
@@ -21,6 +22,7 @@ export function BusinessCard() {
   // Share URLs for different platforms
   const shareUrls = {
     twitter: `https://twitter.com/intent/tweet?text=${encodedShareText}`,
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(websiteUrl)}&quote=${encodedShareText}`,
     linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(websiteUrl)}&summary=${encodedShareText}`,
     email: `mailto:?subject=Professional Handyman Services&body=${encodedShareText}`
   };
@@ -88,7 +90,16 @@ export function BusinessCard() {
             </div>
 
             {/* Share buttons */}
-            <div className="flex gap-2 mt-4">
+            <div className="flex flex-wrap gap-2 mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(shareUrls.facebook, '_blank')}
+                className="flex items-center gap-2"
+              >
+                <SiFacebook className="h-4 w-4" />
+                Facebook
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
