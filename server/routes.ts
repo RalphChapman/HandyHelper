@@ -579,46 +579,31 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ message: "Email is required" });
       }
 
-      try {
-        // Generate reset token
-        const resetToken = randomBytes(32).toString('hex');
-        const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
+      // Generate reset token
+      const resetToken = randomBytes(32).toString('hex');
+      const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
 
-        console.log("[API] Attempting to set password reset token");
-        const user = await storage.setPasswordResetToken(email, resetToken, resetTokenExpiry);
+      console.log("[API] Attempting to set password reset token");
+      const user = await storage.setPasswordResetToken(email, resetToken, resetTokenExpiry);
 
-        if (!user) {
-          // Don't reveal if email exists, but log it
-          console.log("[API] No user found with email:", email);
-          return res.json({ message: "If an account exists with that email, you will receive a password reset link" });
-        }
-
-        console.log("[API] Reset token set successfully for user:", user.id);
-
-        try {
-          // Send reset email
-          console.log("[API] Attempting to send password reset email");
-          await sendPasswordResetEmail(email, resetToken);
-          console.log("[API] Password reset email sent successfully");
-        } catch (emailError) {
-          console.error("[API] Error sending password reset email:", emailError);
-          // If email fails, clear the reset token
-          await storage.updatePasswordAndClearResetToken(user.id, user.password);
-          throw emailError;
-        }
-
-        res.json({ message: "If an account exists with that email, you will receive a password reset link" });
-      } catch (error) {
-        console.error("[API] Error in forgot password flow:", error);
-        // Include stack trace in logs if available
-        if (error instanceof Error) {
-          console.error("[API] Error stack:", error.stack);
-        }
-        throw error;
+      if (!user) {
+        console.log("[API] No user found with email:", email);
+        return res.status(404).json({ message: "No account found with that email address" });
       }
+
+      console.log("[API] Reset token set successfully for user:", user.id);
+
+      // Return the token directly instead of sending email
+      res.json({ 
+        message: "Password reset token generated successfully",
+        resetToken: resetToken 
+      });
     } catch (error) {
-      console.error("[API] Fatal error in forgot password endpoint:", error);
-      res.status(500).json({ message: "An error occurred while processing your request. Please try again later." });
+      console.error("[API] Error in forgot password:", error);
+      if (error instanceof Error) {
+        console.error("[API] Error stack:", error.stack);
+      }
+      res.status(500).json({ message: "Failed to process password reset request" });
     }
   });
 

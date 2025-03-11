@@ -17,6 +17,7 @@ type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
 export function ForgotPasswordForm() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resetToken, setResetToken] = useState<string | null>(null);
 
   const form = useForm<ForgotPasswordValues>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -32,14 +33,17 @@ export function ForgotPasswordForm() {
         email: data.email,
       });
 
+      const result = await response.json();
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to process request");
+        throw new Error(result.message || "Failed to process request");
       }
 
+      setResetToken(result.resetToken);
+
       toast({
-        title: "Request Sent",
-        description: "If an account exists with that email, you will receive a password reset link.",
+        title: "Success",
+        description: "Password reset token generated successfully.",
       });
 
       form.reset();
@@ -55,26 +59,41 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input type="email" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+    <div className="space-y-6">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input type="email" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <Button type="submit" disabled={isSubmitting} className="w-full">
-          {isSubmitting ? "Sending..." : "Send Reset Link"}
-        </Button>
-      </form>
-    </Form>
+          <Button type="submit" disabled={isSubmitting} className="w-full">
+            {isSubmitting ? "Processing..." : "Get Reset Token"}
+          </Button>
+        </form>
+      </Form>
+
+      {resetToken && (
+        <div className="rounded-lg border p-4 bg-muted/50">
+          <h3 className="font-semibold mb-2">Your Password Reset Token</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Copy this token and use it in the password reset form to create a new password.
+            This token will expire in 1 hour.
+          </p>
+          <div className="p-2 bg-background rounded border break-all">
+            {resetToken}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
