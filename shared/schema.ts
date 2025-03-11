@@ -12,12 +12,12 @@ export const services = pgTable("services", {
   rating: integer("rating").notNull().default(5),
 });
 
-// Update projects table with projectDate
+// Update projects table to include multiple images
 export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
   title: varchar("title", { length: 200 }).notNull(),
   description: text("description").notNull(),
-  imageUrl: text("image_url").notNull(),
+  imageUrls: text("image_urls").array().notNull(),
   comment: text("comment").notNull(),
   customerName: varchar("customer_name", { length: 100 }).notNull(),
   projectDate: timestamp("project_date").notNull(),
@@ -123,6 +123,7 @@ export const insertProjectSchema = createInsertSchema(projects)
   .omit({ id: true, createdAt: true })
   .extend({
     projectDate: z.string().transform((str) => new Date(str)),
+    imageUrls: z.array(z.string()),
   });
 
 export type Service = typeof services.$inferSelect;

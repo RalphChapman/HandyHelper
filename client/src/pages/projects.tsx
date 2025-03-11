@@ -24,17 +24,17 @@ interface Project {
   id: number;
   title: string;
   description: string;
-  imageUrl: string;
+  imageUrls: string[];
   comment: string;
   customerName: string;
-  projectDate: Date; 
+  projectDate: Date;
   serviceId: number;
 }
 
 const projectFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
-  imageFile: z.instanceof(File, { message: "Please select an image" }),
+  imageFiles: z.instanceof(FileList).refine((files) => files.length > 0, "Please select at least one image"),
   comment: z.string().min(1, "Please share your experience"),
   customerName: z.string().min(1, "Name is required"),
   projectDate: z.date({
@@ -50,6 +50,7 @@ export default function Projects() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
   const { data: service, isLoading: serviceLoading } = useQuery<Service>({
     queryKey: ["/api/services", serviceId],
@@ -72,7 +73,7 @@ export default function Projects() {
       const data = await response.json();
       return data.map((project: any) => ({
         ...project,
-        projectDate: project.projectDate ? new Date(project.projectDate) : null, 
+        projectDate: project.projectDate ? new Date(project.projectDate) : null,
       }));
     },
   });
@@ -99,7 +100,10 @@ export default function Projects() {
       formData.append("serviceId", serviceId.toString());
       formData.append("projectDate", data.projectDate.toISOString());
 
-      formData.append("image", data.imageFile);
+      // Append all selected files
+      Array.from(data.imageFiles).forEach((file, index) => {
+        formData.append(`images`, file);
+      });
 
       const response = await fetch("/api/projects", {
         method: "POST",
@@ -117,6 +121,7 @@ export default function Projects() {
         description: "Your project has been submitted successfully!",
       });
       form.reset();
+      setPreviewUrls([]);
     } catch (error: any) {
       console.error("Project submission error:", error);
       toast({
@@ -128,6 +133,14 @@ export default function Projects() {
       setIsSubmitting(false);
     }
   }
+
+  // Handle file preview
+  const handleFileChange = (files: FileList | null) => {
+    if (files) {
+      const urls = Array.from(files).map(file => URL.createObjectURL(file));
+      setPreviewUrls(urls);
+    }
+  };
 
   if (serviceLoading || projectsLoading) {
     return (
@@ -236,25 +249,35 @@ export default function Projects() {
 
                   <FormField
                     control={form.control}
-                    name="imageFile"
+                    name="imageFiles"
                     render={({ field: { onChange, value, ...field } }) => (
                       <FormItem>
-                        <FormLabel>Project Image</FormLabel>
+                        <FormLabel>Project Images</FormLabel>
                         <FormControl>
-                          <div className="flex items-center gap-2">
+                          <div className="space-y-4">
                             <Input
                               type="file"
                               accept="image/*"
+                              multiple
                               onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  onChange(file);
-                                }
+                                onChange(e.target.files);
+                                handleFileChange(e.target.files);
                               }}
                               {...field}
                               className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
                             />
-                            <ImageIcon className="w-5 h-5 text-gray-500" />
+                            {previewUrls.length > 0 && (
+                              <div className="grid grid-cols-2 gap-2">
+                                {previewUrls.map((url, index) => (
+                                  <img
+                                    key={index}
+                                    src={url}
+                                    alt={`Preview ${index + 1}`}
+                                    className="w-full h-24 object-cover rounded-md"
+                                  />
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </FormControl>
                         <FormMessage />
@@ -312,12 +335,15 @@ export default function Projects() {
             <div className="grid md:grid-cols-2 gap-6">
               {projects?.map((project) => (
                 <div key={project.id} className="overflow-hidden rounded-lg shadow-lg">
-                  <div className="relative h-64">
-                    <img
-                      src={project.imageUrl}
-                      alt={project.title}
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="grid grid-cols-2 gap-2 p-2">
+                    {project.imageUrls.map((url, index) => (
+                      <img
+                        key={index}
+                        src={url}
+                        alt={`${project.title} - Image ${index + 1}`}
+                        className="w-full h-32 object-cover rounded-md"
+                      />
+                    ))}
                   </div>
                   <div className="p-6">
                     <h3 className="text-xl font-semibold mb-2">{project.title}</h3>
@@ -327,7 +353,7 @@ export default function Projects() {
                       <div className="flex justify-between items-center text-sm">
                         <span className="font-medium">{project.customerName}</span>
                         <span className="text-gray-500">
-                          {project.projectDate ? format(project.projectDate, "PPP") : "N/A"} 
+                          {project.projectDate ? format(project.projectDate, "PPP") : "N/A"}
                         </span>
                       </div>
                     </div>

@@ -29,7 +29,7 @@ const upload = multer({
     }
   },
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
+    fileSize: 5 * 1024 * 1024 // 5MB limit per file
   }
 });
 
@@ -284,26 +284,25 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  app.post("/api/projects", upload.single("image"), async (req, res) => {
+  app.post("/api/projects", upload.array("images", 10), async (req, res) => {
     try {
       console.log("[API] Creating new project", {
         body: req.body,
-        file: req.file ? {
-          filename: req.file.filename,
-          mimetype: req.file.mimetype,
-          size: req.file.size
-        } : 'No file uploaded'
+        files: req.files ? req.files.map(file => ({
+          filename: file.filename,
+          mimetype: file.mimetype,
+          size: file.size
+        })) : 'No files uploaded'
       });
 
-      if (!req.file && !req.body.imageUrl) {
-        console.log("[API] No image provided");
-        return res.status(400).json({ message: "Image file or URL is required" });
+      const files = req.files as Express.Multer.File[];
+      if (!files || files.length === 0) {
+        console.log("[API] No images provided");
+        return res.status(400).json({ message: "At least one image is required" });
       }
 
-      // Create the image URL from uploaded file
-      const finalImageUrl = req.file
-        ? `/uploads/${req.file.filename}`
-        : req.body.imageUrl;
+      // Create array of image URLs
+      const imageUrls = files.map(file => `/uploads/${file.filename}`);
 
       // Validate service exists
       const service = await storage.getService(parseInt(req.body.serviceId));
@@ -327,7 +326,7 @@ export async function registerRoutes(app: Express) {
       const project = {
         title: req.body.title,
         description: req.body.description,
-        imageUrl: finalImageUrl,
+        imageUrls: imageUrls,
         comment: req.body.comment,
         customerName: req.body.customerName,
         projectDate: projectDate,
