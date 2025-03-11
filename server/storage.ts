@@ -88,13 +88,22 @@ export class DatabaseStorage implements IStorage {
 
     console.log("[Storage] Initializing database storage");
 
-    // Only seed data in development mode
-    if (process.env.NODE_ENV !== 'production') {
-      await this.seedData();
-    }
+    try {
+      // Only seed data in development mode
+      if (process.env.NODE_ENV !== 'production') {
+        console.log("[Storage] Development mode detected, seeding data");
+        await this.seedData();
+        console.log("[Storage] Data seeding completed");
+      } else {
+        console.log("[Storage] Production mode detected, skipping data seeding");
+      }
 
-    this.initialized = true;
-    console.log(`[Storage] Initialization complete.`);
+      this.initialized = true;
+      console.log(`[Storage] Initialization complete.`);
+    } catch (error) {
+      console.error("[Storage] Initialization failed:", error);
+      throw error;
+    }
   }
 
   private async seedData(): Promise<void> {
@@ -132,39 +141,19 @@ export class DatabaseStorage implements IStorage {
         category: "Electrical",
         imageUrl: "https://images.unsplash.com/photo-1621905252507-b35492cc74b4",
         rating: 5
-      },
-      {
-        name: "Carpentry",
-        description: "Custom carpentry solutions including furniture repair, cabinet installation, and woodworking.",
-        category: "Carpentry",
-        imageUrl: "https://images.unsplash.com/photo-1504148455328-c376907d081c",
-        rating: 5
-      },
-      {
-        name: "Interior Projects",
-        description: "Expert interior renovation services including professional painting, drywall/sheetrock repair, and finish trim work. Our attention to detail ensures seamless repairs and beautiful finishes for your home.",
-        category: "Interior",
-        imageUrl: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f",
-        rating: 5
-      },
-      {
-        name: "Outdoor Solutions",
-        description: "Professional deck construction, fence painting/repair and patio installations. Expert craftsmanship for all your outdoor structure needs.",
-        category: "Landscaping",
-        imageUrl: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6",
-        rating: 5
-      },
+      }
     ];
 
     console.log("[Storage] Seeding initial services");
     for (const service of initialServices) {
-      const newService = {
-        ...service
-      };
-      await db.insert(services).values(newService).returning();
-      console.log(`[Storage] Added service: ${newService.name}`);
+      try {
+        console.log("[Storage] Attempting to create service:", service.name);
+        const [newService] = await db.insert(services).values(service).returning();
+        console.log(`[Storage] Successfully added service: ${newService.name} with ID: ${newService.id}`);
+      } catch (error) {
+        console.error(`[Storage] Failed to create service ${service.name}:`, error);
+      }
     }
-
     // Add sample projects
     const sampleProjects = [
       {
