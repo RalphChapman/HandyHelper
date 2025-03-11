@@ -1,14 +1,45 @@
 import { QRCodeSVG } from "qrcode.react";
-import { LinkedinIcon, Mail, Phone, Globe } from "lucide-react";
+import { LinkedinIcon, Mail, Phone, Globe, Share2, Twitter } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 export function BusinessCard() {
   const websiteUrl = "https://handyhelper.replit.app";
+  const { toast } = useToast();
   const contactInfo = {
     name: "Ralph Chapman",
     phone: "(864) 361-3730",
     email: "chapman.ralph@gmail.com",
     linkedin: "linkedin.com/in/ralph-chapman"
+  };
+
+  // Generate sharing text
+  const shareText = `Need professional handyman services? Contact ${contactInfo.name}\nPhone: ${contactInfo.phone}\nWebsite: ${websiteUrl}`;
+  const encodedShareText = encodeURIComponent(shareText);
+
+  // Share URLs for different platforms
+  const shareUrls = {
+    twitter: `https://twitter.com/intent/tweet?text=${encodedShareText}`,
+    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(websiteUrl)}&summary=${encodedShareText}`,
+    email: `mailto:?subject=Professional Handyman Services&body=${encodedShareText}`
+  };
+
+  // Copy to clipboard function
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(shareText);
+      toast({
+        title: "Copied to clipboard",
+        description: "Business card information has been copied to your clipboard.",
+      });
+    } catch (err) {
+      toast({
+        title: "Failed to copy",
+        description: "Please try again or use the share buttons.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -54,6 +85,37 @@ export function BusinessCard() {
                 <Globe className="h-4 w-4" />
                 {websiteUrl.replace(/^https?:\/\//, '')}
               </a>
+            </div>
+
+            {/* Share buttons */}
+            <div className="flex gap-2 mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(shareUrls.twitter, '_blank')}
+                className="flex items-center gap-2"
+              >
+                <Twitter className="h-4 w-4" />
+                Tweet
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(shareUrls.linkedin, '_blank')}
+                className="flex items-center gap-2"
+              >
+                <LinkedinIcon className="h-4 w-4" />
+                Share
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={copyToClipboard}
+                className="flex items-center gap-2"
+              >
+                <Share2 className="h-4 w-4" />
+                Copy
+              </Button>
             </div>
           </div>
 
