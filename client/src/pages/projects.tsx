@@ -11,10 +11,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { ImageIcon } from "lucide-react";
+import { ImageIcon, Loader2 } from "lucide-react";
 import { ReviewForm } from "@/components/review-form";
 import { ReviewsSection } from "@/components/reviews-section";
 import { useAuth } from "@/hooks/use-auth";
+import { useState } from 'react';
 
 interface Project {
   id: number;
@@ -27,7 +28,6 @@ interface Project {
   serviceId: number;
 }
 
-// Form schema for project submission
 const projectFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
@@ -43,6 +43,7 @@ export default function Projects() {
   const serviceId = parseInt(params.serviceId as string);
   const { toast } = useToast();
   const { user } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: service, isLoading: serviceLoading } = useQuery<Service>({
     queryKey: ["/api/services", serviceId],
@@ -77,8 +78,8 @@ export default function Projects() {
   });
 
   async function onSubmit(data: ProjectFormValues) {
+    setIsSubmitting(true);
     try {
-      // Create form data for file upload
       const formData = new FormData();
       formData.append("title", data.title);
       formData.append("description", data.description);
@@ -108,6 +109,8 @@ export default function Projects() {
         description: "Failed to submit project. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -233,7 +236,16 @@ export default function Projects() {
                     )}
                   />
 
-                  <Button type="submit" className="w-full">Submit Project</Button>
+                  <Button type="submit" disabled={isSubmitting} className="w-full">
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      "Submit Project"
+                    )}
+                  </Button>
                 </form>
               </Form>
             </DialogContent>
@@ -241,7 +253,6 @@ export default function Projects() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
-          {/* Projects Section */}
           <div>
             <h2 className="text-2xl font-semibold mb-6">Recent Projects</h2>
             <div className="grid md:grid-cols-2 gap-6">
@@ -270,7 +281,6 @@ export default function Projects() {
             </div>
           </div>
 
-          {/* Reviews Section */}
           <div>
             <h2 className="text-2xl font-semibold mb-6">Customer Reviews</h2>
             {user ? (
