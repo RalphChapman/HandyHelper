@@ -588,16 +588,25 @@ export async function registerRoutes(app: Express) {
 
       if (!user) {
         console.log("[API] No user found with email:", email);
-        return res.status(404).json({ message: "No account found with that email address" });
+        // Don't reveal if email exists or not
+        return res.json({ message: "If an account exists with that email, you will receive a password reset link" });
       }
 
       console.log("[API] Reset token set successfully for user:", user.id);
 
-      // Return the token directly instead of sending email
-      res.json({ 
-        message: "Password reset token generated successfully",
-        resetToken: resetToken 
-      });
+      try {
+        // Send reset email
+        console.log("[API] Attempting to send password reset email");
+        await sendPasswordResetEmail(email, resetToken);
+        console.log("[API] Password reset email sent successfully");
+      } catch (emailError) {
+        console.error("[API] Error sending password reset email:", emailError);
+        // If email fails, clear the reset token
+        await storage.updatePasswordAndClearResetToken(user.id, user.password);
+        throw emailError;
+      }
+
+      res.json({ message: "If an account exists with that email, you will receive a password reset link" });
     } catch (error) {
       console.error("[API] Error in forgot password:", error);
       if (error instanceof Error) {

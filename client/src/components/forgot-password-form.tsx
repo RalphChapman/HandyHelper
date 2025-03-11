@@ -17,7 +17,7 @@ type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
 export function ForgotPasswordForm() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [resetToken, setResetToken] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const form = useForm<ForgotPasswordValues>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -39,18 +39,17 @@ export function ForgotPasswordForm() {
         throw new Error(result.message || "Failed to process request");
       }
 
-      setResetToken(result.resetToken);
-
+      setIsSuccess(true);
       toast({
-        title: "Success",
-        description: "Password reset token generated successfully.",
+        title: "Request Sent",
+        description: "If an account exists with that email, you will receive a password reset link.",
       });
 
       form.reset();
-    } catch (error) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message || "Failed to process request",
+        description: error instanceof Error ? error.message : "Failed to process request",
         variant: "destructive",
       });
     } finally {
@@ -77,21 +76,18 @@ export function ForgotPasswordForm() {
           />
 
           <Button type="submit" disabled={isSubmitting} className="w-full">
-            {isSubmitting ? "Processing..." : "Get Reset Token"}
+            {isSubmitting ? "Processing..." : "Send Reset Link"}
           </Button>
         </form>
       </Form>
 
-      {resetToken && (
+      {isSuccess && (
         <div className="rounded-lg border p-4 bg-muted/50">
-          <h3 className="font-semibold mb-2">Your Password Reset Token</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Copy this token and use it in the password reset form to create a new password.
-            This token will expire in 1 hour.
+          <h3 className="font-semibold mb-2">Check Your Email</h3>
+          <p className="text-sm text-muted-foreground">
+            If an account exists with that email address, you will receive a password reset link shortly.
+            The link will expire in 1 hour.
           </p>
-          <div className="p-2 bg-background rounded border break-all">
-            {resetToken}
-          </div>
         </div>
       )}
     </div>
