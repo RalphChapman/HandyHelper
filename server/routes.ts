@@ -704,15 +704,19 @@ export async function registerRoutes(app: Express) {
 
       const files = req.files as Express.Multer.File[];
 
-      // Handle image URLs - combine existing and new
-      let imageUrls = existingProject.imageUrls || [];
+      // Handle image URLs - initialize with existing URLs if any
+      let imageUrls: string[] = [];
+      if (existingProject.imageUrls && Array.isArray(existingProject.imageUrls)) {
+        imageUrls = [...existingProject.imageUrls];
+      }
+
+      // Add new image URLs if files were uploaded
       if (files && files.length > 0) {
         const newImageUrls = files.map(file => `/uploads/${file.filename}`);
         imageUrls = [...imageUrls, ...newImageUrls];
       }
 
-      // Log the image URLs being sent to storage
-      console.log("[API] Image URLs to be saved:", imageUrls);
+      console.log("[API] Final image URLs to be saved:", imageUrls);
 
       const projectData = {
         title: req.body.title,
@@ -724,7 +728,7 @@ export async function registerRoutes(app: Express) {
         serviceId: parseInt(req.body.serviceId)
       };
 
-      console.log("[API] Updating project with data:", JSON.stringify(projectData, null, 2));
+      console.log("[API] Sending project data to storage:", JSON.stringify(projectData, null, 2));
 
       try {
         const updatedProject = await storage.updateProject(projectId, projectData);
@@ -732,9 +736,6 @@ export async function registerRoutes(app: Express) {
         res.json(updatedProject);
       } catch (storageError) {
         console.error("[API] Storage error updating project:", storageError);
-        if (storageError instanceof Error) {
-          console.error("[API] Storage error stack:", storageError.stack);
-        }
         throw storageError;
       }
     } catch (error) {

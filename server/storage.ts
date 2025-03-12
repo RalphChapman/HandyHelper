@@ -725,24 +725,21 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Format image URLs array for Postgres
-      const imageUrls = projectData.imageUrls || [];
+      const imageUrls = Array.isArray(projectData.imageUrls) ? projectData.imageUrls : [];
       console.log('[Storage] Formatting image URLs for database:', imageUrls);
 
-      const updateData = {
-        title: projectData.title,
-        description: projectData.description,
-        image_urls: imageUrls, // Match the column name in the database
-        comment: projectData.comment,
-        customer_name: projectData.customerName,
-        project_date: projectData.projectDate,
-        service_id: projectData.serviceId
-      };
-
-      console.log('[Storage] Formatted update data:', JSON.stringify(updateData, null, 2));
-
+      // Prepare update data with explicit column names
       const [updatedProject] = await db
         .update(projects)
-        .set(updateData)
+        .set({
+          title: projectData.title,
+          description: projectData.description,
+          image_urls: imageUrls,
+          comment: projectData.comment,
+          customer_name: projectData.customerName,
+          project_date: projectData.projectDate,
+          service_id: projectData.serviceId
+        })
         .where(eq(projects.id, id))
         .returning();
 
