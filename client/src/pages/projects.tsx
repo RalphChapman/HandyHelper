@@ -20,6 +20,27 @@ import { format } from "date-fns";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
+const ImageDisplay = ({ src, alt, className }: { src: string; alt: string; className?: string }) => {
+  const [error, setError] = useState(false);
+
+  if (error) {
+    return (
+      <div className={`flex items-center justify-center bg-muted ${className}`}>
+        <ImageIcon className="h-8 w-8 text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      onError={() => setError(true)}
+    />
+  );
+};
+
 interface Project {
   id: number;
   title: string;
@@ -128,7 +149,7 @@ export default function Projects() {
   });
 
   const deleteImageMutation = useMutation({
-    mutationFn: async ({ projectId, imageUrl }: { projectId: number, imageUrl: string }) => {
+    mutationFn: async ({ projectId, imageUrl }: { projectId: number; imageUrl: string }) => {
       const response = await fetch(`/api/projects/${projectId}/images`, {
         method: "DELETE",
         headers: {
@@ -173,13 +194,15 @@ export default function Projects() {
 
   const editForm = useForm<ProjectFormValues>({
     resolver: zodResolver(projectFormSchema),
-    defaultValues: selectedProject ? {
-      title: selectedProject.title,
-      description: selectedProject.description,
-      comment: selectedProject.comment,
-      customerName: selectedProject.customerName,
-      projectDate: new Date(selectedProject.projectDate),
-    } : undefined,
+    defaultValues: selectedProject
+      ? {
+          title: selectedProject.title,
+          description: selectedProject.description,
+          comment: selectedProject.comment,
+          customerName: selectedProject.customerName,
+          projectDate: new Date(selectedProject.projectDate),
+        }
+      : undefined,
   });
 
   async function onSubmit(data: ProjectFormValues) {
@@ -241,7 +264,7 @@ export default function Projects() {
   // Handle file preview
   const handleFileChange = (files: FileList | null, isEdit = false) => {
     if (files) {
-      const urls = Array.from(files).map(file => URL.createObjectURL(file));
+      const urls = Array.from(files).map((file) => URL.createObjectURL(file));
       setPreviewUrls(urls);
     }
   };
@@ -265,7 +288,7 @@ export default function Projects() {
     );
   }
 
-  const ProjectForm = ({ isEdit = false, onSubmit, form }: { isEdit?: boolean, onSubmit: any, form: any }) => (
+  const ProjectForm = ({ isEdit = false, onSubmit, form }: { isEdit?: boolean; onSubmit: any; form: any }) => (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
@@ -323,9 +346,7 @@ export default function Projects() {
                     mode="single"
                     selected={field.value}
                     onSelect={field.onChange}
-                    disabled={(date) =>
-                      date > new Date() || date < new Date("1900-01-01")
-                    }
+                    disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
                     initialFocus
                   />
                 </PopoverContent>
@@ -363,7 +384,7 @@ export default function Projects() {
                       <div className="grid grid-cols-2 gap-2">
                         {selectedProject.imageUrls.map((url, index) => (
                           <div key={index} className="relative group">
-                            <img
+                            <ImageDisplay
                               src={url}
                               alt={`Current ${index + 1}`}
                               className="w-full h-24 object-cover rounded-md"
@@ -400,7 +421,7 @@ export default function Projects() {
                       <p className="text-sm text-muted-foreground mb-2">New Images:</p>
                       <div className="grid grid-cols-2 gap-2">
                         {previewUrls.map((url, index) => (
-                          <img
+                          <ImageDisplay
                             key={index}
                             src={url}
                             alt={`Preview ${index + 1}`}
@@ -491,7 +512,7 @@ export default function Projects() {
                 <div key={project.id} className="overflow-hidden rounded-lg shadow-lg">
                   <div className="grid grid-cols-2 gap-2 p-2">
                     {project.imageUrls.map((url, index) => (
-                      <img
+                      <ImageDisplay
                         key={index}
                         src={url}
                         alt={`${project.title} - Image ${index + 1}`}
