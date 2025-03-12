@@ -75,7 +75,7 @@ export interface IStorage {
   getUserByResetToken(token: string): Promise<User | undefined>;
   updatePasswordAndClearResetToken(id: number, hashedPassword: string): Promise<User | undefined>;
   getProject(id: number): Promise<Project | undefined>;
-  updateProject(id: number, project: Omit<Project, 'id' | 'createdAt'>): Promise<Project>;
+  updateProject(id: number, projectData: Omit<Project, 'id' | 'createdAt'>): Promise<Project>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -728,12 +728,14 @@ export class DatabaseStorage implements IStorage {
       const updateData = {
         title: projectData.title,
         description: projectData.description,
-        imageUrls: projectData.imageUrls,
+        image_urls: projectData.imageUrls, // Match the column name in the database
         comment: projectData.comment,
-        customerName: projectData.customerName,
-        projectDate: projectData.projectDate,
-        serviceId: projectData.serviceId
+        customer_name: projectData.customerName, // Match the column name in the database
+        project_date: projectData.projectDate,
+        service_id: projectData.serviceId // Match the column name in the database
       };
+
+      console.log('[Storage] Formatted update data:', JSON.stringify(updateData, null, 2));
 
       const [updatedProject] = await db
         .update(projects)
