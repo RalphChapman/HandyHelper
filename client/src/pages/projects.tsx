@@ -55,7 +55,15 @@ interface Project {
 const projectFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
-  imageFiles: z.instanceof(FileList).optional(),
+  imageFiles: z.instanceof(FileList)
+    .refine(
+      (files) => {
+        // For new projects, require at least one image
+        // For editing, files are optional
+        return files.length > 0 || window.location.pathname.includes('edit');
+      },
+      "Please select at least one image"
+    ),
   comment: z.string().min(1, "Please share your experience"),
   customerName: z.string().min(1, "Name is required"),
   projectDate: z.date({
