@@ -718,14 +718,31 @@ export class DatabaseStorage implements IStorage {
       console.log('[Storage] Updating project:', id);
       console.log('[Storage] Update data:', JSON.stringify(projectData, null, 2));
 
+      // First check if project exists
+      const existingProject = await this.getProject(id);
+      if (!existingProject) {
+        throw new Error(`Project with ID ${id} not found`);
+      }
+
+      // Ensure data types match the schema
+      const updateData = {
+        title: projectData.title,
+        description: projectData.description,
+        imageUrls: projectData.imageUrls,
+        comment: projectData.comment,
+        customerName: projectData.customerName,
+        projectDate: projectData.projectDate,
+        serviceId: projectData.serviceId
+      };
+
       const [updatedProject] = await db
         .update(projects)
-        .set(projectData)
+        .set(updateData)
         .where(eq(projects.id, id))
         .returning();
 
       if (!updatedProject) {
-        throw new Error(`Project with ID ${id} not found`);
+        throw new Error(`Failed to update project ${id}`);
       }
 
       console.log('[Storage] Project updated successfully:', updatedProject);
