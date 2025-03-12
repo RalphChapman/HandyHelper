@@ -34,7 +34,7 @@ interface Project {
 const projectFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
-  imageFiles: z.instanceof(FileList).refine((files) => files.length > 0, "Please select at least one image").optional(),
+  imageFiles: z.instanceof(FileList).optional(),
   comment: z.string().min(1, "Please share your experience"),
   customerName: z.string().min(1, "Name is required"),
   projectDate: z.date({
@@ -91,7 +91,7 @@ export default function Projects() {
       formData.append("serviceId", serviceId.toString());
       formData.append("projectDate", data.projectDate.toISOString());
 
-      if (data.imageFiles) {
+      if (data.imageFiles && data.imageFiles.length > 0) {
         Array.from(data.imageFiles).forEach((file) => {
           formData.append("images", file);
         });
@@ -116,6 +116,7 @@ export default function Projects() {
         description: "Project updated successfully!",
       });
       setSelectedProject(null);
+      setPreviewUrls([]);
     },
     onError: (error: Error) => {
       toast({
@@ -159,9 +160,11 @@ export default function Projects() {
       formData.append("serviceId", serviceId.toString());
       formData.append("projectDate", data.projectDate.toISOString());
 
-      Array.from(data.imageFiles!).forEach((file) => {
-        formData.append("images", file);
-      });
+      if (data.imageFiles) {
+        Array.from(data.imageFiles).forEach((file) => {
+          formData.append("images", file);
+        });
+      }
 
       const response = await fetch("/api/projects", {
         method: "POST",
@@ -304,7 +307,7 @@ export default function Projects() {
           name="imageFiles"
           render={({ field: { onChange, value, ...field } }) => (
             <FormItem>
-              <FormLabel>Project Images</FormLabel>
+              <FormLabel>{isEdit ? "Add More Images" : "Project Images"}</FormLabel>
               <FormControl>
                 <div className="space-y-4">
                   <Input
@@ -312,34 +315,43 @@ export default function Projects() {
                     accept="image/*"
                     multiple
                     onChange={(e) => {
-                      onChange(e.target.files);
-                      handleFileChange(e.target.files, isEdit);
+                      const files = e.target.files;
+                      if (files && files.length > 0) {
+                        onChange(files);
+                        handleFileChange(files, isEdit);
+                      }
                     }}
                     {...field}
                     className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
                   />
                   {isEdit && selectedProject && (
-                    <div className="grid grid-cols-2 gap-2">
-                      {selectedProject.imageUrls.map((url, index) => (
-                        <img
-                          key={index}
-                          src={url}
-                          alt={`Current ${index + 1}`}
-                          className="w-full h-24 object-cover rounded-md"
-                        />
-                      ))}
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2">Current Images:</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {selectedProject.imageUrls.map((url, index) => (
+                          <img
+                            key={index}
+                            src={url}
+                            alt={`Current ${index + 1}`}
+                            className="w-full h-24 object-cover rounded-md"
+                          />
+                        ))}
+                      </div>
                     </div>
                   )}
                   {previewUrls.length > 0 && (
-                    <div className="grid grid-cols-2 gap-2">
-                      {previewUrls.map((url, index) => (
-                        <img
-                          key={index}
-                          src={url}
-                          alt={`Preview ${index + 1}`}
-                          className="w-full h-24 object-cover rounded-md"
-                        />
-                      ))}
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2">New Images:</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {previewUrls.map((url, index) => (
+                          <img
+                            key={index}
+                            src={url}
+                            alt={`Preview ${index + 1}`}
+                            className="w-full h-24 object-cover rounded-md"
+                          />
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>

@@ -711,20 +711,28 @@ export async function registerRoutes(app: Express) {
       const imageUrls = newImageUrls.length > 0 ? [...existingProject.imageUrls, ...newImageUrls] : existingProject.imageUrls;
 
       const projectData = {
-        title: req.body.title || existingProject.title,
-        description: req.body.description || existingProject.description,
+        title: req.body.title,
+        description: req.body.description,
         imageUrls,
-        comment: req.body.comment || existingProject.comment,
-        customerName: req.body.customerName || existingProject.customerName,
+        comment: req.body.comment,
+        customerName: req.body.customerName,
         projectDate,
-        serviceId: parseInt(req.body.serviceId) || existingProject.serviceId
+        serviceId: parseInt(req.body.serviceId)
       };
 
       console.log("[API] Updating project with data:", JSON.stringify(projectData, null, 2));
 
-      const updatedProject = await storage.updateProject(projectId, projectData);
-      console.log(`[API] Successfully updated project #${updatedProject.id}`);
-      res.json(updatedProject);
+      try {
+        const updatedProject = await storage.updateProject(projectId, projectData);
+        console.log(`[API] Successfully updated project #${updatedProject.id}`);
+        res.json(updatedProject);
+      } catch (storageError) {
+        console.error("[API] Storage error updating project:", storageError);
+        if (storageError instanceof Error) {
+          console.error("[API] Storage error stack:", storageError.stack);
+        }
+        throw storageError;
+      }
     } catch (error) {
       console.error("[API] Error updating project:", error);
       if (error instanceof Error) {
