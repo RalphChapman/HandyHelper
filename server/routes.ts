@@ -670,4 +670,67 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ message: "Failed to reset password" });
     }
   });
+
+  app.patch("/api/projects/:id", upload.array("images", 10), async (req, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      console.log(`[API] Updating project ${projectId} with data:`, {
+        body: req.body,
+        files: req.files ? req.files.map(file => ({
+          filename: file.filename,
+          mimetype: file.mimetype,
+          size: file.size
+        })) : 'No new files uploaded'
+      });
+
+      // Verify project exists
+      const existingProject = await storage.getProject(projectId);
+      if (!existingProject) {
+        console.log(`[API] Project not found: ${projectId}`);
+        return res.status(404).json({ message: "Project not found" });
+      }
+
+      // Parse and validate the project date
+      let projectDate: Date;
+      try {
+        projectDate = new Date(req.body.projectDate);
+        if (isNaN(projectDate.getTime())) {
+          throw new Error("Invalid date");
+        }
+      } catch (error) {
+        console.error("[API] Invalid project date:", req.body.projectDate);
+        return res.status(400).json({ message: "Invalid project date format" });
+      }
+
+      const files = req.files as Express.Multer.File[];
+
+      // If new images were uploaded, create their URLs
+      const newImageUrls = files ? files.map(file => `/uploads/${file.filename}`) : [];
+
+      // Combine existing and new image URLs if there are new uploads
+      const imageUrls = newImageUrls.length > 0 ? [...existingProject.imageUrls, ...newImageUrls] : existingProject.imageUrls;
+
+      const projectData = {
+        title: req.body.title || existingProject.title,
+        description: req.body.description || existingProject.description,
+        imageUrls,
+        comment: req.body.comment || existingProject.comment,
+        customerName: req.body.customerName || existingProject.customerName,
+        projectDate,
+        serviceId: parseInt(req.body.serviceId) || existingProject.serviceId
+      };
+
+      console.log("[API] Updating project with data:", JSON.stringify(projectData, null, 2));
+
+      const updatedProject = await storage.updateProject(projectId, projectData);
+      console.log(`[API] Successfully updated project #${updatedProject.id}`);
+      res.json(updatedProject);
+    } catch (error) {
+      console.error("[API] Error updating project:", error);
+      if (error instanceof Error) {
+        console.error("[API] Error stack:", error.stack);
+      }
+      res.status(500).json({ message: "Failed to update project", error: (error as Error).message });
+    }
+  });
 }
