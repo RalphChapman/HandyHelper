@@ -716,7 +716,7 @@ export async function registerRoutes(app: Express) {
       const projectData = {
         title: req.body.title,
         description: req.body.description,
-        imageUrls: imageUrls,
+        imageUrls,
         comment: req.body.comment,
         customerName: req.body.customerName,
         projectDate,

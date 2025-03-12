@@ -385,6 +385,7 @@ export default function Projects() {
                     }}
                     {...field}
                     className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                    key={value ? 'has-value' : 'no-value'} // Force re-render when value changes
                   />
                   {isEdit && selectedProject && selectedProject.imageUrls && selectedProject.imageUrls.length > 0 && (
                     <div>
