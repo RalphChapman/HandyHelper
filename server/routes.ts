@@ -704,19 +704,20 @@ export async function registerRoutes(app: Express) {
 
       const files = req.files as Express.Multer.File[];
 
-      // Handle image URLs
+      // Handle image URLs - combine existing and new
       let imageUrls = existingProject.imageUrls || [];
-
-      // If new images were uploaded, add their URLs to the existing array
       if (files && files.length > 0) {
         const newImageUrls = files.map(file => `/uploads/${file.filename}`);
         imageUrls = [...imageUrls, ...newImageUrls];
       }
 
+      // Log the image URLs being sent to storage
+      console.log("[API] Image URLs to be saved:", imageUrls);
+
       const projectData = {
         title: req.body.title,
         description: req.body.description,
-        imageUrls,
+        imageUrls: imageUrls,
         comment: req.body.comment,
         customerName: req.body.customerName,
         projectDate,

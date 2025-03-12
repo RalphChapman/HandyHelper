@@ -724,15 +724,18 @@ export class DatabaseStorage implements IStorage {
         throw new Error(`Project with ID ${id} not found`);
       }
 
-      // Ensure data types match the schema
+      // Format image URLs array for Postgres
+      const imageUrls = projectData.imageUrls || [];
+      console.log('[Storage] Formatting image URLs for database:', imageUrls);
+
       const updateData = {
         title: projectData.title,
         description: projectData.description,
-        image_urls: projectData.imageUrls, // Match the column name in the database
+        image_urls: imageUrls, // Match the column name in the database
         comment: projectData.comment,
-        customer_name: projectData.customerName, // Match the column name in the database
+        customer_name: projectData.customerName,
         project_date: projectData.projectDate,
-        service_id: projectData.serviceId // Match the column name in the database
+        service_id: projectData.serviceId
       };
 
       console.log('[Storage] Formatted update data:', JSON.stringify(updateData, null, 2));
