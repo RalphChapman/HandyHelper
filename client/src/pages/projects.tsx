@@ -11,7 +11,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { ImageIcon, Loader2, Calendar, Edit } from "lucide-react";
+import { ImageIcon, Loader2, Calendar, Edit, X } from "lucide-react";
 import { ReviewForm } from "@/components/review-form";
 import { ReviewsSection } from "@/components/reviews-section";
 import { useAuth } from "@/hooks/use-auth";
@@ -122,6 +122,39 @@ export default function Projects() {
       toast({
         title: "Error",
         description: error.message || "Failed to update project",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteImageMutation = useMutation({
+    mutationFn: async ({ projectId, imageUrl }: { projectId: number, imageUrl: string }) => {
+      const response = await fetch(`/api/projects/${projectId}/images`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ imageUrl }),
+      });
+
+      if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.message || "Failed to delete image");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", serviceId] });
+      toast({
+        title: "Success",
+        description: "Image deleted successfully!",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete image",
         variant: "destructive",
       });
     },
@@ -329,12 +362,35 @@ export default function Projects() {
                       <p className="text-sm text-muted-foreground mb-2">Current Images:</p>
                       <div className="grid grid-cols-2 gap-2">
                         {selectedProject.imageUrls.map((url, index) => (
-                          <img
-                            key={index}
-                            src={url}
-                            alt={`Current ${index + 1}`}
-                            className="w-full h-24 object-cover rounded-md"
-                          />
+                          <div key={index} className="relative group">
+                            <img
+                              src={url}
+                              alt={`Current ${index + 1}`}
+                              className="w-full h-24 object-cover rounded-md"
+                            />
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => {
+                                if (selectedProject.imageUrls.length <= 1) {
+                                  toast({
+                                    title: "Error",
+                                    description: "Cannot delete the last image. Projects must have at least one image.",
+                                    variant: "destructive",
+                                  });
+                                  return;
+                                }
+                                deleteImageMutation.mutate({
+                                  projectId: selectedProject.id,
+                                  imageUrl: url,
+                                });
+                              }}
+                              type="button"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
                         ))}
                       </div>
                     </div>

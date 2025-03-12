@@ -10,6 +10,7 @@ import { sendQuoteNotification, sendBookingConfirmation, sendPasswordResetEmail 
 import { setupAuth, hashPassword, comparePasswords } from "./auth";
 import { analyzeProjectDescription, estimateProjectCost } from "./utils/grok";
 import { randomBytes } from "crypto";
+import fs from "fs"; // Import fs module here
 
 // Configure multer for handling file uploads
 const upload = multer({
@@ -54,7 +55,6 @@ export async function registerRoutes(app: Express) {
   setupAuth(app);
 
   // Create uploads directory if it doesn't exist
-  const fs = await import("fs");
   if (!fs.existsSync("./uploads")) {
     fs.mkdirSync("./uploads");
   }
@@ -739,6 +739,50 @@ export async function registerRoutes(app: Express) {
         console.error("[API] Error stack:", error.stack);
       }
       res.status(500).json({ message: "Failed to update project", error: (error as Error).message });
+    }
+  });
+
+  app.delete("/api/projects/:id/images", async (req, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const { imageUrl } = req.body;
+
+      console.log(`[API] Deleting image from project ${projectId}:`, imageUrl);
+
+      // Get the project
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        console.log(`[API] Project not found: ${projectId}`);
+        return res.status(404).json({ message: "Project not found" });
+      }
+
+      // Remove the image URL from the array
+      const updatedImageUrls = project.imageUrls.filter(url => url !== imageUrl);
+
+      // Update the project with the new image URLs
+      const projectData = {
+        ...project,
+        imageUrls: updatedImageUrls,
+      };
+
+      try {
+        // Delete the actual file from the uploads directory
+        const filePath = `./uploads${imageUrl}`; // Corrected file path
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+          console.log(`[API] Deleted file: ${filePath}`);
+        }
+
+        const updatedProject = await storage.updateProject(projectId, projectData);
+        console.log(`[API] Successfully updated project #${updatedProject.id}`);
+        res.json(updatedProject);
+      } catch (storageError) {
+        console.error("[API] Error updating project:", storageError);
+        throw storageError;
+      }
+    } catch (error) {
+      console.error("[API] Error deleting image:", error);
+      res.status(500).json({ message: "Failed to delete image", error: (error as Error).message });
     }
   });
 }
