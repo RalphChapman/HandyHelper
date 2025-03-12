@@ -74,6 +74,8 @@ export interface IStorage {
   setPasswordResetToken(email: string, resetToken: string, resetTokenExpiry: Date): Promise<User | undefined>;
   getUserByResetToken(token: string): Promise<User | undefined>;
   updatePasswordAndClearResetToken(id: number, hashedPassword: string): Promise<User | undefined>;
+  getProject(id: number): Promise<Project | undefined>;
+  updateProject(id: number, project: Omit<Project, 'id' | 'createdAt'>): Promise<Project>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -692,6 +694,44 @@ export class DatabaseStorage implements IStorage {
       return updatedUser;
     } catch (error) {
       console.error("[Storage] Error updating password and clearing reset token:", error);
+      throw error;
+    }
+  }
+  async getProject(id: number): Promise<Project | undefined> {
+    try {
+      console.log('[Storage] Fetching project:', id);
+      const [project] = await db
+        .select()
+        .from(projects)
+        .where(eq(projects.id, id));
+
+      console.log('[Storage] Project fetch result:', project ? 'Found' : 'Not found');
+      return project;
+    } catch (error) {
+      console.error('[Storage] Error fetching project:', error);
+      throw error;
+    }
+  }
+
+  async updateProject(id: number, projectData: Omit<Project, 'id' | 'createdAt'>): Promise<Project> {
+    try {
+      console.log('[Storage] Updating project:', id);
+      console.log('[Storage] Update data:', JSON.stringify(projectData, null, 2));
+
+      const [updatedProject] = await db
+        .update(projects)
+        .set(projectData)
+        .where(eq(projects.id, id))
+        .returning();
+
+      if (!updatedProject) {
+        throw new Error(`Project with ID ${id} not found`);
+      }
+
+      console.log('[Storage] Project updated successfully:', updatedProject);
+      return updatedProject;
+    } catch (error) {
+      console.error('[Storage] Error updating project:', error);
       throw error;
     }
   }
