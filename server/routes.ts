@@ -707,8 +707,11 @@ export async function registerRoutes(app: Express) {
       // If new images were uploaded, create their URLs
       const newImageUrls = files ? files.map(file => `/uploads/${file.filename}`) : [];
 
-      // Combine existing and new image URLs if there are new uploads
-      const imageUrls = newImageUrls.length > 0 ? [...existingProject.imageUrls, ...newImageUrls] : existingProject.imageUrls;
+      // Combine existing and new image URLs
+      const imageUrls = existingProject.imageUrls ? [...existingProject.imageUrls] : [];
+      if (newImageUrls.length > 0) {
+        imageUrls.push(...newImageUrls);
+      }
 
       const projectData = {
         title: req.body.title,
