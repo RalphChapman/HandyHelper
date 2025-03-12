@@ -724,22 +724,23 @@ export class DatabaseStorage implements IStorage {
         throw new Error(`Project with ID ${id} not found`);
       }
 
-      // Format image URLs array for Postgres
-      const imageUrls = Array.isArray(projectData.imageUrls) ? projectData.imageUrls : [];
-      console.log('[Storage] Formatting image URLs for database:', imageUrls);
+      // Create update data with snake_case column names
+      const updateData = {
+        title: projectData.title,
+        description: projectData.description,
+        image_urls: projectData.imageUrls,
+        comment: projectData.comment,
+        customer_name: projectData.customerName,
+        project_date: new Date(projectData.projectDate),
+        service_id: projectData.serviceId
+      };
 
-      // Prepare update data with explicit column names
+      console.log('[Storage] Final update data:', JSON.stringify(updateData, null, 2));
+
+      // Update the project
       const [updatedProject] = await db
         .update(projects)
-        .set({
-          title: projectData.title,
-          description: projectData.description,
-          image_urls: imageUrls,
-          comment: projectData.comment,
-          customer_name: projectData.customerName,
-          project_date: projectData.projectDate,
-          service_id: projectData.serviceId
-        })
+        .set(updateData)
         .where(eq(projects.id, id))
         .returning();
 

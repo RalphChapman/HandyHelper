@@ -10,7 +10,7 @@ import { sendQuoteNotification, sendBookingConfirmation, sendPasswordResetEmail 
 import { setupAuth, hashPassword, comparePasswords } from "./auth";
 import { analyzeProjectDescription, estimateProjectCost } from "./utils/grok";
 import { randomBytes } from "crypto";
-import fs from "fs"; // Import fs module here
+import fs from "fs";
 
 // Configure multer for handling file uploads
 const upload = multer({
@@ -674,14 +674,9 @@ export async function registerRoutes(app: Express) {
   app.patch("/api/projects/:id", upload.array("images", 10), async (req, res) => {
     try {
       const projectId = parseInt(req.params.id);
-      console.log(`[API] Updating project ${projectId} with data:`, {
-        body: req.body,
-        files: req.files ? req.files.map(file => ({
-          filename: file.filename,
-          mimetype: file.mimetype,
-          size: file.size
-        })) : 'No new files uploaded'
-      });
+      console.log(`[API] Updating project ${projectId}`);
+      console.log('[API] Request body:', req.body);
+      console.log('[API] Files:', req.files);
 
       // Verify project exists
       const existingProject = await storage.getProject(projectId);
@@ -704,11 +699,8 @@ export async function registerRoutes(app: Express) {
 
       const files = req.files as Express.Multer.File[];
 
-      // Handle image URLs - initialize with existing URLs if any
-      let imageUrls: string[] = [];
-      if (existingProject.imageUrls && Array.isArray(existingProject.imageUrls)) {
-        imageUrls = [...existingProject.imageUrls];
-      }
+      // Handle image URLs
+      let imageUrls = existingProject.imageUrls || [];
 
       // Add new image URLs if files were uploaded
       if (files && files.length > 0) {
@@ -716,7 +708,7 @@ export async function registerRoutes(app: Express) {
         imageUrls = [...imageUrls, ...newImageUrls];
       }
 
-      console.log("[API] Final image URLs to be saved:", imageUrls);
+      console.log('[API] Image URLs to save:', imageUrls);
 
       const projectData = {
         title: req.body.title,
@@ -724,25 +716,17 @@ export async function registerRoutes(app: Express) {
         imageUrls: imageUrls,
         comment: req.body.comment,
         customerName: req.body.customerName,
-        projectDate,
+        projectDate: projectDate,
         serviceId: parseInt(req.body.serviceId)
       };
 
-      console.log("[API] Sending project data to storage:", JSON.stringify(projectData, null, 2));
+      console.log('[API] Project data for update:', JSON.stringify(projectData, null, 2));
 
-      try {
-        const updatedProject = await storage.updateProject(projectId, projectData);
-        console.log(`[API] Successfully updated project #${updatedProject.id}`);
-        res.json(updatedProject);
-      } catch (storageError) {
-        console.error("[API] Storage error updating project:", storageError);
-        throw storageError;
-      }
+      const updatedProject = await storage.updateProject(projectId, projectData);
+      console.log(`[API] Successfully updated project #${updatedProject.id}`);
+      res.json(updatedProject);
     } catch (error) {
       console.error("[API] Error updating project:", error);
-      if (error instanceof Error) {
-        console.error("[API] Error stack:", error.stack);
-      }
       res.status(500).json({ message: "Failed to update project", error: (error as Error).message });
     }
   });
@@ -772,7 +756,7 @@ export async function registerRoutes(app: Express) {
 
       try {
         // Delete the actual file from the uploads directory
-        const filePath = `./uploads${imageUrl}`; // Corrected file path
+        const filePath = `./uploads${imageUrl}`; 
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);
           console.log(`[API] Deleted file: ${filePath}`);
