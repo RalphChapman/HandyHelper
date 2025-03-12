@@ -378,7 +378,7 @@ export default function Projects() {
                     {...field}
                     className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
                   />
-                  {isEdit && selectedProject && (
+                  {isEdit && selectedProject && selectedProject.imageUrls && selectedProject.imageUrls.length > 0 && (
                     <div>
                       <p className="text-sm text-muted-foreground mb-2">Current Images:</p>
                       <div className="grid grid-cols-2 gap-2">
@@ -510,16 +510,18 @@ export default function Projects() {
             <div className="grid md:grid-cols-2 gap-6">
               {projects?.map((project) => (
                 <div key={project.id} className="overflow-hidden rounded-lg shadow-lg">
-                  <div className="grid grid-cols-2 gap-2 p-2">
-                    {project.imageUrls.map((url, index) => (
-                      <ImageDisplay
-                        key={index}
-                        src={url}
-                        alt={`${project.title} - Image ${index + 1}`}
-                        className="w-full h-32 object-cover rounded-md"
-                      />
-                    ))}
-                  </div>
+                  {project.imageUrls && project.imageUrls.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2 p-2">
+                      {project.imageUrls.map((url, index) => (
+                        <ImageDisplay
+                          key={index}
+                          src={url}
+                          alt={`${project.title} - Image ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-md"
+                        />
+                      ))}
+                    </div>
+                  )}
                   <div className="p-6">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="text-xl font-semibold">{project.title}</h3>
