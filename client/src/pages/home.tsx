@@ -28,25 +28,25 @@ export default function Home() {
       title: "Kitchen Remodel",
       description:
         "Complete kitchen renovation including cabinets and countertops",
-      serviceId: 1, // General Home Maintenance
+      serviceId: 19, // General Home Maintenance
     },
     {
       image: "https://images.unsplash.com/photo-1565183928294-7063f23ce0f8",
       title: "Bathroom Update",
       description: "Modern bathroom upgrade with custom tiling",
-      serviceId: 1, // General Home Maintenance
+      serviceId: 19, // General Home Maintenance
     },
     {
       image: "https://images.unsplash.com/photo-1513694203232-719a280e022f",
       title: "Custom Carpentry",
       description: "Built-in bookshelves and storage solutions",
-      serviceId: 4, // Carpentry
+      serviceId: 22, // Interior Projects
     },
     {
       image: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6",
       title: "Outdoor Solutions",
       description: "Custom deck and patio installations",
-      serviceId: 6, // Outdoor Solutions
+      serviceId: 23, // Outdoor Solutions
     },
   ];
 
