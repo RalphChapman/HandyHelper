@@ -29,6 +29,9 @@ app.use(compression());
 // Serve static files from the public directory
 app.use(express.static(path.join(process.cwd(), 'public')));
 
+// Serve files from the uploads directory
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
 // Apply rate limiting to API routes only
 app.use("/api", apiLimiter);
 

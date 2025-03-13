@@ -31,12 +31,18 @@ const ImageDisplay = ({ src, alt, className }: { src: string; alt: string; class
     );
   }
 
+  // Add debug logging to help diagnose the issue
+  console.log(`[ImageDisplay] Attempting to load image:`, { src, alt });
+
   return (
     <img
       src={src}
       alt={alt}
       className={className}
-      onError={() => setError(true)}
+      onError={(e) => {
+        console.error(`[ImageDisplay] Failed to load image:`, { src, error: e });
+        setError(true);
+      }}
     />
   );
 };
