@@ -44,18 +44,18 @@ export default function Dashboard() {
   const sampleInvoices = [
     {
       id: 1,
-      name: "Kitchen Renovation Invoice",
-      date: "March 13, 2025",
-      amount: "$2,500.00",
-      file: "/invoices/sample-invoice-1.pdf"
+      name: "Many Projects Invoice",
+      date: "February 28, 2025",
+      amount: "$19,050.00",
+      file: "/invoices/HambyJobs.pdf",
     },
     {
       id: 2,
       name: "Bathroom Remodel Invoice",
-      date: "March 14, 2025",
-      amount: "$3,750.00",
-      file: "/invoices/sample-invoice-2.pdf"
-    }
+      date: "December 14, 2024",
+      amount: "$11,800.00",
+      file: "/invoices/HambyFence.pdf",
+    },
   ];
 
   return (
@@ -68,7 +68,9 @@ export default function Dashboard() {
             <TabsTrigger value="bookings">My Bookings</TabsTrigger>
             <TabsTrigger value="quotes">Quote Requests</TabsTrigger>
             <TabsTrigger value="invoices">Invoices</TabsTrigger>
-            {isAdmin && <TabsTrigger value="testimonials">Testimonials</TabsTrigger>}
+            {isAdmin && (
+              <TabsTrigger value="testimonials">Testimonials</TabsTrigger>
+            )}
             <TabsTrigger value="security">Security Settings</TabsTrigger>
           </TabsList>
 
@@ -85,7 +87,11 @@ export default function Dashboard() {
                   <Card key={booking.id}>
                     <CardHeader>
                       <CardTitle>
-                        Appointment on {format(new Date(booking.appointmentDate), "PPP 'at' p")}
+                        Appointment on{" "}
+                        {format(
+                          new Date(booking.appointmentDate),
+                          "PPP 'at' p",
+                        )}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -120,7 +126,10 @@ export default function Dashboard() {
                       <div className="space-y-4">
                         <div className="space-y-2">
                           <h3 className="font-semibold">Service Details</h3>
-                          <p>Service: {quote.serviceName || `ID: ${quote.serviceId}`}</p>
+                          <p>
+                            Service:{" "}
+                            {quote.serviceName || `ID: ${quote.serviceId}`}
+                          </p>
                           <p>Description: {quote.description}</p>
                         </div>
 
@@ -135,7 +144,9 @@ export default function Dashboard() {
                         {quote.analysis && (
                           <div className="space-y-2">
                             <h3 className="font-semibold">Project Analysis</h3>
-                            <p className="text-sm text-gray-600">{quote.analysis}</p>
+                            <p className="text-sm text-gray-600">
+                              {quote.analysis}
+                            </p>
                           </div>
                         )}
                       </div>
@@ -153,13 +164,18 @@ export default function Dashboard() {
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                       <span>{invoice.name}</span>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         asChild
                         className="ml-4"
                       >
-                        <a href={invoice.file} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                        <a
+                          href={invoice.file}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2"
+                        >
                           <FileText className="h-4 w-4" />
                           View PDF
                         </a>
@@ -199,10 +215,13 @@ export default function Dashboard() {
                           <p className="text-gray-600">{testimonial.content}</p>
                           <div className="flex items-center justify-between">
                             <p className="text-sm text-gray-500">
-                              Status: {testimonial.approved ? "Approved" : "Pending"}
+                              Status:{" "}
+                              {testimonial.approved ? "Approved" : "Pending"}
                             </p>
                             <Button
-                              variant={testimonial.approved ? "outline" : "default"}
+                              variant={
+                                testimonial.approved ? "outline" : "default"
+                              }
                               onClick={() =>
                                 approveTestimonialMutation.mutate({
                                   id: testimonial.id,

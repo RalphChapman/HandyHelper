@@ -7,6 +7,7 @@ import rateLimit from "express-rate-limit";
 import { registerRoutes } from "./routes";
 import { serveStatic, setupVite, log } from "./vite";
 import { createServer } from "http";
+import path from "path";
 
 const app = express();
 
@@ -24,6 +25,9 @@ const apiLimiter = rateLimit({
 
 app.use(express.json());
 app.use(compression());
+
+// Serve static files from the public directory
+app.use(express.static(path.join(process.cwd(), 'public')));
 
 // Apply rate limiting to API routes only
 app.use("/api", apiLimiter);
