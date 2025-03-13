@@ -31,16 +31,18 @@ const ImageDisplay = ({ src, alt, className }: { src: string; alt: string; class
     );
   }
 
-  // Add debug logging to help diagnose the issue
-  console.log(`[ImageDisplay] Attempting to load image:`, { src, alt });
+  // Normalize the image URL to ensure it starts with "/"
+  const normalizedSrc = src.startsWith('/') ? src : `/${src}`;
+
+  console.log(`[ImageDisplay] Attempting to load image:`, { originalSrc: src, normalizedSrc, alt });
 
   return (
     <img
-      src={src}
+      src={normalizedSrc}
       alt={alt}
       className={className}
       onError={(e) => {
-        console.error(`[ImageDisplay] Failed to load image:`, { src, error: e });
+        console.error(`[ImageDisplay] Failed to load image:`, { src: normalizedSrc, error: e });
         setError(true);
       }}
     />
