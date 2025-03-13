@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { queryClient } from "@/lib/queryClient";
 import type { Booking, QuoteRequest, Testimonial } from "@shared/schema";
 import { UpdatePasswordForm } from "@/components/update-password-form";
+import { FileText } from "lucide-react";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -40,6 +41,23 @@ export default function Dashboard() {
     },
   });
 
+  const sampleInvoices = [
+    {
+      id: 1,
+      name: "Kitchen Renovation Invoice",
+      date: "March 13, 2025",
+      amount: "$2,500.00",
+      file: "/invoices/sample-invoice-1.pdf"
+    },
+    {
+      id: 2,
+      name: "Bathroom Remodel Invoice",
+      date: "March 14, 2025",
+      amount: "$3,750.00",
+      file: "/invoices/sample-invoice-2.pdf"
+    }
+  ];
+
   return (
     <div className="py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -49,6 +67,7 @@ export default function Dashboard() {
           <TabsList>
             <TabsTrigger value="bookings">My Bookings</TabsTrigger>
             <TabsTrigger value="quotes">Quote Requests</TabsTrigger>
+            <TabsTrigger value="invoices">Invoices</TabsTrigger>
             {isAdmin && <TabsTrigger value="testimonials">Testimonials</TabsTrigger>}
             <TabsTrigger value="security">Security Settings</TabsTrigger>
           </TabsList>
@@ -124,6 +143,37 @@ export default function Dashboard() {
                   </Card>
                 ))
               )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="invoices">
+            <div className="grid gap-6">
+              {sampleInvoices.map((invoice) => (
+                <Card key={invoice.id}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                      <span>{invoice.name}</span>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        asChild
+                        className="ml-4"
+                      >
+                        <a href={invoice.file} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          View PDF
+                        </a>
+                      </Button>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <p>Date: {invoice.date}</p>
+                      <p>Amount: {invoice.amount}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </TabsContent>
 
