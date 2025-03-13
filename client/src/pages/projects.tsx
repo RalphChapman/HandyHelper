@@ -1,5 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { useParams, Link } from "wouter";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Service } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -11,14 +12,99 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { ImageIcon, Loader2, Calendar, Edit, X } from "lucide-react";
+import { ImageIcon, Loader2, Calendar, Edit, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { ReviewForm } from "@/components/review-form";
 import { ReviewsSection } from "@/components/reviews-section";
 import { useAuth } from "@/hooks/use-auth";
-import { useState } from 'react';
 import { format } from "date-fns";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+const ImageGallery = ({ images }: { images: string[] }) => {
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+
+  const nextImage = () => {
+    if (selectedImageIndex === null) return;
+    setSelectedImageIndex((selectedImageIndex + 1) % images.length);
+  };
+
+  const previousImage = () => {
+    if (selectedImageIndex === null) return;
+    setSelectedImageIndex(selectedImageIndex === 0 ? images.length - 1 : selectedImageIndex - 1);
+  };
+
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-2">
+        {images.map((url, index) => (
+          <div 
+            key={index} 
+            className="relative cursor-pointer group"
+            onClick={() => setSelectedImageIndex(index)}
+          >
+            <ImageDisplay
+              src={url}
+              alt={`Project Image ${index + 1}`}
+              className="w-full h-32 object-cover rounded-md transition-opacity group-hover:opacity-90"
+            />
+          </div>
+        ))}
+      </div>
+
+      <Dialog open={selectedImageIndex !== null} onOpenChange={() => setSelectedImageIndex(null)}>
+        <DialogContent className="max-w-4xl p-0">
+          <div className="relative">
+            {selectedImageIndex !== null && (
+              <>
+                <div className="relative aspect-video">
+                  <ImageDisplay
+                    src={images[selectedImageIndex]}
+                    alt={`Project Image ${selectedImageIndex + 1}`}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+
+                <div className="absolute inset-y-0 left-0 flex items-center">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-full px-2 hover:bg-black/10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      previousImage();
+                    }}
+                  >
+                    <ChevronLeft className="h-8 w-8" />
+                  </Button>
+                </div>
+
+                <div className="absolute inset-y-0 right-0 flex items-center">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-full px-2 hover:bg-black/10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      nextImage();
+                    }}
+                  >
+                    <ChevronRight className="h-8 w-8" />
+                  </Button>
+                </div>
+
+                <div className="absolute bottom-4 left-0 right-0 text-center">
+                  <span className="bg-black/50 text-white px-2 py-1 rounded-md text-sm">
+                    {selectedImageIndex + 1} / {images.length}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
 
 const ImageDisplay = ({ src, alt, className }: { src: string; alt: string; className?: string }) => {
   const [error, setError] = useState(false);
@@ -285,25 +371,6 @@ export default function Projects() {
     }
   };
 
-  if (serviceLoading || projectsLoading) {
-    return (
-      <div className="py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Skeleton className="h-8 w-64 mb-8" />
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="space-y-4">
-                <Skeleton className="h-48 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-full" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   const ProjectForm = ({ isEdit = false, onSubmit, form }: { isEdit?: boolean; onSubmit: any; form: any }) => (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -499,6 +566,25 @@ export default function Projects() {
     </Form>
   );
 
+  if (serviceLoading || projectsLoading) {
+    return (
+      <div className="py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Skeleton className="h-8 w-64 mb-8" />
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="space-y-4">
+                <Skeleton className="h-48 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-full" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -528,15 +614,8 @@ export default function Projects() {
               {projects?.map((project) => (
                 <div key={project.id} className="overflow-hidden rounded-lg shadow-lg">
                   {project.imageUrls && project.imageUrls.length > 0 && (
-                    <div className="grid grid-cols-2 gap-2 p-2">
-                      {project.imageUrls.map((url, index) => (
-                        <ImageDisplay
-                          key={index}
-                          src={url}
-                          alt={`${project.title} - Image ${index + 1}`}
-                          className="w-full h-32 object-cover rounded-md"
-                        />
-                      ))}
+                    <div className="p-2">
+                      <ImageGallery images={project.imageUrls} />
                     </div>
                   )}
                   <div className="p-6">
