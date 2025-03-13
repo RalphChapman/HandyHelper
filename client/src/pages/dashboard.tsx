@@ -44,18 +44,18 @@ export default function Dashboard() {
   const sampleInvoices = [
     {
       id: 1,
-      name: "Many Projects Invoice",
-      date: "February 28, 2025",
-      amount: "$19,050.00",
-      file: "/invoices/HambyJobs.pdf",
+      name: "Kitchen Renovation Invoice",
+      date: "March 13, 2025",
+      amount: "$2,500.00",
+      file: "/invoices/sample-invoice-1.pdf"
     },
     {
       id: 2,
       name: "Bathroom Remodel Invoice",
-      date: "December 14, 2024",
-      amount: "$11,800.00",
-      file: "/invoices/HambyFence.pdf",
-    },
+      date: "March 14, 2025",
+      amount: "$3,750.00",
+      file: "/invoices/sample-invoice-2.pdf"
+    }
   ];
 
   return (
@@ -63,16 +63,45 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Dashboard</h1>
 
-        <Tabs defaultValue="bookings" className="space-y-6">
+        <Tabs defaultValue="invoices" className="space-y-6">
           <TabsList>
+            <TabsTrigger value="invoices">Invoices</TabsTrigger>
             <TabsTrigger value="bookings">My Bookings</TabsTrigger>
             <TabsTrigger value="quotes">Quote Requests</TabsTrigger>
-            <TabsTrigger value="invoices">Invoices</TabsTrigger>
-            {isAdmin && (
-              <TabsTrigger value="testimonials">Testimonials</TabsTrigger>
-            )}
+            {isAdmin && <TabsTrigger value="testimonials">Testimonials</TabsTrigger>}
             <TabsTrigger value="security">Security Settings</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="invoices">
+            <div className="grid gap-6">
+              {sampleInvoices.map((invoice) => (
+                <Card key={invoice.id}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                      <span>{invoice.name}</span>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        asChild
+                        className="ml-4"
+                      >
+                        <a href={invoice.file} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          View PDF
+                        </a>
+                      </Button>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <p>Date: {invoice.date}</p>
+                      <p>Amount: {invoice.amount}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
 
           <TabsContent value="bookings">
             <div className="grid gap-6">
@@ -154,42 +183,6 @@ export default function Dashboard() {
                   </Card>
                 ))
               )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="invoices">
-            <div className="grid gap-6">
-              {sampleInvoices.map((invoice) => (
-                <Card key={invoice.id}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <span>{invoice.name}</span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        asChild
-                        className="ml-4"
-                      >
-                        <a
-                          href={invoice.file}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2"
-                        >
-                          <FileText className="h-4 w-4" />
-                          View PDF
-                        </a>
-                      </Button>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <p>Date: {invoice.date}</p>
-                      <p>Amount: {invoice.amount}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
             </div>
           </TabsContent>
 
