@@ -39,6 +39,13 @@ const firebaseConfig: FirebaseConfig = {
   appId: requiredEnvVars.appId,
 };
 
+// Log the configuration without sensitive data
+console.log('Firebase configuration:', {
+  ...firebaseConfig,
+  apiKey: '[HIDDEN]',
+  appId: '[HIDDEN]'
+});
+
 // Initialize Firebase with error handling
 let app;
 try {
@@ -54,11 +61,14 @@ const googleProvider = new GoogleAuthProvider();
 
 export const signInWithGoogle = async () => {
   try {
+    console.log('Attempting Google sign-in...');
     const result = await signInWithPopup(auth, googleProvider);
     console.log('Google sign-in successful');
     return result.user;
   } catch (error: any) {
     console.error("Error during Google sign-in:", error);
+    console.log('Error code:', error.code);
+    console.log('Error message:', error.message);
 
     // Provide user-friendly error messages
     if (error.code === 'auth/invalid-api-key') {
@@ -69,6 +79,9 @@ export const signInWithGoogle = async () => {
       throw new Error('Sign-in was cancelled. Please try again.');
     } else if (error.code === 'auth/network-request-failed') {
       throw new Error('Network error. Please check your internet connection and try again.');
+    } else if (error.code === 'auth/unauthorized-domain') {
+      console.error('Domain not authorized. Please add this domain to Firebase Console.');
+      throw new Error('This website is not authorized to use Firebase authentication. Please contact support.');
     }
 
     throw new Error('Failed to sign in with Google. Please try again later.');
