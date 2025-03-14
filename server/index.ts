@@ -23,14 +23,14 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-app.use(express.json());
-app.use(compression());
-
 // Serve static files from the public directory
 app.use(express.static(path.join(process.cwd(), 'public')));
 
 // Serve files from the uploads directory
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+app.use(express.json());
+app.use(compression());
 
 // Apply rate limiting to API routes only
 app.use("/api", apiLimiter);
@@ -41,22 +41,14 @@ app.use((req, res, next) => {
   const requestId = Math.random().toString(36).substring(7);
 
   log(`[${requestId}] Incoming ${req.method} ${req.path}`);
-  log(`[${requestId}] Rate Limit Headers: ${JSON.stringify({
-    'x-ratelimit-limit': req.headers['x-ratelimit-limit'],
-    'x-ratelimit-remaining': req.headers['x-ratelimit-remaining'],
-    'x-ratelimit-reset': req.headers['x-ratelimit-reset']
-  })}`);
 
-  // Add small artificial delay to prevent rate limiting
-  setTimeout(() => {
-    // Log response status and timing after request completes
-    res.on('finish', () => {
-      const duration = Date.now() - start;
-      log(`[${requestId}] Completed ${req.method} ${req.path} with status ${res.statusCode} in ${duration}ms`);
-    });
+  // Log response status and timing after request completes
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    log(`[${requestId}] Completed ${req.method} ${req.path} with status ${res.statusCode} in ${duration}ms`);
+  });
 
-    next();
-  }, 100); // 100ms delay
+  next();
 });
 
 (async () => {
@@ -64,24 +56,32 @@ app.use((req, res, next) => {
     // Register API routes first
     await registerRoutes(app);
 
-    try {
-      // Try to serve static files first
-      serveStatic(app);
-      log("Running in production mode with static files");
-    } catch (error) {
-      // If static files are not available, fall back to development mode
-      log("Static files not found, falling back to development mode");
+    // In production, serve static files from the dist directory
+    if (process.env.NODE_ENV === "production") {
+      app.use(express.static(path.join(process.cwd(), 'dist', 'client')));
+
+      // Handle client-side routing for all non-API routes
+      app.get('*', (req, res, next) => {
+        if (req.path.startsWith('/api/')) {
+          log("[Server] Forwarding API request:", req.path);
+          return next();
+        }
+
+        log("[Server] Serving client app for path:", req.path);
+        res.sendFile(path.join(process.cwd(), 'dist', 'client', 'index.html'));
+      });
+
+      app.listen(5000, "0.0.0.0", () => {
+        log("Server running on port 5000 (production mode)");
+      });
+    } else {
+      // In development mode, use Vite's dev server
       const server = createServer(app);
       await setupVite(app, server);
       server.listen(5000, "0.0.0.0", () => {
         log("Server running on port 5000 (development mode)");
       });
-      return;
     }
-
-    app.listen(5000, "0.0.0.0", () => {
-      log("Server running on port 5000 (production mode)");
-    });
   } catch (error) {
     console.error("Failed to start server:", error);
     process.exit(1);

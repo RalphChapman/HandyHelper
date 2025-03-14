@@ -299,17 +299,17 @@ HandyPro Service Team
   }
 }
 
-export async function sendPasswordResetEmail(email: string, resetToken: string) {
-  console.log("[EMAIL] Initiating password reset email to:", email);
+async function sendPasswordResetEmail(email: string, resetToken: string) {
+    console.log("[EMAIL] Initiating password reset email to:", email);
 
-  try {
-    const resetLink = `https://handyhelper.replit.app/password-reset?token=${resetToken}`;
+    try {
+      const resetLink = `https://handyhelper.replit.app/reset-password?token=${resetToken}`;
 
-    const message = {
-      from: '"HandyPro Service" <chapman.ralph@gmail.com>',
-      to: email,
-      subject: "Password Reset Request",
-      text: `
+      const message = {
+        from: '"HandyPro Service" <chapman.ralph@gmail.com>',
+        to: email,
+        subject: "Password Reset Request",
+        text: `
 Hello,
 
 You recently requested to reset your password for your HandyPro Service account. Click the link below to reset it:
@@ -323,7 +323,7 @@ This password reset link is only valid for 1 hour.
 Best regards,
 HandyPro Service Team
       `,
-      html: `
+        html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #2563eb; margin-bottom: 24px;">Password Reset Request</h2>
 
@@ -348,23 +348,25 @@ HandyPro Service Team
           </div>
         </div>
       `
-    };
+      };
 
-    console.log("[EMAIL] Attempting to send password reset email");
-    const result = await transporter.sendMail(message);
-    console.log("[EMAIL] Password reset email sent successfully:", result);
-    return result;
-  } catch (error) {
-    console.error("[EMAIL] Failed to send password reset email:", error);
-    // Include full error details in logs
-    if (error instanceof Error) {
-      console.error("[EMAIL] Error stack:", error.stack);
-      console.error("[EMAIL] Error name:", error.name);
-      console.error("[EMAIL] Error message:", error.message);
-      if ('code' in error) {
-        console.error("[EMAIL] Error code:", (error as any).code);
+      console.log("[EMAIL] Attempting to send password reset email");
+      const result = await transporter.sendMail(message);
+      console.log("[EMAIL] Password reset email sent successfully:", result);
+      return result;
+    } catch (error) {
+      console.error("[EMAIL] Failed to send password reset email:", error);
+      // Include full error details in logs
+      if (error instanceof Error) {
+        console.error("[EMAIL] Error stack:", error.stack);
+        console.error("[EMAIL] Error name:", error.name);
+        console.error("[EMAIL] Error message:", error.message);
+        if ('code' in error) {
+          console.error("[EMAIL] Error code:", (error as any).code);
+        }
       }
+      throw error;
     }
-    throw error;
   }
-}
+
+  export { sendPasswordResetEmail, sendQuoteNotification, sendBookingConfirmation };
