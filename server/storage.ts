@@ -670,21 +670,30 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByResetToken(token: string): Promise<User | undefined> {
     try {
-      console.log("[Storage] Finding user by reset token");
+      console.log("[Storage] Finding user by reset token:", token);
       const [user] = await db
         .select()
         .from(users)
-        .where(eq(users.resetToken, token))
-        .where(sql`${users.resetTokenExpiry} > NOW()`); // Only return if token hasn't expired
+        .where(eq(users.resetToken, token));
 
       console.log("[Storage] User lookup result:", user ? "Found" : "Not found");
-      if (user?.resetTokenExpiry) {
-        const isExpired = new Date(user.resetTokenExpiry) < new Date();
-        if (isExpired) {
-          console.log("[Storage] Reset token has expired");
-          return undefined;
-        }
+
+      if (!user) {
+        console.log("[Storage] No user found with reset token");
+        return undefined;
       }
+
+      if (!user.resetTokenExpiry) {
+        console.log("[Storage] Reset token exists but no expiry date found");
+        return undefined;
+      }
+
+      const isExpired = new Date(user.resetTokenExpiry) < new Date();
+      if (isExpired) {
+        console.log("[Storage] Reset token has expired");
+        return undefined;
+      }
+
       return user;
     } catch (error) {
       console.error("[Storage] Error finding user by reset token:", error);

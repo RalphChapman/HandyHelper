@@ -654,16 +654,25 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ message: "Token and new password are required" });
       }
 
-      // Verify token and update password
+      // Verify token and get user
       const user = await storage.getUserByResetToken(token);
-      if (!user || !user.resetTokenExpiry || user.resetTokenExpiry < new Date()) {
+      console.log("[API] Token validation result:", user ? "Valid token" : "Invalid or expired token");
+
+      if (!user || !user.resetTokenExpiry) {
         return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+
+      // Check if token has expired
+      if (new Date(user.resetTokenExpiry) < new Date()) {
+        console.log("[API] Reset token has expired");
+        return res.status(400).json({ message: "Reset token has expired. Please request a new password reset." });
       }
 
       // Update password and clear reset token
       const hashedPassword = await hashPassword(newPassword);
       await storage.updatePasswordAndClearResetToken(user.id, hashedPassword);
 
+      console.log("[API] Password reset successful for user:", user.id);
       res.json({ message: "Password has been reset successfully" });
     } catch (error) {
       console.error("[API] Error in reset password:", error);

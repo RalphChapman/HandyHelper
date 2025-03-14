@@ -29,6 +29,7 @@ export function ForgotPasswordForm() {
   async function onSubmit(data: ForgotPasswordValues) {
     setIsSubmitting(true);
     try {
+      console.log("[ForgotPassword] Submitting reset request for email:", data.email);
       const response = await apiRequest("POST", "/api/forgot-password", {
         email: data.email,
       });
@@ -47,6 +48,7 @@ export function ForgotPasswordForm() {
 
       form.reset();
     } catch (error: unknown) {
+      console.error("[ForgotPassword] Error:", error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to process request",
