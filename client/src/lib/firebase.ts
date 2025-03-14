@@ -63,6 +63,13 @@ try {
 export const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
+// Configure Google Provider
+googleProvider.setCustomParameters({
+  prompt: 'select_account',
+  // Add the current domain as the OAuth redirect domain
+  login_hint: currentDomain
+});
+
 export const signInWithGoogle = async () => {
   try {
     console.log('Attempting Google sign-in...');
