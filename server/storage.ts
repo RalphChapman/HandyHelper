@@ -604,14 +604,21 @@ export class DatabaseStorage implements IStorage {
 
   async validateUserCredentials(username: string, password: string): Promise<User | undefined> {
     try {
+      console.log("[Storage] Validating credentials for user:", username);
       const user = await this.getUserByUsername(username);
-      if (!user) return undefined;
+      if (!user) {
+        console.log("[Storage] User not found during validation:", username);
+        return undefined;
+      }
 
       const [hashedPassword, salt] = user.password.split(".");
       const buf = (await scryptAsync(password, salt, 64)) as Buffer;
       const suppliedHash = buf.toString("hex");
 
-      if (hashedPassword === suppliedHash) {
+      const isValid = hashedPassword === suppliedHash;
+      console.log("[Storage] Credential validation result:", isValid ? "Valid" : "Invalid");
+
+      if (isValid) {
         return user;
       }
 

@@ -35,6 +35,8 @@ export async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  console.log("[Auth] Setting up authentication...");
+
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "your-secret-key",
     resave: false,
@@ -42,9 +44,16 @@ export function setupAuth(app: Express) {
     store: storage.sessionStore,
     cookie: {
       secure: process.env.NODE_ENV === "production",
-      maxAge: 1000 * 60 * 60 * 24 // 24 hours
+      maxAge: 1000 * 60 * 60 * 24, // 24 hours
+      httpOnly: true,
+      sameSite: 'lax'
     }
   };
+
+  console.log("[Auth] Session settings configured:", {
+    secure: sessionSettings.cookie?.secure,
+    maxAge: sessionSettings.cookie?.maxAge
+  });
 
   app.set("trust proxy", 1);
   app.use(session(sessionSettings));
@@ -67,7 +76,6 @@ export function setupAuth(app: Express) {
           return done(null, false, { message: "Invalid username or password" });
         }
 
-        // Remove password from user object before serializing
         const { password: _, ...userWithoutPassword } = user;
         console.log("[Auth] Login successful for user:", username);
         return done(null, userWithoutPassword);
@@ -91,13 +99,37 @@ export function setupAuth(app: Express) {
         console.log("[Auth] User not found during deserialization:", id);
         return done(null, false);
       }
-      // Remove password from user object
       const { password: _, ...userWithoutPassword } = user;
+      console.log("[Auth] User deserialized successfully:", id);
       done(null, userWithoutPassword);
     } catch (error) {
       console.error("[Auth] Deserialization error:", error);
       done(error);
     }
+  });
+
+  app.post("/api/login", (req, res, next) => {
+    console.log("[Auth] Login request received:", req.body.username);
+
+    passport.authenticate("local", (err: Error | null, user: Express.User | false, info: any) => {
+      if (err) {
+        console.error("[Auth] Authentication error:", err);
+        return res.status(500).json({ message: "Authentication error" });
+      }
+      if (!user) {
+        console.log("[Auth] Authentication failed:", info?.message);
+        return res.status(401).json({ message: info?.message || "Invalid username or password" });
+      }
+
+      req.login(user, (err) => {
+        if (err) {
+          console.error("[Auth] Login error:", err);
+          return res.status(500).json({ message: "Login failed" });
+        }
+        console.log("[Auth] Login successful:", user.id);
+        return res.json(user);
+      });
+    })(req, res, next);
   });
 
   app.post("/api/register", async (req, res) => {
@@ -128,10 +160,8 @@ export function setupAuth(app: Express) {
 
       console.log("[Auth] User created successfully:", user.id);
 
-      // Remove password before sending response
       const { password: _, ...userWithoutPassword } = user;
 
-      // Log the user in after registration
       req.login(userWithoutPassword, (err) => {
         if (err) {
           console.error("[Auth] Login after registration failed:", err);
@@ -146,27 +176,6 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err: Error | null, user: Express.User | false, info: any) => {
-      if (err) {
-        console.error("[Auth] Authentication error:", err);
-        return res.status(500).json({ message: "Authentication error" });
-      }
-      if (!user) {
-        console.log("[Auth] Authentication failed:", info?.message);
-        return res.status(401).json({ message: info?.message || "Invalid username or password" });
-      }
-      req.login(user, (err) => {
-        if (err) {
-          console.error("[Auth] Login error:", err);
-          return res.status(500).json({ message: "Login failed" });
-        }
-        console.log("[Auth] Login successful:", user.id);
-        return res.json(user);
-      });
-    })(req, res, next);
-  });
-
   app.post("/api/logout", (req, res) => {
     const userId = req.user?.id;
     console.log("[Auth] Logout request for user:", userId);
@@ -177,6 +186,12 @@ export function setupAuth(app: Express) {
   });
 
   app.get("/api/user", (req, res) => {
+    console.log("[Auth] User session check:", {
+      isAuthenticated: req.isAuthenticated(),
+      sessionID: req.sessionID,
+      user: req.user?.id
+    });
+
     if (!req.isAuthenticated()) {
       console.log("[Auth] Unauthenticated user session");
       return res.status(401).json({ message: "Not authenticated" });
@@ -184,4 +199,6 @@ export function setupAuth(app: Express) {
     console.log("[Auth] User session verified:", req.user?.id);
     res.json(req.user);
   });
+
+  console.log("[Auth] Authentication setup complete");
 }
