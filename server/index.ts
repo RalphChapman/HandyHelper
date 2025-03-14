@@ -1,6 +1,4 @@
-// Force production mode for Replit environment
-process.env.NODE_ENV = "production";
-
+// Remove forced production mode to allow proper environment detection
 import express from "express";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
@@ -14,7 +12,7 @@ const app = express();
 // Trust proxies in the Replit environment
 app.set('trust proxy', 1);
 
-// Add permissive CSP headers for development
+// Add permissive CSP headers
 app.use((req, res, next) => {
   res.setHeader(
     'Content-Security-Policy',
@@ -58,40 +56,13 @@ app.use((req, res, next) => {
     // Register API routes first
     await registerRoutes(app);
 
-    const distPath = path.join(process.cwd(), 'dist', 'public');
     const server = createServer(app);
 
-    if (process.env.NODE_ENV === "production") {
-      log(`[Server] Setting up static file serving from ${distPath}`);
-
-      // Serve static files
-      app.use(express.static(distPath));
-
-      // Handle client-side routing for all non-API routes
-      app.get('*', (req, res, next) => {
-        if (req.path.startsWith('/api/')) {
-          log("[Server] Forwarding API request:", req.path);
-          return next();
-        }
-
-        log("[Server] Serving client app for path:", req.path);
-        const indexPath = path.join(distPath, 'index.html');
-
-        res.sendFile(indexPath, (err) => {
-          if (err) {
-            log("[Server] Error serving index.html:", err);
-            next(err);
-          }
-        });
-      });
-    } else {
-      // In development mode, use Vite's dev server
-      log("[Server] Setting up Vite development server");
-      await setupVite(app, server);
-    }
+    // Let Vite handle all routing in development
+    await setupVite(app, server);
 
     server.listen(5000, "0.0.0.0", () => {
-      log(`[Server] Server running on port 5000 (${process.env.NODE_ENV} mode)`);
+      log(`[Server] Server running on port 5000 (${process.env.NODE_ENV || 'development'} mode)`);
     });
   } catch (error) {
     console.error("Failed to start server:", error);
