@@ -7,10 +7,8 @@ import { promisify } from "util";
 import { storage } from "./storage";
 import { type User } from "@shared/schema";
 
-// Extend Express.User to include our User type
 declare global {
   namespace Express {
-    // Use interface merging instead of extension to avoid recursive reference
     interface User {
       id: number;
       username: string;
@@ -142,7 +140,7 @@ export function setupAuth(app: Express) {
         console.log("[Auth] Registration and login successful:", user.id);
         return res.status(201).json(userWithoutPassword);
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("[Auth] Registration error:", error);
       res.status(500).json({ message: error.message || "Registration failed" });
     }
