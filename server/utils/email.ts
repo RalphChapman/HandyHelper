@@ -16,31 +16,12 @@ const createTransporter = () => {
       },
       tls: {
         rejectUnauthorized: false
-      },
-      debug: true, // Enable debug logs
-      logger: true // Enable built-in logger
+      }
     });
-
-    // Non-blocking transporter verify
-    transporter.verify()
-      .then(() => {
-        console.log("[EMAIL] Server is ready to send messages");
-      })
-      .catch((error) => {
-        console.error("[EMAIL] SMTP Connection Error:", error);
-        console.error("[EMAIL] Error details:", {
-          code: error.code,
-          command: error.command,
-          response: error.response
-        });
-      });
 
     return transporter;
   } catch (error) {
     console.error("[EMAIL] Failed to create transporter:", error);
-    if (error instanceof Error) {
-      console.error("[EMAIL] Error stack:", error.stack);
-    }
     throw error;
   }
 };
@@ -300,16 +281,19 @@ HandyPro Service Team
 }
 
 async function sendPasswordResetEmail(email: string, resetToken: string) {
-    console.log("[EMAIL] Initiating password reset email to:", email);
+  console.log("[EMAIL] Initiating password reset email to:", email);
 
-    try {
-      const resetLink = `https://handyhelper.replit.app/reset-password?token=${resetToken}`;
+  try {
+    // Ensure the token is properly encoded for URLs
+    const encodedToken = encodeURIComponent(resetToken);
+    const resetLink = `${process.env.VITE_APP_URL || 'https://handyhelper.replit.app'}/reset-password?token=${encodedToken}`;
+    console.log("[EMAIL] Generated reset link:", resetLink);
 
-      const message = {
-        from: '"HandyPro Service" <chapman.ralph@gmail.com>',
-        to: email,
-        subject: "Password Reset Request",
-        text: `
+    const message = {
+      from: '"HandyPro Service" <chapman.ralph@gmail.com>',
+      to: email,
+      subject: "Password Reset Request",
+      text: `
 Hello,
 
 You recently requested to reset your password for your HandyPro Service account. Click the link below to reset it:
@@ -323,7 +307,7 @@ This password reset link is only valid for 1 hour.
 Best regards,
 HandyPro Service Team
       `,
-        html: `
+      html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #2563eb; margin-bottom: 24px;">Password Reset Request</h2>
 
@@ -338,6 +322,11 @@ HandyPro Service Team
             </a>
           </div>
 
+          <p style="margin-bottom: 16px; color: #64748b;">If the button doesn't work, copy and paste this link into your browser:</p>
+          <p style="margin-bottom: 16px; word-break: break-all; color: #2563eb;">
+            ${resetLink}
+          </p>
+
           <p style="margin-bottom: 16px; color: #64748b;">If you did not request a password reset, please ignore this email or contact us if you have concerns.</p>
 
           <p style="margin-bottom: 16px; color: #64748b;">This password reset link is only valid for 1 hour.</p>
@@ -348,25 +337,16 @@ HandyPro Service Team
           </div>
         </div>
       `
-      };
+    };
 
-      console.log("[EMAIL] Attempting to send password reset email");
-      const result = await transporter.sendMail(message);
-      console.log("[EMAIL] Password reset email sent successfully:", result);
-      return result;
-    } catch (error) {
-      console.error("[EMAIL] Failed to send password reset email:", error);
-      // Include full error details in logs
-      if (error instanceof Error) {
-        console.error("[EMAIL] Error stack:", error.stack);
-        console.error("[EMAIL] Error name:", error.name);
-        console.error("[EMAIL] Error message:", error.message);
-        if ('code' in error) {
-          console.error("[EMAIL] Error code:", (error as any).code);
-        }
-      }
-      throw error;
-    }
+    console.log("[EMAIL] Attempting to send password reset email");
+    const result = await transporter.sendMail(message);
+    console.log("[EMAIL] Password reset email sent successfully");
+    return result;
+  } catch (error) {
+    console.error("[EMAIL] Failed to send password reset email:", error);
+    throw error;
   }
+}
 
-  export { sendPasswordResetEmail, sendQuoteNotification, sendBookingConfirmation };
+export { sendPasswordResetEmail, sendQuoteNotification, sendBookingConfirmation };

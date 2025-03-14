@@ -1,28 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResetPasswordForm } from "@/components/reset-password-form";
-import { useLocation } from "wouter";
 
 export default function ResetPasswordPage() {
-  const [location] = useLocation();
-  console.log("[ResetPassword] Current location:", location);
+  // Extract token from URL using URLSearchParams
+  const searchParams = new URLSearchParams(window.location.search);
+  const token = searchParams.get('token');
 
-  // Parse token from URL
-  let token = '';
-  try {
-    if (location.includes('?')) {
-      const searchParams = new URLSearchParams(location.split('?')[1]);
-      token = searchParams.get('token') || '';
-      console.log("[ResetPassword] Token from URL:", token.substring(0, 8) + '...');
-    }
-  } catch (error) {
-    console.error("[ResetPassword] Error parsing URL parameters:", error);
-  }
+  console.log("[ResetPassword] Token present:", !!token);
 
-  // Simple validation that token exists and is not empty
-  const isValidToken = Boolean(token);
-  console.log("[ResetPassword] Token validation:", isValidToken);
-
-  if (!isValidToken) {
+  if (!token) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card className="max-w-md mx-auto">

@@ -28,8 +28,7 @@ export default function App() {
             <Route path="/book" component={Book} />
             <Route path="/dashboard" component={Dashboard} />
             <Route path="/auth" component={Auth} />
-            {/* Handle both /reset-password and /reset-password?token=xyz */}
-            <Route path="/reset-password/:rest*" component={ResetPassword} />
+            <Route path="/reset-password" component={ResetPassword} />
             <Route component={NotFound} />
           </Switch>
         </main>
