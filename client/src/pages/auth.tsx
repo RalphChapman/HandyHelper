@@ -12,11 +12,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2, Wrench, Shield, Clock } from "lucide-react";
 import { ForgotPasswordForm } from "@/components/forgot-password-form";
+import { SiGoogle } from 'react-icons/si';
+import { signInWithGoogle } from "@/lib/firebase";
 
 const authSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  email: z.string().email("Invalid email address"), // Make email required
+  email: z.string().email("Invalid email address"),
 });
 
 type AuthFormValues = z.infer<typeof authSchema>;
@@ -70,6 +72,20 @@ export default function AuthPage() {
     }
   }
 
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+      setLocation("/");
+    } catch (error) {
+      console.error("Google sign-in error:", error);
+      toast({
+        variant: "destructive",
+        title: "Authentication Error",
+        description: "Failed to sign in with Google. Please try again.",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-12">
@@ -90,129 +106,175 @@ export default function AuthPage() {
                   </TabsList>
 
                   <TabsContent value="login">
-                    <Form {...loginForm}>
-                      <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
-                        <FormField
-                          control={loginForm.control}
-                          name="username"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Username</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                    <div className="space-y-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full flex items-center justify-center gap-2"
+                        onClick={handleGoogleSignIn}
+                      >
+                        <SiGoogle className="h-4 w-4" />
+                        Sign in with Google
+                      </Button>
 
-                        <FormField
-                          control={loginForm.control}
-                          name="password"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Password</FormLabel>
-                              <FormControl>
-                                <Input type="password" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <div className="flex items-center justify-between">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="link" className="px-0">Forgot Password?</Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Reset Your Password</DialogTitle>
-                              </DialogHeader>
-                              <ForgotPasswordForm />
-                            </DialogContent>
-                          </Dialog>
-
-                          <Button
-                            type="submit"
-                            className="w-32"
-                            disabled={loginMutation.isPending}
-                          >
-                            {loginMutation.isPending ? (
-                              <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Logging in...
-                              </>
-                            ) : (
-                              'Login'
-                            )}
-                          </Button>
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                          <span className="w-full border-t" />
                         </div>
-                      </form>
-                    </Form>
+                        <div className="relative flex justify-center text-xs uppercase">
+                          <span className="bg-background px-2 text-muted-foreground">
+                            Or continue with
+                          </span>
+                        </div>
+                      </div>
+
+                      <Form {...loginForm}>
+                        <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
+                          <FormField
+                            control={loginForm.control}
+                            name="username"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Username</FormLabel>
+                                <FormControl>
+                                  <Input {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={loginForm.control}
+                            name="password"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Password</FormLabel>
+                                <FormControl>
+                                  <Input type="password" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <div className="flex items-center justify-between">
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="link" className="px-0">Forgot Password?</Button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>Reset Your Password</DialogTitle>
+                                </DialogHeader>
+                                <ForgotPasswordForm />
+                              </DialogContent>
+                            </Dialog>
+
+                            <Button
+                              type="submit"
+                              className="w-32"
+                              disabled={loginMutation.isPending}
+                            >
+                              {loginMutation.isPending ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Logging in...
+                                </>
+                              ) : (
+                                'Login'
+                              )}
+                            </Button>
+                          </div>
+                        </form>
+                      </Form>
+                    </div>
                   </TabsContent>
 
                   <TabsContent value="register">
-                    <Form {...registerForm}>
-                      <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-4">
-                        <FormField
-                          control={registerForm.control}
-                          name="username"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Username</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                    <div className="space-y-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full flex items-center justify-center gap-2"
+                        onClick={handleGoogleSignIn}
+                      >
+                        <SiGoogle className="h-4 w-4" />
+                        Sign up with Google
+                      </Button>
 
-                        <FormField
-                          control={registerForm.control}
-                          name="email"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Email</FormLabel>
-                              <FormControl>
-                                <Input type="email" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                          <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                          <span className="bg-background px-2 text-muted-foreground">
+                            Or continue with
+                          </span>
+                        </div>
+                      </div>
 
-                        <FormField
-                          control={registerForm.control}
-                          name="password"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Password</FormLabel>
-                              <FormControl>
-                                <Input type="password" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                      <Form {...registerForm}>
+                        <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-4">
+                          <FormField
+                            control={registerForm.control}
+                            name="username"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Username</FormLabel>
+                                <FormControl>
+                                  <Input {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
 
-                        <Button
-                          type="submit"
-                          className="w-full"
-                          disabled={registerMutation.isPending}
-                        >
-                          {registerMutation.isPending ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Creating account...
-                            </>
-                          ) : (
-                            'Register'
-                          )}
-                        </Button>
-                      </form>
-                    </Form>
+                          <FormField
+                            control={registerForm.control}
+                            name="email"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Email</FormLabel>
+                                <FormControl>
+                                  <Input type="email" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={registerForm.control}
+                            name="password"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Password</FormLabel>
+                                <FormControl>
+                                  <Input type="password" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <Button
+                            type="submit"
+                            className="w-full"
+                            disabled={registerMutation.isPending}
+                          >
+                            {registerMutation.isPending ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Creating account...
+                              </>
+                            ) : (
+                              'Register'
+                            )}
+                          </Button>
+                        </form>
+                      </Form>
+                    </div>
                   </TabsContent>
                 </Tabs>
               </CardContent>
