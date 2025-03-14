@@ -14,6 +14,15 @@ const app = express();
 // Trust proxies in the Replit environment
 app.set('trust proxy', 1);
 
+// Add permissive CSP headers for development
+app.use((req, res, next) => {
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
+  );
+  next();
+});
+
 // Create a limiter for API requests only
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute

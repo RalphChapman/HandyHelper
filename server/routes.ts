@@ -62,172 +62,155 @@ export async function registerRoutes(app: Express) {
   // Serve uploaded files
   app.use("/uploads", express.static("uploads"));
 
-  // Add the new password reset form route before the existing routes
-  app.get("/api/reset-password/form", async (req, res) => {
+  // Password reset form route
+  app.get("/reset-password", async (req, res) => {
     try {
       const token = req.query.token as string;
 
       if (!token) {
-        return res.status(400).send(`
+        return res.send(`
           <html>
-            <head><title>Invalid Reset Link</title></head>
+            <head>
+              <title>Invalid Reset Link</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <style>
+                body { font-family: system-ui; max-width: 600px; margin: 40px auto; padding: 20px; }
+                .error { color: #dc2626; }
+                .btn { display: inline-block; padding: 10px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 4px; }
+              </style>
+            </head>
             <body>
-              <h1>Invalid Reset Link</h1>
-              <p>This password reset link is invalid or has expired. Please request a new one.</p>
-              <a href="/auth">Return to Login</a>
+              <h1 class="error">Invalid Reset Link</h1>
+              <p>This password reset link is invalid. Please request a new password reset.</p>
+              <a href="/auth" class="btn">Return to Login</a>
             </body>
           </html>
         `);
       }
 
-      // Verify token validity
+      // Verify token
       const user = await storage.getUserByResetToken(token);
       if (!user || !user.resetTokenExpiry || new Date(user.resetTokenExpiry) < new Date()) {
-        return res.status(400).send(`
+        return res.send(`
           <html>
-            <head><title>Expired Reset Link</title></head>
+            <head>
+              <title>Expired Reset Link</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <style>
+                body { font-family: system-ui; max-width: 600px; margin: 40px auto; padding: 20px; }
+                .error { color: #dc2626; }
+                .btn { display: inline-block; padding: 10px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 4px; }
+              </style>
+            </head>
             <body>
-              <h1>Expired Reset Link</h1>
-              <p>This password reset link has expired. Please request a new one.</p>
-              <a href="/auth">Return to Login</a>
+              <h1 class="error">Expired Reset Link</h1>
+              <p>This password reset link has expired. Please request a new password reset.</p>
+              <a href="/auth" class="btn">Return to Login</a>
             </body>
           </html>
         `);
       }
 
-      // Serve the password reset form
+      // Show reset form
       res.send(`
-        <!DOCTYPE html>
         <html>
           <head>
-            <title>Reset Your Password</title>
+            <title>Reset Password</title>
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <style>
-              body {
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-                line-height: 1.6;
-                max-width: 500px;
-                margin: 0 auto;
-                padding: 20px;
-                background: #f5f5f5;
-              }
-              .container {
-                background: white;
-                padding: 20px;
-                border-radius: 8px;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-              }
-              h1 {
-                color: #2563eb;
-                margin-bottom: 24px;
-              }
-              .form-group {
-                margin-bottom: 16px;
-              }
-              label {
-                display: block;
-                margin-bottom: 8px;
-                font-weight: 500;
-              }
-              input {
-                width: 100%;
-                padding: 8px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                font-size: 16px;
-              }
-              button {
-                background: #2563eb;
-                color: white;
-                border: none;
-                padding: 12px 24px;
-                border-radius: 4px;
-                font-size: 16px;
-                cursor: pointer;
-                width: 100%;
-              }
-              button:hover {
-                background: #1d4ed8;
-              }
-              .error {
-                color: #dc2626;
-                margin-top: 8px;
-                font-size: 14px;
-              }
+              body { font-family: system-ui; max-width: 600px; margin: 40px auto; padding: 20px; }
+              .form-group { margin-bottom: 20px; }
+              label { display: block; margin-bottom: 8px; }
+              input[type="password"] { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+              button { width: 100%; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; }
+              button:hover { background: #1d4ed8; }
+              .error { color: #dc2626; }
             </style>
           </head>
           <body>
-            <div class="container">
-              <h1>Reset Your Password</h1>
-              <form action="/api/reset-password" method="POST">
-                <input type="hidden" name="token" value="${token}">
-                <div class="form-group">
-                  <label for="newPassword">New Password</label>
-                  <input 
-                    type="password" 
-                    id="newPassword" 
-                    name="newPassword" 
-                    required 
-                    minlength="8"
-                    pattern="(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9]).{8,}"
-                    title="Password must be at least 8 characters long and include uppercase, lowercase, and numbers"
-                  >
-                </div>
-                <div class="form-group">
-                  <label for="confirmPassword">Confirm Password</label>
-                  <input 
-                    type="password" 
-                    id="confirmPassword" 
-                    name="confirmPassword" 
-                    required
-                  >
-                </div>
-                <button type="submit">Reset Password</button>
-              </form>
-              <script>
-                document.querySelector('form').addEventListener('submit', function(e) {
-                  const password = document.getElementById('newPassword').value;
-                  const confirm = document.getElementById('confirmPassword').value;
+            <h1>Reset Your Password</h1>
+            <form method="POST" action="/reset-password" onsubmit="return validateForm()">
+              <input type="hidden" name="token" value="${token}">
+              <div class="form-group">
+                <label for="password">New Password</label>
+                <input type="password" id="password" name="password" required minlength="8">
+              </div>
+              <div class="form-group">
+                <label for="confirm">Confirm Password</label>
+                <input type="password" id="confirm" name="confirm" required minlength="8">
+              </div>
+              <div id="error" class="error" style="display: none; margin-bottom: 20px;"></div>
+              <button type="submit">Reset Password</button>
+            </form>
+            <script>
+              function validateForm() {
+                const password = document.getElementById('password').value;
+                const confirm = document.getElementById('confirm').value;
+                const error = document.getElementById('error');
 
-                  if (password !== confirm) {
-                    e.preventDefault();
-                    alert('Passwords do not match');
-                  }
-                });
-              </script>
-            </div>
+                if (password !== confirm) {
+                  error.textContent = 'Passwords do not match';
+                  error.style.display = 'block';
+                  return false;
+                }
+
+                if (password.length < 8) {
+                  error.textContent = 'Password must be at least 8 characters long';
+                  error.style.display = 'block';
+                  return false;
+                }
+
+                return true;
+              }
+            </script>
           </body>
         </html>
       `);
     } catch (error) {
-      console.error("[API] Error serving reset password form:", error);
-      res.status(500).send(`
+      console.error('[Reset Password] Error:', error);
+      res.send(`
         <html>
-          <head><title>Error</title></head>
+          <head>
+            <title>Error</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+              body { font-family: system-ui; max-width: 600px; margin: 40px auto; padding: 20px; }
+              .error { color: #dc2626; }
+              .btn { display: inline-block; padding: 10px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 4px; }
+            </style>
+          </head>
           <body>
-            <h1>Error</h1>
+            <h1 class="error">Error</h1>
             <p>An error occurred while processing your request. Please try again later.</p>
-            <a href="/auth">Return to Login</a>
+            <a href="/auth" class="btn">Return to Login</a>
           </body>
         </html>
       `);
     }
   });
 
-  // Update the existing POST route to handle form submission and redirect
-  app.post("/api/reset-password", express.urlencoded({ extended: true }), async (req, res) => {
+  // Process password reset
+  app.post("/reset-password", express.urlencoded({ extended: true }), async (req, res) => {
     try {
-      const { token, newPassword } = req.body;
-      console.log("[API] Processing password reset with token");
+      const { token, password } = req.body;
+      console.log("[Reset Password] Processing reset request");
 
-      if (!token || !newPassword) {
+      if (!token || !password) {
         return res.status(400).send(`
           <html>
-            <head><title>Error</title></head>
+            <head>
+              <title>Error</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <style>
+                body { font-family: system-ui; max-width: 600px; margin: 40px auto; padding: 20px; }
+                .error { color: #dc2626; }
+                .btn { display: inline-block; padding: 10px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 4px; }
+              </style>
+            </head>
             <body>
-              <h1>Error</h1>
-              <p>Please provide both a token and a new password.</p>
-              <a href="/auth">Return to Login</a>
+              <h1 class="error">Invalid Request</h1>
+              <p>Missing required information. Please try again.</p>
+              <a href="/auth" class="btn">Return to Login</a>
             </body>
           </html>
         `);
@@ -235,34 +218,96 @@ export async function registerRoutes(app: Express) {
 
       // Verify token and get user
       const user = await storage.getUserByResetToken(token);
-      console.log("[API] Token validation result:", user ? "Valid token" : "Invalid or expired token");
-
-      if (!user || !user.resetTokenExpiry) {
+      if (!user || !user.resetTokenExpiry || new Date(user.resetTokenExpiry) < new Date()) {
         return res.status(400).send(`
           <html>
-            <head><title>Invalid Reset Link</title></head>
+            <head>
+              <title>Invalid Reset Link</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <style>
+                body { font-family: system-ui; max-width: 600px; margin: 40px auto; padding: 20px; }
+                .error { color: #dc2626; }
+                .btn { display: inline-block; padding: 10px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 4px; }
+              </style>
+            </head>
             <body>
-              <h1>Invalid Reset Link</h1>
+              <h1 class="error">Invalid or Expired Link</h1>
               <p>This password reset link is invalid or has expired. Please request a new one.</p>
-              <a href="/auth">Return to Login</a>
+              <a href="/auth" class="btn">Return to Login</a>
             </body>
           </html>
         `);
       }
 
+      // Update password
+      const hashedPassword = await hashPassword(password);
+      await storage.updatePasswordAndClearResetToken(user.id, hashedPassword);
+
+      // Show success and redirect
+      res.send(`
+        <html>
+          <head>
+            <title>Password Reset Successful</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <meta http-equiv="refresh" content="3;url=/auth">
+            <style>
+              body { font-family: system-ui; max-width: 600px; margin: 40px auto; padding: 20px; text-align: center; }
+              .success { color: #059669; }
+              .btn { display: inline-block; padding: 10px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 4px; }
+            </style>
+          </head>
+          <body>
+            <h1 class="success">Password Reset Successful</h1>
+            <p>Your password has been reset successfully. You will be redirected to the login page in a few seconds.</p>
+            <p>If you are not redirected, <a href="/auth" class="btn">click here</a> to login.</p>
+          </body>
+        </html>
+      `);
+    } catch (error) {
+      console.error('[Reset Password] Error:', error);
+      res.status(500).send(`
+        <html>
+          <head>
+            <title>Error</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+              body { font-family: system-ui; max-width: 600px; margin: 40px auto; padding: 20px; }
+              .error { color: #dc2626; }
+              .btn { display: inline-block; padding: 10px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 4px; }
+            </style>
+          </head>
+          <body>
+            <h1 class="error">Error</h1>
+            <p>An error occurred while resetting your password. Please try again later.</p>
+            <a href="/auth" class="btn">Return to Login</a>
+          </body>
+        </html>
+      `);
+    }
+  });
+
+  // Remove existing password reset form route and replace with API-only endpoints
+  app.post("/api/reset-password", async (req, res) => {
+    try {
+      const { token, newPassword } = req.body;
+      console.log("[API] Processing password reset with token");
+
+      if (!token || !newPassword) {
+        return res.status(400).json({ message: "Token and new password are required" });
+      }
+
+      // Verify token and get user
+      const user = await storage.getUserByResetToken(token);
+      console.log("[API] Token validation result:", user ? "Valid token" : "Invalid or expired token");
+
+      if (!user || !user.resetTokenExpiry) {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+
       // Check if token has expired
       if (new Date(user.resetTokenExpiry) < new Date()) {
         console.log("[API] Reset token has expired");
-        return res.status(400).send(`
-          <html>
-            <head><title>Expired Reset Link</title></head>
-            <body>
-              <h1>Expired Reset Link</h1>
-              <p>This password reset link has expired. Please request a new one.</p>
-              <a href="/auth">Return to Login</a>
-            </body>
-          </html>
-        `);
+        return res.status(400).json({ message: "Reset token has expired. Please request a new password reset." });
       }
 
       // Update password and clear reset token
@@ -270,47 +315,51 @@ export async function registerRoutes(app: Express) {
       await storage.updatePasswordAndClearResetToken(user.id, hashedPassword);
 
       console.log("[API] Password reset successful for user:", user.id);
-
-      // Redirect to login page with success message
-      res.send(`
-        <html>
-          <head>
-            <title>Password Reset Successful</title>
-            <meta http-equiv="refresh" content="3;url=/auth">
-            <style>
-              body {
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                line-height: 1.6;
-                max-width: 500px;
-                margin: 0 auto;
-                padding: 20px;
-                text-align: center;
-              }
-              .success {
-                color: #059669;
-                margin-bottom: 16px;
-              }
-            </style>
-          </head>
-          <body>
-            <h1 class="success">Password Reset Successful!</h1>
-            <p>Your password has been updated. You will be redirected to the login page in a few seconds.</p>
-            <p>If you are not redirected, <a href="/auth">click here</a> to go to the login page.</p>
-          </body>
-        </html>
-      `);
+      res.json({ message: "Password has been reset successfully" });
     } catch (error) {
       console.error("[API] Error in reset password:", error);
-      res.status(500).send(`
-        <html>
-          <head><title>Error</title></head>
-          <body>
-            <h1>Error</h1>
-            <p>An error occurred while resetting your password. Please try again later.</p>
-            <a href="/auth">Return to Login</a>
-          </body>
-        </html>
-      `);
+      res.status(500).json({ message: "Failed to reset password" });
+    }
+  });
+
+  app.post("/api/forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+      console.log("[API] Processing password reset request for email:", email);
+
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      // Generate reset token
+      const resetToken = randomBytes(32).toString('hex');
+      const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
+
+      console.log("[API] Attempting to set password reset token");
+      const user = await storage.setPasswordResetToken(email, resetToken, resetTokenExpiry);
+
+      if (!user) {
+        console.log("[API] No user found with email:", email);
+        // Don't reveal if email exists or not
+        return res.json({ message: "If an account exists with that email, you will receive a password reset link" });
+      }
+
+      console.log("[API] Reset token set successfully for user:", user.id);
+
+      try {
+        // Send reset email
+        await sendPasswordResetEmail(email, resetToken);
+        console.log("[API] Reset email sent successfully");
+      } catch (emailError) {
+        console.error("[API] Failed to send reset email:", emailError);
+        // Don't expose email sending errors to client
+        return res.json({ message: "If an account exists with that email, you will receive a password reset link" });
+      }
+
+      res.json({ message: "If an account exists with that email, you will receive a password reset link" });
+    } catch (error) {
+      console.error("[API] Error processing forgot password request:", error);
+      res.status(500).json({ message: "Failed to process password reset request" });
     }
   });
 
@@ -697,7 +746,7 @@ export async function registerRoutes(app: Express) {
     try {
       // Check if user is authenticated
       if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "You must be logged in to leave a review" });
+        return res.status(401).json({ message: "You must be logged in to leavea review" });
       }
 
       console.log("[API] Creating new review");
@@ -895,6 +944,7 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ message: "Failed to process password reset request" });
     }
   });
+
 
 
   app.patch("/api/projects/:id", upload.array("images", 10), async (req, res) => {
