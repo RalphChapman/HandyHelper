@@ -246,9 +246,10 @@ const sendPasswordResetEmail = async (email: string, resetToken: string) => {
   console.log("[EMAIL] Initiating password reset email to:", email);
 
   try {
+    // Generate direct reset link to the API endpoint
     const encodedToken = encodeURIComponent(resetToken);
     const baseUrl = process.env.VITE_APP_URL || 'https://handyhelper.replit.app';
-    const resetLink = `${baseUrl}/reset-password?token=${encodedToken}`;
+    const resetLink = `${baseUrl}/api/reset-password/form?token=${encodedToken}`;
 
     console.log("[EMAIL] Generated reset link:", resetLink);
 

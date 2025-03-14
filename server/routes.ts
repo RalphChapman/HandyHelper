@@ -62,6 +62,258 @@ export async function registerRoutes(app: Express) {
   // Serve uploaded files
   app.use("/uploads", express.static("uploads"));
 
+  // Add the new password reset form route before the existing routes
+  app.get("/api/reset-password/form", async (req, res) => {
+    try {
+      const token = req.query.token as string;
+
+      if (!token) {
+        return res.status(400).send(`
+          <html>
+            <head><title>Invalid Reset Link</title></head>
+            <body>
+              <h1>Invalid Reset Link</h1>
+              <p>This password reset link is invalid or has expired. Please request a new one.</p>
+              <a href="/auth">Return to Login</a>
+            </body>
+          </html>
+        `);
+      }
+
+      // Verify token validity
+      const user = await storage.getUserByResetToken(token);
+      if (!user || !user.resetTokenExpiry || new Date(user.resetTokenExpiry) < new Date()) {
+        return res.status(400).send(`
+          <html>
+            <head><title>Expired Reset Link</title></head>
+            <body>
+              <h1>Expired Reset Link</h1>
+              <p>This password reset link has expired. Please request a new one.</p>
+              <a href="/auth">Return to Login</a>
+            </body>
+          </html>
+        `);
+      }
+
+      // Serve the password reset form
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Reset Your Password</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                line-height: 1.6;
+                max-width: 500px;
+                margin: 0 auto;
+                padding: 20px;
+                background: #f5f5f5;
+              }
+              .container {
+                background: white;
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+              }
+              h1 {
+                color: #2563eb;
+                margin-bottom: 24px;
+              }
+              .form-group {
+                margin-bottom: 16px;
+              }
+              label {
+                display: block;
+                margin-bottom: 8px;
+                font-weight: 500;
+              }
+              input {
+                width: 100%;
+                padding: 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 16px;
+              }
+              button {
+                background: #2563eb;
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 4px;
+                font-size: 16px;
+                cursor: pointer;
+                width: 100%;
+              }
+              button:hover {
+                background: #1d4ed8;
+              }
+              .error {
+                color: #dc2626;
+                margin-top: 8px;
+                font-size: 14px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h1>Reset Your Password</h1>
+              <form action="/api/reset-password" method="POST">
+                <input type="hidden" name="token" value="${token}">
+                <div class="form-group">
+                  <label for="newPassword">New Password</label>
+                  <input 
+                    type="password" 
+                    id="newPassword" 
+                    name="newPassword" 
+                    required 
+                    minlength="8"
+                    pattern="(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9]).{8,}"
+                    title="Password must be at least 8 characters long and include uppercase, lowercase, and numbers"
+                  >
+                </div>
+                <div class="form-group">
+                  <label for="confirmPassword">Confirm Password</label>
+                  <input 
+                    type="password" 
+                    id="confirmPassword" 
+                    name="confirmPassword" 
+                    required
+                  >
+                </div>
+                <button type="submit">Reset Password</button>
+              </form>
+              <script>
+                document.querySelector('form').addEventListener('submit', function(e) {
+                  const password = document.getElementById('newPassword').value;
+                  const confirm = document.getElementById('confirmPassword').value;
+
+                  if (password !== confirm) {
+                    e.preventDefault();
+                    alert('Passwords do not match');
+                  }
+                });
+              </script>
+            </div>
+          </body>
+        </html>
+      `);
+    } catch (error) {
+      console.error("[API] Error serving reset password form:", error);
+      res.status(500).send(`
+        <html>
+          <head><title>Error</title></head>
+          <body>
+            <h1>Error</h1>
+            <p>An error occurred while processing your request. Please try again later.</p>
+            <a href="/auth">Return to Login</a>
+          </body>
+        </html>
+      `);
+    }
+  });
+
+  // Update the existing POST route to handle form submission and redirect
+  app.post("/api/reset-password", express.urlencoded({ extended: true }), async (req, res) => {
+    try {
+      const { token, newPassword } = req.body;
+      console.log("[API] Processing password reset with token");
+
+      if (!token || !newPassword) {
+        return res.status(400).send(`
+          <html>
+            <head><title>Error</title></head>
+            <body>
+              <h1>Error</h1>
+              <p>Please provide both a token and a new password.</p>
+              <a href="/auth">Return to Login</a>
+            </body>
+          </html>
+        `);
+      }
+
+      // Verify token and get user
+      const user = await storage.getUserByResetToken(token);
+      console.log("[API] Token validation result:", user ? "Valid token" : "Invalid or expired token");
+
+      if (!user || !user.resetTokenExpiry) {
+        return res.status(400).send(`
+          <html>
+            <head><title>Invalid Reset Link</title></head>
+            <body>
+              <h1>Invalid Reset Link</h1>
+              <p>This password reset link is invalid or has expired. Please request a new one.</p>
+              <a href="/auth">Return to Login</a>
+            </body>
+          </html>
+        `);
+      }
+
+      // Check if token has expired
+      if (new Date(user.resetTokenExpiry) < new Date()) {
+        console.log("[API] Reset token has expired");
+        return res.status(400).send(`
+          <html>
+            <head><title>Expired Reset Link</title></head>
+            <body>
+              <h1>Expired Reset Link</h1>
+              <p>This password reset link has expired. Please request a new one.</p>
+              <a href="/auth">Return to Login</a>
+            </body>
+          </html>
+        `);
+      }
+
+      // Update password and clear reset token
+      const hashedPassword = await hashPassword(newPassword);
+      await storage.updatePasswordAndClearResetToken(user.id, hashedPassword);
+
+      console.log("[API] Password reset successful for user:", user.id);
+
+      // Redirect to login page with success message
+      res.send(`
+        <html>
+          <head>
+            <title>Password Reset Successful</title>
+            <meta http-equiv="refresh" content="3;url=/auth">
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                line-height: 1.6;
+                max-width: 500px;
+                margin: 0 auto;
+                padding: 20px;
+                text-align: center;
+              }
+              .success {
+                color: #059669;
+                margin-bottom: 16px;
+              }
+            </style>
+          </head>
+          <body>
+            <h1 class="success">Password Reset Successful!</h1>
+            <p>Your password has been updated. You will be redirected to the login page in a few seconds.</p>
+            <p>If you are not redirected, <a href="/auth">click here</a> to go to the login page.</p>
+          </body>
+        </html>
+      `);
+    } catch (error) {
+      console.error("[API] Error in reset password:", error);
+      res.status(500).send(`
+        <html>
+          <head><title>Error</title></head>
+          <body>
+            <h1>Error</h1>
+            <p>An error occurred while resetting your password. Please try again later.</p>
+            <a href="/auth">Return to Login</a>
+          </body>
+        </html>
+      `);
+    }
+  });
+
   // Testimonial routes
   app.post("/api/testimonials", async (req, res) => {
     try {
@@ -573,8 +825,7 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ message: "Current password and new password are required" });
       }
 
-      // Verify current password
-      const user = await storage.getUser(req.user.id);
+      // Verify current password      const user = await storage.getUser(req.user.id);
       if (!user) {
         console.log("[API] User not found:", req.user.id);
         return res.status(404).json({ message: "User not found" });
@@ -590,7 +841,7 @@ export async function registerRoutes(app: Express) {
       const hashedPassword = await hashPassword(newPassword);
       await storage.updateUserPassword(req.user.id, hashedPassword);
 
-      console.log("[API] Password updated successfully for user:", req.user.id);
+      console.log("[API] Password updated successfully for user:", req.user?.id);
       res.json({ message: "Password updated successfully" });
     } catch (error) {
       console.error("[API] Error updating password:", error);
@@ -645,40 +896,6 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  app.post("/api/reset-password", async (req, res) => {
-    try {
-      const { token, newPassword } = req.body;
-      console.log("[API] Processing password reset with token");
-
-      if (!token || !newPassword) {
-        return res.status(400).json({ message: "Token and new password are required" });
-      }
-
-      // Verify token and get user
-      const user = await storage.getUserByResetToken(token);
-      console.log("[API] Token validation result:", user ? "Valid token" : "Invalid or expired token");
-
-      if (!user || !user.resetTokenExpiry) {
-        return res.status(400).json({ message: "Invalid or expired reset token" });
-      }
-
-      // Check if token has expired
-      if (new Date(user.resetTokenExpiry) < new Date()) {
-        console.log("[API] Reset token has expired");
-        return res.status(400).json({ message: "Reset token has expired. Please request a new password reset." });
-      }
-
-      // Update password and clear reset token
-      const hashedPassword = await hashPassword(newPassword);
-      await storage.updatePasswordAndClearResetToken(user.id, hashedPassword);
-
-      console.log("[API] Password reset successful for user:", user.id);
-      res.json({ message: "Password has been reset successfully" });
-    } catch (error) {
-      console.error("[API] Error in reset password:", error);
-      res.status(500).json({ message: "Failed to reset password" });
-    }
-  });
 
   app.patch("/api/projects/:id", upload.array("images", 10), async (req, res) => {
     try {
