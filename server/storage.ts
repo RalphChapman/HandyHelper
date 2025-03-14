@@ -14,7 +14,7 @@ import createMemoryStore from "memorystore";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 
 const MemoryStore = createMemoryStore(session);
 const scryptAsync = promisify(scrypt);
@@ -674,9 +674,17 @@ export class DatabaseStorage implements IStorage {
       const [user] = await db
         .select()
         .from(users)
-        .where(eq(users.resetToken, token));
+        .where(eq(users.resetToken, token))
+        .where(sql`${users.resetTokenExpiry} > NOW()`); // Only return if token hasn't expired
 
       console.log("[Storage] User lookup result:", user ? "Found" : "Not found");
+      if (user?.resetTokenExpiry) {
+        const isExpired = new Date(user.resetTokenExpiry) < new Date();
+        if (isExpired) {
+          console.log("[Storage] Reset token has expired");
+          return undefined;
+        }
+      }
       return user;
     } catch (error) {
       console.error("[Storage] Error finding user by reset token:", error);

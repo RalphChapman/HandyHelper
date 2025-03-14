@@ -7,8 +7,8 @@ export default function ResetPasswordPage() {
   const params = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
   const token = params.get('token');
 
-  // Validate token format (should be a 64-character hex string)
-  const isValidToken = token && /^[a-f0-9]{64}$/.test(token);
+  // Simple validation that token exists and is not empty
+  const isValidToken = token && token.length > 0;
 
   if (!isValidToken) {
     return (

@@ -39,6 +39,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
   async function onSubmit(data: ResetPasswordValues) {
     setIsSubmitting(true);
     try {
+      console.log('Attempting password reset...');
       const response = await apiRequest("POST", "/api/reset-password", {
         token,
         newPassword: data.newPassword,
@@ -56,10 +57,11 @@ export function ResetPasswordForm({ token }: { token: string }) {
 
       // Redirect to login page
       setLocation("/auth");
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Password reset error:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to reset password",
+        description: error.message || "Failed to reset password. The link may have expired.",
         variant: "destructive",
       });
     } finally {
