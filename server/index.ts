@@ -5,7 +5,7 @@ import express from "express";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
 import { registerRoutes } from "./routes";
-import { serveStatic, setupVite, log } from "./vite";
+import { setupVite, log } from "./vite";
 import { createServer } from "http";
 import path from "path";
 
@@ -23,12 +23,6 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Serve static files from the public directory
-app.use(express.static(path.join(process.cwd(), 'public')));
-
-// Serve files from the uploads directory
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
-
 app.use(express.json());
 app.use(compression());
 
@@ -42,7 +36,6 @@ app.use((req, res, next) => {
 
   log(`[${requestId}] Incoming ${req.method} ${req.path}`);
 
-  // Log response status and timing after request completes
   res.on('finish', () => {
     const duration = Date.now() - start;
     log(`[${requestId}] Completed ${req.method} ${req.path} with status ${res.statusCode} in ${duration}ms`);
@@ -56,9 +49,14 @@ app.use((req, res, next) => {
     // Register API routes first
     await registerRoutes(app);
 
-    // In production, serve static files from the dist directory
+    const distPath = path.join(process.cwd(), 'dist', 'public');
+    const server = createServer(app);
+
     if (process.env.NODE_ENV === "production") {
-      app.use(express.static(path.join(process.cwd(), 'dist', 'client')));
+      log(`[Server] Setting up static file serving from ${distPath}`);
+
+      // Serve static files
+      app.use(express.static(distPath));
 
       // Handle client-side routing for all non-API routes
       app.get('*', (req, res, next) => {
@@ -68,20 +66,24 @@ app.use((req, res, next) => {
         }
 
         log("[Server] Serving client app for path:", req.path);
-        res.sendFile(path.join(process.cwd(), 'dist', 'client', 'index.html'));
-      });
+        const indexPath = path.join(distPath, 'index.html');
 
-      app.listen(5000, "0.0.0.0", () => {
-        log("Server running on port 5000 (production mode)");
+        res.sendFile(indexPath, (err) => {
+          if (err) {
+            log("[Server] Error serving index.html:", err);
+            next(err);
+          }
+        });
       });
     } else {
       // In development mode, use Vite's dev server
-      const server = createServer(app);
+      log("[Server] Setting up Vite development server");
       await setupVite(app, server);
-      server.listen(5000, "0.0.0.0", () => {
-        log("Server running on port 5000 (development mode)");
-      });
     }
+
+    server.listen(5000, "0.0.0.0", () => {
+      log(`[Server] Server running on port 5000 (${process.env.NODE_ENV} mode)`);
+    });
   } catch (error) {
     console.error("Failed to start server:", error);
     process.exit(1);

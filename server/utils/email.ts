@@ -1,14 +1,13 @@
 import nodemailer from "nodemailer";
 import { analyzeProjectDescription } from "./grok";
 
-// Create reusable transporter with better error handling
 const createTransporter = () => {
   try {
     if (!process.env.EMAIL_APP_PASSWORD) {
       throw new Error("EMAIL_APP_PASSWORD environment variable must be set");
     }
 
-    const transporter = nodemailer.createTransport({
+    return nodemailer.createTransport({
       service: "gmail",
       auth: {
         user: "chapman.ralph@gmail.com",
@@ -18,8 +17,6 @@ const createTransporter = () => {
         rejectUnauthorized: false
       }
     });
-
-    return transporter;
   } catch (error) {
     console.error("[EMAIL] Failed to create transporter:", error);
     throw error;
@@ -28,7 +25,7 @@ const createTransporter = () => {
 
 const transporter = createTransporter();
 
-export async function sendQuoteNotification(quoteRequest: any) {
+const sendQuoteNotification = async (quoteRequest: any) => {
   console.log("[EMAIL] Sending quote notification with data:", {
     ...quoteRequest,
     email: quoteRequest.email,
@@ -42,13 +39,9 @@ export async function sendQuoteNotification(quoteRequest: any) {
     aiAnalysis = await analyzeProjectDescription(quoteRequest.description);
   } catch (error) {
     console.error("Failed to get AI analysis:", error);
-    if (error instanceof Error) {
-      console.error("[EMAIL] Error stack:", error.stack);
-    }
   }
 
   const serviceInfo = `Service Requested: ${quoteRequest.serviceName}`;
-
   const message = {
     from: '"HandyPro Service" <chapman.ralph@gmail.com>',
     to: [quoteRequest.email, "chapman.ralph@gmail.com"].join(", "),
@@ -150,33 +143,18 @@ HandyPro Service Team
   };
 
   try {
-    // Verify connection before sending
     await transporter.verify();
     console.log("[EMAIL] Attempting to send email to:", message.to);
     const result = await transporter.sendMail(message);
-    console.log("[EMAIL] Email sent successfully:", result);
+    console.log("[EMAIL] Email sent successfully");
     return result;
   } catch (error) {
     console.error("[EMAIL] Failed to send email:", error);
-    if (error instanceof Error) {
-      console.error("[EMAIL] Error stack:", error.stack);
-      console.error("[EMAIL] Error name:", error.name);
-      console.error("[EMAIL] Error message:", error.message);
-      if ('code' in error) {
-        console.error("[EMAIL] Error code:", (error as any).code);
-      }
-    }
     throw error;
   }
-}
+};
 
-export async function sendBookingConfirmation(booking: any) {
-  console.log("[EMAIL] Sending booking confirmation with data:", {
-    ...booking,
-    clientEmail: booking.clientEmail,
-    clientName: booking.clientName
-  });
-
+const sendBookingConfirmation = async (booking: any) => {
   const message = {
     from: '"HandyPro Service" <chapman.ralph@gmail.com>',
     to: [booking.clientEmail, "chapman.ralph@gmail.com"].join(", "),
@@ -191,13 +169,7 @@ Phone: ${booking.clientPhone}
 Appointment Date: ${new Date(booking.appointmentDate).toLocaleString()}
 ${booking.notes ? `\nAdditional Notes: ${booking.notes}` : ''}
 
-We will review your booking and confirm the appointment shortly. If you need to make any changes or have questions, please contact us:
-
-Ralph Chapman
-Phone: (864) 361-3730
-Email: chapman.ralph@gmail.com
-LinkedIn: linkedin.com/in/ralph-chapman
-Website: https://handyhelper.replit.app/
+We will review your booking and confirm the appointment shortly.
 
 Best regards,
 HandyPro Service Team
@@ -262,31 +234,22 @@ HandyPro Service Team
 
   try {
     await transporter.verify();
-    console.log("[EMAIL] Attempting to send booking confirmation to:", message.to);
     const result = await transporter.sendMail(message);
-    console.log("[EMAIL] Booking confirmation sent successfully:", result);
     return result;
   } catch (error) {
     console.error("[EMAIL] Failed to send booking confirmation:", error);
-    if (error instanceof Error) {
-      console.error("[EMAIL] Error stack:", error.stack);
-      console.error("[EMAIL] Error name:", error.name);
-      console.error("[EMAIL] Error message:", error.message);
-      if ('code' in error) {
-        console.error("[EMAIL] Error code:", (error as any).code);
-      }
-    }
     throw error;
   }
-}
+};
 
-async function sendPasswordResetEmail(email: string, resetToken: string) {
+const sendPasswordResetEmail = async (email: string, resetToken: string) => {
   console.log("[EMAIL] Initiating password reset email to:", email);
 
   try {
-    // Ensure the token is properly encoded for URLs
     const encodedToken = encodeURIComponent(resetToken);
-    const resetLink = `${process.env.VITE_APP_URL || 'https://handyhelper.replit.app'}/reset-password?token=${encodedToken}`;
+    const baseUrl = process.env.VITE_APP_URL || 'https://handyhelper.replit.app';
+    const resetLink = `${baseUrl}/reset-password?token=${encodedToken}`;
+
     console.log("[EMAIL] Generated reset link:", resetLink);
 
     const message = {
@@ -310,7 +273,6 @@ HandyPro Service Team
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #2563eb; margin-bottom: 24px;">Password Reset Request</h2>
-
           <p style="margin-bottom: 16px;">Hello,</p>
 
           <p style="margin-bottom: 16px;">You recently requested to reset your password for your HandyPro Service account. Click the button below to reset it:</p>
@@ -347,6 +309,6 @@ HandyPro Service Team
     console.error("[EMAIL] Failed to send password reset email:", error);
     throw error;
   }
-}
+};
 
 export { sendPasswordResetEmail, sendQuoteNotification, sendBookingConfirmation };
