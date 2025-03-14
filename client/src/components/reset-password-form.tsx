@@ -28,6 +28,8 @@ export function ResetPasswordForm({ token }: { token: string }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [, setLocation] = useLocation();
 
+  console.log('[ResetPasswordForm] Rendering with token:', token ? 'Present' : 'Missing');
+
   const form = useForm<ResetPasswordValues>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
@@ -39,7 +41,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
   async function onSubmit(data: ResetPasswordValues) {
     setIsSubmitting(true);
     try {
-      console.log('Attempting password reset...');
+      console.log('[ResetPasswordForm] Attempting password reset...');
       const response = await apiRequest("POST", "/api/reset-password", {
         token,
         newPassword: data.newPassword,
@@ -50,6 +52,9 @@ export function ResetPasswordForm({ token }: { token: string }) {
         throw new Error(error.message || "Failed to reset password");
       }
 
+      const result = await response.json();
+      console.log('[ResetPasswordForm] Password reset successful');
+
       toast({
         title: "Password Reset Successful",
         description: "Your password has been successfully reset. Please log in with your new password.",
@@ -58,7 +63,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
       // Redirect to login page
       setLocation("/auth");
     } catch (error: any) {
-      console.error('Password reset error:', error);
+      console.error('[ResetPasswordForm] Password reset error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to reset password. The link may have expired.",

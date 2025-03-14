@@ -4,11 +4,23 @@ import { useLocation } from "wouter";
 
 export default function ResetPasswordPage() {
   const [location] = useLocation();
-  const params = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
-  const token = params.get('token');
+  console.log("[ResetPassword] Current location:", location);
+
+  // Parse token from URL
+  let token = '';
+  try {
+    if (location.includes('?')) {
+      const searchParams = new URLSearchParams(location.split('?')[1]);
+      token = searchParams.get('token') || '';
+      console.log("[ResetPassword] Token from URL:", token.substring(0, 8) + '...');
+    }
+  } catch (error) {
+    console.error("[ResetPassword] Error parsing URL parameters:", error);
+  }
 
   // Simple validation that token exists and is not empty
-  const isValidToken = token && token.length > 0;
+  const isValidToken = Boolean(token);
+  console.log("[ResetPassword] Token validation:", isValidToken);
 
   if (!isValidToken) {
     return (
