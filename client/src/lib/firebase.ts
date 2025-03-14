@@ -37,9 +37,9 @@ console.log('Current domain:', currentDomain);
 // Create Firebase configuration
 const firebaseConfig: FirebaseConfig = {
   apiKey: requiredEnvVars.apiKey,
-  authDomain: `${requiredEnvVars.projectId}.firebaseapp.com`,
-  projectId: requiredEnvVars.projectId,
-  storageBucket: `${requiredEnvVars.projectId}.appspot.com`,
+  authDomain: `${requiredEnvVars.projectId.trim()}.firebaseapp.com`,
+  projectId: requiredEnvVars.projectId.trim(),
+  storageBucket: `${requiredEnvVars.projectId.trim()}.appspot.com`,
   appId: requiredEnvVars.appId,
 };
 
