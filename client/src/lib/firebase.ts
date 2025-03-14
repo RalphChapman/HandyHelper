@@ -30,6 +30,10 @@ if (missingVars.length > 0) {
   );
 }
 
+// Log current domain for verification
+const currentDomain = window.location.hostname;
+console.log('Current domain:', currentDomain);
+
 // Create Firebase configuration
 const firebaseConfig: FirebaseConfig = {
   apiKey: requiredEnvVars.apiKey,
@@ -81,7 +85,7 @@ export const signInWithGoogle = async () => {
       throw new Error('Network error. Please check your internet connection and try again.');
     } else if (error.code === 'auth/unauthorized-domain') {
       console.error('Domain not authorized. Please add this domain to Firebase Console.');
-      throw new Error('This website is not authorized to use Firebase authentication. Please contact support.');
+      throw new Error(`This website (${currentDomain}) is not authorized for Firebase authentication. Please add it to Firebase Console > Authentication > Settings > Authorized domains.`);
     }
 
     throw new Error('Failed to sign in with Google. Please try again later.');
