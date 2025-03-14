@@ -19,9 +19,9 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
     if (!apiKey) {
       setIsKeyMissing(true);
       console.warn("Google Maps API key is not configured");
-      // Silently fall back to manual input
+      onError?.("Address verification is not available at the moment. You can still enter your address manually.");
     }
-  }, [apiKey]);
+  }, [apiKey, onError]);
 
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: apiKey || "", // Provide empty string as fallback
@@ -32,8 +32,9 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
     if (loadError) {
       console.error("Google Maps load error:", loadError);
       setIsKeyMissing(true);
+      onError?.("Address verification service is currently unavailable. You can still enter your address manually.");
     }
-  }, [loadError]);
+  }, [loadError, onError]);
 
   const onPlaceChanged = () => {
     if (autocomplete) {
@@ -42,6 +43,7 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
         onChange(place.formatted_address);
       } else {
         console.warn("No address returned from place selection");
+        onError?.("Could not verify the selected address. Please check and try again.");
       }
     }
   };
@@ -52,7 +54,7 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
       <Input 
         value={value} 
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Enter your address"
+        placeholder="Enter your address manually"
       />
     );
   }
