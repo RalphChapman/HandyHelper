@@ -47,14 +47,14 @@ export default function Dashboard() {
       name: "Projects Invoice",
       date: "February 28, 2025",
       amount: "$19,050.00",
-      file: "/invoices/SampleInvoice1.pdf",
+      file: "/public/invoices/SampleInvoice1.pdf",
     },
     {
       id: 2,
       name: "New Fence Invoice",
       date: "December 14, 2024",
       amount: "$11,800.00",
-      file: "/invoices/SampleInvoice2.pdf",
+      file: "/public/invoices/SampleInvoice2.pdf",
     },
   ];
 
