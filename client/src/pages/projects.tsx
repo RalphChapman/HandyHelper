@@ -147,12 +147,13 @@ interface Project {
 const projectFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
-  imageFiles: z.instanceof(FileList)
+  imageFiles: z
+    .any()
+    .optional()
     .refine(
       (files) => {
-        // For new projects, require at least one image
-        // For editing, files are optional
-        return files.length > 0 || window.location.pathname.includes('edit');
+        if (!files) return true; // Allow empty for editing
+        return files instanceof FileList && files.length > 0;
       },
       "Please select at least one image"
     ),
@@ -289,7 +290,6 @@ export default function Projects() {
       comment: "",
       customerName: "",
       projectDate: new Date(),
-      imageFiles: new FileList(), 
     },
   });
 
@@ -302,7 +302,6 @@ export default function Projects() {
           comment: selectedProject.comment,
           customerName: selectedProject.customerName,
           projectDate: new Date(selectedProject.projectDate),
-          imageFiles: new FileList(), 
         }
       : undefined,
   });
