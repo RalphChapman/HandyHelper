@@ -289,6 +289,7 @@ export default function Projects() {
       comment: "",
       customerName: "",
       projectDate: new Date(),
+      imageFiles: new FileList(), 
     },
   });
 
@@ -301,6 +302,7 @@ export default function Projects() {
           comment: selectedProject.comment,
           customerName: selectedProject.customerName,
           projectDate: new Date(selectedProject.projectDate),
+          imageFiles: new FileList(), 
         }
       : undefined,
   });
@@ -361,7 +363,7 @@ export default function Projects() {
     });
   }
 
-  // Handle file preview
+
   const handleFileChange = (files: FileList | null, isEdit = false) => {
     if (files) {
       const urls = Array.from(files).map((file) => URL.createObjectURL(file));
@@ -369,200 +371,208 @@ export default function Projects() {
     }
   };
 
-  const ProjectForm = ({ isEdit = false, onSubmit, form }: { isEdit?: boolean; onSubmit: any; form: any }) => (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Project Title</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+  const ProjectForm = ({ isEdit = false, onSubmit, form }: { isEdit?: boolean; onSubmit: any; form: any }) => {
+    const [fileInputKey, setFileInputKey] = useState(0);
 
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Project Description</FormLabel>
-              <FormControl>
-                <Textarea {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+    // Handle file change without affecting form state
+    const handleLocalFileChange = (files: FileList | null) => {
+      if (files && files.length > 0) {
+        form.setValue('imageFiles', files);
+        handleFileChange(files, isEdit);  
+      }
+    };
 
-        <FormField
-          control={form.control}
-          name="projectDate"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Project Date</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={`w-full pl-3 text-left font-normal ${!field.value && "text-muted-foreground"}`}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP")
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                      <Calendar className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarComponent
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+    return (
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="title"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Project Title</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="imageFiles"
-          render={({ field: { onChange, value, ...field } }) => (
-            <FormItem>
-              <FormLabel>{isEdit ? "Add More Images" : "Project Images"}</FormLabel>
-              <FormControl>
-                <div className="space-y-4">
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Project Description</FormLabel>
+                <FormControl>
+                  <Textarea {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="projectDate"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Project Date</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant={"outline"}
+                        className={`w-full pl-3 text-left font-normal ${!field.value && "text-muted-foreground"}`}
+                      >
+                        {field.value ? (
+                          format(field.value, "PPP")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                        <Calendar className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="imageFiles"
+            render={({ field: { onChange, value, ...field } }) => (
+              <FormItem>
+                <FormLabel>{isEdit ? "Add More Images" : "Project Images"}</FormLabel>
+                <FormControl>
                   <Input
+                    key={fileInputKey}
                     type="file"
                     accept="image/*"
                     multiple
-                    onChange={(e) => {
-                      const files = e.target.files;
-                      if (files && files.length > 0) {
-                        onChange(files);
-                        handleFileChange(files, isEdit);
-                      }
-                    }}
+                    onChange={(e) => handleLocalFileChange(e.target.files)}
                     {...field}
                     className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
-                    key={value ? 'has-value' : 'no-value'} // Force re-render when value changes
                   />
-                  {isEdit && selectedProject && selectedProject.imageUrls && selectedProject.imageUrls.length > 0 && (
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-2">Current Images:</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {selectedProject.imageUrls.map((url, index) => (
-                          <div key={index} className="relative group">
-                            <ImageDisplay
-                              src={url}
-                              alt={`Current ${index + 1}`}
-                              className="w-full h-24 object-cover rounded-md"
-                            />
-                            <Button
-                              variant="destructive"
-                              size="icon"
-                              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => {
-                                if (selectedProject.imageUrls.length <= 1) {
-                                  toast({
-                                    title: "Error",
-                                    description: "Cannot delete the last image. Projects must have at least one image.",
-                                    variant: "destructive",
-                                  });
-                                  return;
-                                }
-                                deleteImageMutation.mutate({
-                                  projectId: selectedProject.id,
-                                  imageUrl: url,
-                                });
-                              }}
-                              type="button"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {previewUrls.length > 0 && (
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-2">New Images:</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {previewUrls.map((url, index) => (
+                </FormControl>
+                {isEdit && selectedProject && selectedProject.imageUrls && selectedProject.imageUrls.length > 0 && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-2">Current Images:</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {selectedProject.imageUrls.map((url, index) => (
+                        <div key={index} className="relative group">
                           <ImageDisplay
-                            key={index}
                             src={url}
-                            alt={`Preview ${index + 1}`}
+                            alt={`Current ${index + 1}`}
                             className="w-full h-24 object-cover rounded-md"
                           />
-                        ))}
-                      </div>
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => {
+                              if (selectedProject.imageUrls.length <= 1) {
+                                toast({
+                                  title: "Error",
+                                  description: "Cannot delete the last image. Projects must have at least one image.",
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
+                              deleteImageMutation.mutate({
+                                projectId: selectedProject.id,
+                                imageUrl: url,
+                              });
+                            }}
+                            type="button"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
                     </div>
-                  )}
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="comment"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Your Experience</FormLabel>
-              <FormControl>
-                <Textarea {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="customerName"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Your Name</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="sticky bottom-0 bg-background pt-4">
-          <Button type="submit" disabled={isSubmitting || updateProjectMutation.isPending} className="w-full">
-            {(isSubmitting || updateProjectMutation.isPending) ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {isEdit ? "Updating..." : "Submitting..."}
-              </>
-            ) : (
-              isEdit ? "Update Project" : "Submit Project"
+                  </div>
+                )}
+                {previewUrls.length > 0 && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-2">New Images:</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {previewUrls.map((url, index) => (
+                        <ImageDisplay
+                          key={index}
+                          src={url}
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-24 object-cover rounded-md"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <FormMessage />
+              </FormItem>
             )}
-          </Button>
-        </div>
-      </form>
-    </Form>
-  );
+          />
+
+          <FormField
+            control={form.control}
+            name="comment"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Your Experience</FormLabel>
+                <FormControl>
+                  <Textarea {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="customerName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Your Name</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="sticky bottom-0 bg-background pt-4">
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={isSubmitting || updateProjectMutation.isPending}
+            >
+              {(isSubmitting || updateProjectMutation.isPending) ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {isEdit ? "Updating..." : "Submitting..."}
+                </>
+              ) : (
+                isEdit ? "Update Project" : "Submit Project"
+              )}
+            </Button>
+          </div>
+        </form>
+      </Form>
+    );
+  };
 
   if (serviceLoading || projectsLoading) {
     return (
