@@ -598,7 +598,9 @@ export default function Projects() {
           }
         } else {
           try {
-            errorMessage = await response.text();
+            const textError = await response.text();
+            console.error('Error response:', textError);
+            errorMessage = textError || 'Failed to submit project';
           } catch (error) {
             console.error('Error reading error response:', error);
             errorMessage = 'Failed to submit project';
