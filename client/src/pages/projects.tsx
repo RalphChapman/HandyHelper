@@ -558,7 +558,7 @@ export default function Projects() {
         console.log('Number of files to upload:', data.imageFiles.length);
         Array.from(data.imageFiles).forEach((file) => {
           console.log('Appending file:', file.name, 'size:', file.size);
-          formData.append('image', file); // Changed to 'image' to match server expectation
+          formData.append('images', file); // Changed to 'images' to match server configuration
         });
 
         // Log FormData contents for debugging
@@ -775,3 +775,5 @@ export default function Projects() {
     </div>
   );
 }
+
+import { ChevronLeft, ChevronRight } from "lucide-react";
