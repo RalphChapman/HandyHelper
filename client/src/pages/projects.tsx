@@ -671,10 +671,8 @@ export default function Projects() {
             ) : (
               <div className="mb-8 p-4 bg-gray-50 rounded-lg text-center">
                 <p className="text-gray-600">Please log in to leave a review</p>
-                <Link href="/auth">
-                  <Button variant="link" className="mt-2">
-                    Login or Register
-                  </Button>
+                <Link href="/auth" className="inline-block mt-2 text-primary hover:underline">
+                  Login or Register
                 </Link>
               </div>
             )}
