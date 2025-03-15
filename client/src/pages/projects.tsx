@@ -43,7 +43,14 @@ const projectFormSchema = z.object({
 
 type ProjectFormValues = z.infer<typeof projectFormSchema>;
 
-const ProjectForm = ({ isEdit = false, onSubmit, form }: { isEdit?: boolean; onSubmit: any; form: any }) => {
+const ProjectForm = ({ isEdit = false, onSubmit, form, selectedProject = null, deleteImageMutation }: {
+  isEdit?: boolean;
+  onSubmit: any;
+  form: any;
+  selectedProject?: Project | null;
+  deleteImageMutation?: any;
+}) => {
+  const { toast } = useToast();
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
   // Cleanup preview URLs when component unmounts
@@ -61,11 +68,7 @@ const ProjectForm = ({ isEdit = false, onSubmit, form }: { isEdit?: boolean; onS
     const newUrls = Array.from(files).map(file => URL.createObjectURL(file));
 
     // Update preview URLs
-    setPreviewUrls(prevUrls => {
-      // Cleanup old preview URLs
-      prevUrls.forEach(URL.revokeObjectURL);
-      return newUrls;
-    });
+    setPreviewUrls(newUrls);
 
     // Update form value
     form.setValue('imageFiles', files);
@@ -181,7 +184,7 @@ const ProjectForm = ({ isEdit = false, onSubmit, form }: { isEdit?: boolean; onS
                               });
                               return;
                             }
-                            deleteImageMutation.mutate({
+                            deleteImageMutation?.mutate({
                               projectId: selectedProject.id,
                               imageUrl: url,
                             });
@@ -247,8 +250,8 @@ const ProjectForm = ({ isEdit = false, onSubmit, form }: { isEdit?: boolean; onS
         />
 
         <div className="sticky bottom-0 bg-background pt-4">
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             className="w-full"
             disabled={form.formState.isSubmitting}
           >
@@ -267,7 +270,6 @@ const ProjectForm = ({ isEdit = false, onSubmit, form }: { isEdit?: boolean; onS
   );
 };
 
-// Separate component for handling both server images and local previews
 const ImageDisplay = ({ src, alt, className }: { src: string; alt: string; className?: string }) => {
   const [error, setError] = useState(false);
 
@@ -665,7 +667,13 @@ export default function Projects() {
                           <DialogHeader>
                             <DialogTitle>Edit Project</DialogTitle>
                           </DialogHeader>
-                          <ProjectForm isEdit onSubmit={onEditSubmit} form={editForm} />
+                          <ProjectForm
+                            isEdit
+                            onSubmit={onEditSubmit}
+                            form={editForm}
+                            selectedProject={selectedProject}
+                            deleteImageMutation={deleteImageMutation}
+                          />
                         </DialogContent>
                       </Dialog>
                     </div>
