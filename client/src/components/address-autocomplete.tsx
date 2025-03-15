@@ -15,24 +15,24 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
   const [isKeyMissing, setIsKeyMissing] = useState(false);
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: apiKey || "",
+    libraries,
+  });
+
   useEffect(() => {
     if (!apiKey) {
+      console.error("Google Maps API key is not configured");
       setIsKeyMissing(true);
-      console.warn("Google Maps API key is not configured");
       onError?.("Address verification is not available at the moment. You can still enter your address manually.");
     }
   }, [apiKey, onError]);
-
-  const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: apiKey || "", // Provide empty string as fallback
-    libraries,
-  });
 
   useEffect(() => {
     if (loadError) {
       console.error("Google Maps load error:", loadError);
       setIsKeyMissing(true);
-      onError?.("Address verification service is currently unavailable. You can still enter your address manually.");
+      onError?.("Failed to load address verification service. You can still enter your address manually.");
     }
   }, [loadError, onError]);
 
@@ -40,6 +40,7 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
     if (autocomplete) {
       const place = autocomplete.getPlace();
       if (place.formatted_address) {
+        console.log("Selected address:", place.formatted_address);
         onChange(place.formatted_address);
       } else {
         console.warn("No address returned from place selection");
@@ -69,7 +70,7 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
       onPlaceChanged={onPlaceChanged}
       options={{
         componentRestrictions: { country: "us" },
-        fields: ["formatted_address"],
+        fields: ["formatted_address", "address_components"],
         types: ["address"]
       }}
     >
