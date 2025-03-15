@@ -25,15 +25,8 @@ const projectFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
   imageFiles: z
-    .any()
-    .optional()
-    .refine(
-      (files) => {
-        if (!files) return true;
-        return files instanceof FileList && files.length > 0;
-      },
-      "Please select at least one image"
-    ),
+    .custom<FileList>()
+    .refine((files) => files?.length > 0, "Please select at least one image"),
   comment: z.string().min(1, "Please share your experience"),
   customerName: z.string().min(1, "Name is required"),
   projectDate: z.date({
@@ -43,9 +36,9 @@ const projectFormSchema = z.object({
 
 type ProjectFormValues = z.infer<typeof projectFormSchema>;
 
-const ProjectForm = ({ isEdit = false, onSubmit, form, selectedProject = null, deleteImageMutation }: {
-  isEdit?: boolean;
-  onSubmit: any;
+const ProjectForm = ({ isEdit = false, onSubmit, form, selectedProject = null, deleteImageMutation }: { 
+  isEdit?: boolean; 
+  onSubmit: any; 
   form: any;
   selectedProject?: Project | null;
   deleteImageMutation?: any;
@@ -55,7 +48,6 @@ const ProjectForm = ({ isEdit = false, onSubmit, form, selectedProject = null, d
 
   useEffect(() => {
     return () => {
-      // Cleanup preview URLs when component unmounts
       previewUrls.forEach(url => URL.revokeObjectURL(url));
     };
   }, [previewUrls]);
@@ -71,7 +63,7 @@ const ProjectForm = ({ isEdit = false, onSubmit, form, selectedProject = null, d
     const newUrls = Array.from(files).map(file => URL.createObjectURL(file));
     setPreviewUrls(newUrls);
 
-    // Update form value
+    // Update form value with the FileList
     form.setValue('imageFiles', files, { shouldValidate: true });
   }, [form, previewUrls]);
 
@@ -81,7 +73,7 @@ const ProjectForm = ({ isEdit = false, onSubmit, form, selectedProject = null, d
         <FormField
           control={form.control}
           name="imageFiles"
-          render={({ field: { value, ref, ...field } }) => (
+          render={({ field }) => (
             <FormItem>
               <FormLabel>{isEdit ? "Add More Images" : "Project Images"}</FormLabel>
               <FormControl>
@@ -90,8 +82,6 @@ const ProjectForm = ({ isEdit = false, onSubmit, form, selectedProject = null, d
                   accept="image/*"
                   multiple
                   onChange={handleFileChange}
-                  ref={ref}
-                  {...field}
                   className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
                 />
               </FormControl>
@@ -136,7 +126,7 @@ const ProjectForm = ({ isEdit = false, onSubmit, form, selectedProject = null, d
                 </div>
               )}
 
-              {/* Show selected image previews */}
+              {/* Preview section for newly selected images */}
               {previewUrls.length > 0 && (
                 <div className="mt-4">
                   <p className="text-sm text-muted-foreground mb-2">Selected Images:</p>
@@ -194,6 +184,34 @@ const ProjectForm = ({ isEdit = false, onSubmit, form, selectedProject = null, d
 
         <FormField
           control={form.control}
+          name="comment"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Your Experience</FormLabel>
+              <FormControl>
+                <Textarea {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="customerName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Your Name</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
           name="projectDate"
           render={({ field }) => (
             <FormItem className="flex flex-col">
@@ -224,34 +242,6 @@ const ProjectForm = ({ isEdit = false, onSubmit, form, selectedProject = null, d
                   />
                 </PopoverContent>
               </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="comment"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Your Experience</FormLabel>
-              <FormControl>
-                <Textarea {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="customerName"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Your Name</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
               <FormMessage />
             </FormItem>
           )}
