@@ -64,88 +64,24 @@ const ProjectForm = ({ isEdit = false, onSubmit, form, selectedProject = null, d
     const files = e.target.files;
     if (!files) return;
 
-    // Create new preview URLs
-    const newUrls = Array.from(files).map(file => URL.createObjectURL(file));
+    // Cleanup old preview URLs
+    previewUrls.forEach(URL.revokeObjectURL);
 
-    // Update preview URLs
+    // Create new preview URLs and update state
+    const newUrls = Array.from(files).map(file => URL.createObjectURL(file));
     setPreviewUrls(newUrls);
 
     // Update form value
-    form.setValue('imageFiles', files);
-  }, [form]);
+    form.setValue('imageFiles', files, { shouldValidate: true });
+  }, [form, previewUrls]);
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Project Title</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Project Description</FormLabel>
-              <FormControl>
-                <Textarea {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="projectDate"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Project Date</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={`w-full pl-3 text-left font-normal ${!field.value && "text-muted-foreground"}`}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP")
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                      <Calendar className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarComponent
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
           name="imageFiles"
-          render={({ field: { value, onChange, ...field } }) => (
+          render={({ field: { ref, ...field } }) => (
             <FormItem>
               <FormLabel>{isEdit ? "Add More Images" : "Project Images"}</FormLabel>
               <FormControl>
@@ -155,6 +91,7 @@ const ProjectForm = ({ isEdit = false, onSubmit, form, selectedProject = null, d
                   multiple
                   onChange={handleFileChange}
                   {...field}
+                  ref={ref}
                   className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
                 />
               </FormControl>
@@ -216,6 +153,71 @@ const ProjectForm = ({ isEdit = false, onSubmit, form, selectedProject = null, d
                 </div>
               )}
 
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Project Title</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Project Description</FormLabel>
+              <FormControl>
+                <Textarea {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="projectDate"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Project Date</FormLabel>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant={"outline"}
+                      className={`w-full pl-3 text-left font-normal ${!field.value && "text-muted-foreground"}`}
+                    >
+                      {field.value ? (
+                        format(field.value, "PPP")
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
+                      <Calendar className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={field.value}
+                    onSelect={field.onChange}
+                    disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
               <FormMessage />
             </FormItem>
           )}
