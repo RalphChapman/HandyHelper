@@ -12,10 +12,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { ImageIcon, Loader2, Calendar, Edit, X, ChevronLeft, ChevronRight } from "lucide-react";
-import { ReviewForm } from "@/components/review-form";
-import { ReviewsSection } from "@/components/reviews-section";
-import { useAuth } from "@/hooks/use-auth";
+import { ImageIcon, Loader2, Calendar, Edit, X } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -490,8 +487,8 @@ export default function Projects() {
                     <div className="grid grid-cols-2 gap-2">
                       {selectedProject.imageUrls.map((url, index) => (
                         <div key={`existing-${index}`} className="relative group">
-                          <ImageDisplay
-                            src={url}
+                          <img
+                            src={url.startsWith('/') ? url : `/uploads/${url}`}
                             alt={`Current ${index + 1}`}
                             className="w-full h-24 object-cover rounded-md"
                           />
@@ -529,7 +526,7 @@ export default function Projects() {
                     <p className="text-sm text-muted-foreground mb-2">Selected Images:</p>
                     <div className="grid grid-cols-2 gap-2">
                       {localPreviewUrls.map((url, index) => (
-                        <ImageDisplay
+                        <img
                           key={`preview-${index}`}
                           src={url}
                           alt={`Preview ${index + 1}`}
