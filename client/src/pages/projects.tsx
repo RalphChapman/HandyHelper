@@ -585,13 +585,12 @@ export default function Projects() {
 
       if (!response.ok) {
         let errorMessage = 'Failed to submit project';
-        try {
+        const contentType = response.headers.get('content-type');
+        if (contentType?.includes('application/json')) {
           const errorData = await response.json();
           errorMessage = errorData.message || errorMessage;
-        } catch (e) {
-          const textError = await response.text();
-          console.error('Project submission error response:', textError);
-          errorMessage = textError || errorMessage;
+        } else {
+          errorMessage = await response.text();
         }
         throw new Error(errorMessage);
       }
