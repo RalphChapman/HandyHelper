@@ -16,19 +16,23 @@ import fs from "fs";
 const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
-      // Use absolute path in Replit's environment
-      const uploadDir = path.join(process.cwd(), 'uploads');
+      // Use absolute path that works in both dev and production
+      const uploadDir = process.env.REPL_SLUG 
+        ? path.join('/home/runner', process.env.REPL_SLUG, 'uploads')
+        : path.join(process.cwd(), 'uploads');
+
       console.log('[API] Upload directory path:', uploadDir);
-      console.log('[API] Current working directory:', process.cwd());
+      console.log('[API] Environment:', {
+        REPL_SLUG: process.env.REPL_SLUG,
+        cwd: process.cwd(),
+        absPath: uploadDir
+      });
 
       // Ensure uploads directory exists with proper permissions
       if (!fs.existsSync(uploadDir)) {
         console.log('[API] Creating uploads directory');
         try {
-          // Create directory with full permissions
-          fs.mkdirSync(uploadDir, { recursive: true, mode: 0o777 });
-          // Explicitly set permissions after creation
-          fs.chmodSync(uploadDir, 0o777);
+          fs.mkdirSync(uploadDir, { recursive: true });
           console.log('[API] Created uploads directory successfully');
         } catch (error) {
           console.error('[API] Error creating uploads directory:', error);
@@ -37,7 +41,7 @@ const upload = multer({
         }
       }
 
-      // Double-check directory permissions after creation
+      // Double-check directory permissions
       try {
         const stats = fs.statSync(uploadDir);
         console.log('[API] Directory permissions:', stats.mode.toString(8));
@@ -97,63 +101,30 @@ export async function registerRoutes(app: Express) {
   // Set up authentication
   setupAuth(app);
 
-  // Set up static file serving for uploads with extensive error handling
-  const uploadDir = path.join(process.cwd(), 'uploads');
+  // Set up static file serving for uploads
+  const uploadDir = process.env.REPL_SLUG 
+    ? path.join('/home/runner', process.env.REPL_SLUG, 'uploads')
+    : path.join(process.cwd(), 'uploads');
+
   console.log('[API] Setting up static file serving from:', uploadDir);
 
   // Create uploads directory if it doesn't exist
   if (!fs.existsSync(uploadDir)) {
     try {
-      fs.mkdirSync(uploadDir, { recursive: true, mode: 0o777 });
-      fs.chmodSync(uploadDir, 0o777);
-      console.log('[API] Created uploads directory with permissions');
+      fs.mkdirSync(uploadDir, { recursive: true });
+      console.log('[API] Created uploads directory');
     } catch (error) {
       console.error('[API] Failed to create uploads directory:', error);
     }
   }
 
   // Serve uploaded files
-  app.use("/uploads", (req, res, next) => {
-    console.log("[API] Serving file from uploads:", req.url);
-    console.log("[API] Full file path:", path.join(uploadDir, req.url));
+  app.use("/uploads", express.static(uploadDir));
 
-    // Verify file exists before serving
-    const filePath = path.join(uploadDir, path.basename(req.url));
-    if (!fs.existsSync(filePath)) {
-      console.error('[API] File not found:', filePath);
-      return res.status(404).json({ message: "File not found" });
-    }
-
-    // Log file stats
-    try {
-      const stats = fs.statSync(filePath);
-      console.log('[API] File stats:', {
-        size: stats.size,
-        permissions: stats.mode.toString(8),
-        created: stats.birthtime,
-        modified: stats.mtime
-      });
-    } catch (error) {
-      console.error('[API] Error reading file stats:', error);
-    }
-
-    express.static(uploadDir, {
-      dotfiles: 'deny',
-      fallthrough: false,
-      index: false,
-      maxAge: '1h'
-    })(req, res, (err) => {
-      if (err) {
-        console.error("[API] Error serving file:", err);
-        if (err.status === 404) {
-          res.status(404).json({ message: "File not found" });
-        } else {
-          res.status(500).json({ message: "Error serving file" });
-        }
-      } else {
-        next();
-      }
-    });
+  // Add error handling middleware for file serving
+  app.use("/uploads", (err: any, req: Request, res: Response, next: NextFunction) => {
+    console.error('[API] Error serving file:', err);
+    res.status(500).json({ message: "Error serving file" });
   });
 
 
@@ -776,7 +747,7 @@ export async function registerRoutes(app: Express) {
 
       if (!email) {
         console.log("[API] Missing email in request");
-        return res.status(400).json({ message: "Email is required" });
+        return res.status(40).json({ message: "Email is required" });
       }
 
       // Generate reset token
