@@ -117,18 +117,14 @@ const ImageDisplay = ({ src, alt, className }: { src: string; alt: string; class
     );
   }
 
-  // Normalize the image URL to ensure it starts with "/"
-  const normalizedSrc = src.startsWith('/') ? src : `/${src}`;
-
-  console.log(`[ImageDisplay] Attempting to load image:`, { originalSrc: src, normalizedSrc, alt });
-
+  // Remove the normalization since the backend already returns correct paths
   return (
     <img
-      src={normalizedSrc}
+      src={src}
       alt={alt}
       className={className}
       onError={(e) => {
-        console.error(`[ImageDisplay] Failed to load image:`, { src: normalizedSrc, error: e });
+        console.error(`[ImageDisplay] Failed to load image:`, { src, error: e });
         setError(true);
       }}
     />
