@@ -583,19 +583,18 @@ export default function Projects() {
         body: formData,
       });
 
-      if (!response.ok) {
-        let errorMessage = 'Failed to submit project';
-        const contentType = response.headers.get('content-type');
-        if (contentType?.includes('application/json')) {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } else {
-          errorMessage = await response.text();
-        }
-        throw new Error(errorMessage);
+      let result;
+      try {
+        result = await response.json();
+      } catch (error) {
+        console.error('Error parsing response:', error);
+        throw new Error('Failed to parse server response');
       }
 
-      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result?.message || 'Failed to submit project');
+      }
+
       console.log('Project submission result:', result);
 
       toast({
