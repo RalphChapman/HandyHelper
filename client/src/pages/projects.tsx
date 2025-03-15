@@ -36,9 +36,9 @@ const projectFormSchema = z.object({
 
 type ProjectFormValues = z.infer<typeof projectFormSchema>;
 
-const ProjectForm = ({ isEdit = false, onSubmit, form, selectedProject = null, deleteImageMutation }: { 
-  isEdit?: boolean; 
-  onSubmit: any; 
+const ProjectForm = ({ isEdit = false, onSubmit, form, selectedProject = null, deleteImageMutation }: {
+  isEdit?: boolean;
+  onSubmit: any;
   form: any;
   selectedProject?: Project | null;
   deleteImageMutation?: any;
@@ -85,74 +85,73 @@ const ProjectForm = ({ isEdit = false, onSubmit, form, selectedProject = null, d
                   className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
                 />
               </FormControl>
-
-              {/* Show existing images in edit mode */}
-              {isEdit && selectedProject?.imageUrls?.length > 0 && (
-                <div className="mt-4">
-                  <p className="text-sm text-muted-foreground mb-2">Current Images:</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {selectedProject.imageUrls.map((url, index) => (
-                      <div key={`existing-${index}`} className="relative group">
-                        <img
-                          src={url.startsWith('/') ? url : `/uploads/${url}`}
-                          alt={`Current ${index + 1}`}
-                          className="w-full h-24 object-cover rounded-md"
-                        />
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => {
-                            if (selectedProject.imageUrls.length <= 1) {
-                              toast({
-                                title: "Error",
-                                description: "Cannot delete the last image. Projects must have at least one image.",
-                                variant: "destructive",
-                              });
-                              return;
-                            }
-                            deleteImageMutation?.mutate({
-                              projectId: selectedProject.id,
-                              imageUrl: url,
-                            });
-                          }}
-                          type="button"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Preview section for newly selected images */}
-              {previewUrls.length > 0 && (
-                <div className="mt-4">
-                  <p className="text-sm text-muted-foreground mb-2">Selected Images:</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {previewUrls.map((url, index) => (
-                      <div key={`preview-${index}`} className="relative">
-                        <img
-                          src={url}
-                          alt={`Preview ${index + 1}`}
-                          className="w-full h-24 object-cover rounded-md"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
-                            target.className = "w-full h-24 p-6 bg-muted rounded-md";
-                          }}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               <FormMessage />
             </FormItem>
           )}
         />
+
+        {/* Show existing images in edit mode */}
+        {isEdit && selectedProject?.imageUrls?.length > 0 && (
+          <div className="mt-4">
+            <p className="text-sm text-muted-foreground mb-2">Current Images:</p>
+            <div className="grid grid-cols-2 gap-2">
+              {selectedProject.imageUrls.map((url, index) => (
+                <div key={`existing-${index}`} className="relative group">
+                  <img
+                    src={url.startsWith('/') ? url : `/uploads/${url}`}
+                    alt={`Current ${index + 1}`}
+                    className="w-full h-24 object-cover rounded-md"
+                  />
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => {
+                      if (selectedProject.imageUrls.length <= 1) {
+                        toast({
+                          title: "Error",
+                          description: "Cannot delete the last image. Projects must have at least one image.",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      deleteImageMutation?.mutate({
+                        projectId: selectedProject.id,
+                        imageUrl: url,
+                      });
+                    }}
+                    type="button"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Preview section for newly selected images */}
+        {previewUrls.length > 0 && (
+          <div className="mt-4 p-4 border rounded-lg">
+            <p className="text-sm text-muted-foreground mb-2">Selected Images:</p>
+            <div className="grid grid-cols-2 gap-2">
+              {previewUrls.map((url, index) => (
+                <div key={`preview-${index}`} className="relative">
+                  <img
+                    src={url}
+                    alt={`Preview ${index + 1}`}
+                    className="w-full h-24 object-cover rounded-md"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.className = "w-full h-24 p-6 bg-muted rounded-md";
+                      target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <FormField
           control={form.control}
@@ -522,12 +521,12 @@ export default function Projects() {
     resolver: zodResolver(projectFormSchema),
     defaultValues: selectedProject
       ? {
-          title: selectedProject.title,
-          description: selectedProject.description,
-          comment: selectedProject.comment,
-          customerName: selectedProject.customerName,
-          projectDate: new Date(selectedProject.projectDate),
-        }
+        title: selectedProject.title,
+        description: selectedProject.description,
+        comment: selectedProject.comment,
+        customerName: selectedProject.customerName,
+        projectDate: new Date(selectedProject.projectDate),
+      }
       : undefined,
   });
 
