@@ -12,10 +12,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { ImageIcon, Loader2, Calendar, Edit, X } from "lucide-react";
+import { ImageIcon, Loader2, Calendar, Edit, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useAuth } from "@/hooks/use-auth";
+import { ReviewForm } from "@/components/review-form";
+import { ReviewsSection } from "@/components/reviews-section";
 
 // Separate component for handling both server images and local previews
 const ImageDisplay = ({ src, alt, className }: { src: string; alt: string; className?: string }) => {
