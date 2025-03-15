@@ -6,6 +6,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, log } from "./vite";
 import { createServer } from "http";
 import path from "path";
+import fs from 'fs';
 
 const app = express();
 
@@ -50,6 +51,16 @@ app.use((req, res, next) => {
 
   next();
 });
+
+// Serve static files from the public directory with proper MIME types
+app.use(express.static(path.resolve(process.cwd(), "public"), {
+  setHeaders: (res, filePath) => {
+    if (path.extname(filePath) === '.pdf') {
+      res.setHeader('Content-Type', 'application/pdf');
+    }
+  }
+}));
+
 
 (async () => {
   try {
