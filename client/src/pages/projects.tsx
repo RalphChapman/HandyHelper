@@ -58,7 +58,7 @@ const ProjectForm = ({ isEdit = false, onSubmit, form, selectedProject = null, d
       // Cleanup preview URLs when component unmounts
       previewUrls.forEach(url => URL.revokeObjectURL(url));
     };
-  }, []);
+  }, [previewUrls]);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
