@@ -383,7 +383,8 @@ export default function Projects() {
     }, [localPreviewUrls]);
 
     // Handle local file changes
-    const handleLocalFileChange = (files: FileList | null) => {
+    const handleLocalFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const files = event.target.files;
       if (files && files.length > 0) {
         // Cleanup previous preview URLs
         localPreviewUrls.forEach(URL.revokeObjectURL);
@@ -393,7 +394,7 @@ export default function Projects() {
         setLocalPreviewUrls(newUrls);
 
         // Update form state
-        form.setValue('imageFiles', files);
+        form.setValue('imageFiles', files, { shouldValidate: true });
       }
     };
 
@@ -468,7 +469,7 @@ export default function Projects() {
           <FormField
             control={form.control}
             name="imageFiles"
-            render={({ field: { onChange, value, ...field } }) => (
+            render={({ field: { value, onChange, ...field } }) => (
               <FormItem>
                 <FormLabel>{isEdit ? "Add More Images" : "Project Images"}</FormLabel>
                 <FormControl>
@@ -477,7 +478,7 @@ export default function Projects() {
                     type="file"
                     accept="image/*"
                     multiple
-                    onChange={(e) => handleLocalFileChange(e.target.files)}
+                    onChange={handleLocalFileChange}
                     {...field}
                     className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
                   />
