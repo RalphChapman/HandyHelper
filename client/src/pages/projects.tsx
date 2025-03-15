@@ -20,7 +20,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { ReviewForm } from "@/components/review-form";
 import { ReviewsSection } from "@/components/reviews-section";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Trash2 } from "lucide-react";
+import { Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 
 // Project form schema
 const projectFormSchema = z.object({
@@ -522,12 +522,26 @@ export default function Projects() {
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to delete project');
+          let errorMessage = 'Failed to delete project';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorMessage;
+          } catch (e) {
+            // If response is not JSON, try to get the text
+            const textError = await response.text();
+            errorMessage = textError || errorMessage;
+          }
+          throw new Error(errorMessage);
         }
 
-        const result = await response.json();
-        return result;
+        // Only try to parse JSON if we have a content
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          return response.json();
+        }
+
+        // If no JSON content, just return success
+        return { success: true };
       } catch (error: any) {
         console.error('Delete project error:', error);
         throw new Error(error.message || 'An unexpected error occurred while deleting the project');
@@ -537,7 +551,7 @@ export default function Projects() {
       // Optimistically remove the project from the UI
       const previousProjects = queryClient.getQueryData<Project[]>(["/api/projects", serviceId]);
       if (previousProjects) {
-        queryClient.setQueryData<Project[]>(["/api/projects", serviceId], 
+        queryClient.setQueryData<Project[]>(["/api/projects", serviceId],
           previousProjects.filter(p => p.id !== projectId)
         );
       }
