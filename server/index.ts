@@ -58,8 +58,16 @@ app.use((req, res, next) => {
 
     const server = createServer(app);
 
-    // Let Vite handle all routing in development
-    await setupVite(app, server);
+    if (process.env.NODE_ENV === 'production') {
+      // Serve static files in production
+      app.use(express.static(path.resolve(process.cwd(), "dist/public")));
+      app.get('*', (req, res) => {
+        res.sendFile(path.resolve(process.cwd(), "dist/public/index.html"));
+      });
+    } else {
+      // Let Vite handle all routing in development
+      await setupVite(app, server);
+    }
 
     server.listen(5000, "0.0.0.0", () => {
       log(`[Server] Server running on port 5000 (${process.env.NODE_ENV || 'development'} mode)`);
