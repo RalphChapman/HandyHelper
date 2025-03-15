@@ -15,13 +15,20 @@ import fs from "fs";
 // Configure multer for handling file uploads
 const upload = multer({
   storage: multer.diskStorage({
-    destination: "./uploads",
+    destination: (req, file, cb) => {
+      // Ensure uploads directory exists
+      if (!fs.existsSync("./uploads")) {
+        fs.mkdirSync("./uploads", { recursive: true });
+      }
+      cb(null, "./uploads");
+    },
     filename: (req, file, cb) => {
       const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1E9);
       cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
     }
   }),
   fileFilter: (req, file, cb) => {
+    console.log("[API] Processing file upload:", file.originalname);
     // Accept only image files
     if (file.mimetype.startsWith("image/")) {
       cb(null, true);
@@ -56,11 +63,14 @@ export async function registerRoutes(app: Express) {
 
   // Create uploads directory if it doesn't exist
   if (!fs.existsSync("./uploads")) {
-    fs.mkdirSync("./uploads");
+    fs.mkdirSync("./uploads", { recursive: true });
   }
 
-  // Serve uploaded files
-  app.use("/uploads", express.static("uploads"));
+  // Serve uploaded files - Add debug logging
+  app.use("/uploads", (req, res, next) => {
+    console.log("[API] Serving file from uploads:", req.url);
+    express.static("uploads")(req, res, next);
+  });
 
 
   // Remove existing password reset form route and replace with API-only endpoints
