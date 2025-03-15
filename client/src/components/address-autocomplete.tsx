@@ -8,25 +8,26 @@ interface AddressAutocompleteProps {
   onError?: (error: string) => void;
 }
 
-const libraries: ("places")[] = ["places"];
+// Make libraries array static to avoid unnecessary reloads
+const LIBRARIES: ("places")[] = ["places"];
 
 export function AddressAutocomplete({ value, onChange, onError }: AddressAutocompleteProps) {
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [isKeyMissing, setIsKeyMissing] = useState(false);
 
-  // Ensure we're using the VITE_ prefixed environment variable
+  // Get API key from environment
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
   // Debug: Log the API key status (not the actual key)
   console.log("[AddressAutocomplete] API Key status:", apiKey ? "Present" : "Missing");
 
+  // Load Google Maps script
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: apiKey || "",
-    libraries,
-    // Add loading callback
-    onLoad: () => console.log("[AddressAutocomplete] Google Maps script loaded successfully"),
+    libraries: LIBRARIES
   });
 
+  // Handle missing API key
   useEffect(() => {
     if (!apiKey) {
       console.error("[AddressAutocomplete] Google Maps API key is missing in environment");
@@ -35,6 +36,7 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
     }
   }, [apiKey, onError]);
 
+  // Handle script load errors
   useEffect(() => {
     if (loadError) {
       console.error("[AddressAutocomplete] Google Maps load error:", loadError);
@@ -43,6 +45,7 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
     }
   }, [loadError, onError]);
 
+  // Handle place selection
   const onPlaceChanged = () => {
     if (autocomplete) {
       const place = autocomplete.getPlace();
@@ -67,16 +70,15 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
     );
   }
 
+  // Show loading state
   if (!isLoaded) {
     return <Input value={value} disabled placeholder="Loading address verification..." />;
   }
 
+  // Return Autocomplete component
   return (
     <Autocomplete
-      onLoad={(auto) => {
-        console.log("[AddressAutocomplete] Autocomplete component loaded");
-        setAutocomplete(auto);
-      }}
+      onLoad={setAutocomplete}
       onPlaceChanged={onPlaceChanged}
       options={{
         componentRestrictions: { country: "us" },
