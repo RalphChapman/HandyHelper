@@ -558,7 +558,7 @@ export default function Projects() {
         console.log('Number of files to upload:', data.imageFiles.length);
         Array.from(data.imageFiles).forEach((file) => {
           console.log('Appending file:', file.name, 'size:', file.size);
-          formData.append('images', file);
+          formData.append('image', file); // Changed to 'image' to match server expectation
         });
 
         // Log FormData contents for debugging
@@ -579,6 +579,7 @@ export default function Projects() {
       console.log('Submitting project...');
       const response = await fetch("/api/projects", {
         method: "POST",
+        // Important: Do not set Content-Type header for multipart/form-data
         body: formData,
       });
 
