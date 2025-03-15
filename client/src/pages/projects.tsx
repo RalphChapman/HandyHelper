@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Service } from "@shared/schema";
@@ -19,6 +19,210 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useAuth } from "@/hooks/use-auth";
 import { ReviewForm } from "@/components/review-form";
 import { ReviewsSection } from "@/components/reviews-section";
+
+// Project form schema and component...
+const projectFormSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().min(1, "Description is required"),
+  imageFiles: z
+    .any()
+    .optional()
+    .refine(
+      (files) => {
+        if (!files) return true;
+        return files instanceof FileList && files.length > 0;
+      },
+      "Please select at least one image"
+    ),
+  comment: z.string().min(1, "Please share your experience"),
+  customerName: z.string().min(1, "Name is required"),
+  projectDate: z.date({
+    required_error: "Please select a project date",
+  }),
+});
+
+type ProjectFormValues = z.infer<typeof projectFormSchema>;
+
+const ProjectForm = ({ isEdit = false, onSubmit, form }: { isEdit?: boolean; onSubmit: any; form: any }) => {
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+
+  // Cleanup preview URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      previewUrls.forEach(URL.revokeObjectURL);
+    };
+  }, [previewUrls]);
+
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    // Cleanup old preview URLs
+    previewUrls.forEach(URL.revokeObjectURL);
+
+    // Create new preview URLs
+    const newUrls = Array.from(files).map(file => URL.createObjectURL(file));
+    setPreviewUrls(newUrls);
+
+    // Update form
+    form.setValue('imageFiles', files);
+  }, [form, previewUrls]);
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Project Title</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Project Description</FormLabel>
+              <FormControl>
+                <Textarea {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="projectDate"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Project Date</FormLabel>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant={"outline"}
+                      className={`w-full pl-3 text-left font-normal ${!field.value && "text-muted-foreground"}`}
+                    >
+                      {field.value ? (
+                        format(field.value, "PPP")
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
+                      <Calendar className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={field.value}
+                    onSelect={field.onChange}
+                    disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="imageFiles"
+          render={({ field: { value, onChange, ...field } }) => (
+            <FormItem>
+              <FormLabel>{isEdit ? "Add More Images" : "Project Images"}</FormLabel>
+              <FormControl>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleFileChange}
+                  {...field}
+                  className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                />
+              </FormControl>
+
+              {/* Preview new images */}
+              {previewUrls.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm text-muted-foreground mb-2">Selected Images:</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {previewUrls.map((url, index) => (
+                      <img
+                        key={`preview-${index}`}
+                        src={url}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-24 object-cover rounded-md"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="comment"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Your Experience</FormLabel>
+              <FormControl>
+                <Textarea {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="customerName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Your Name</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="sticky bottom-0 bg-background pt-4">
+          <Button 
+            type="submit" 
+            className="w-full"
+            disabled={form.formState.isSubmitting}
+          >
+            {form.formState.isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {isEdit ? "Updating..." : "Submitting..."}
+              </>
+            ) : (
+              isEdit ? "Update Project" : "Submit Project"
+            )}
+          </Button>
+        </div>
+      </form>
+    </Form>
+  );
+};
 
 // Separate component for handling both server images and local previews
 const ImageDisplay = ({ src, alt, className }: { src: string; alt: string; className?: string }) => {
@@ -145,27 +349,6 @@ interface Project {
   serviceId: number;
 }
 
-const projectFormSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().min(1, "Description is required"),
-  imageFiles: z
-    .any()
-    .optional()
-    .refine(
-      (files) => {
-        if (!files) return true; // Allow empty for editing
-        return files instanceof FileList && files.length > 0;
-      },
-      "Please select at least one image"
-    ),
-  comment: z.string().min(1, "Please share your experience"),
-  customerName: z.string().min(1, "Name is required"),
-  projectDate: z.date({
-    required_error: "Please select a project date",
-  }),
-});
-
-type ProjectFormValues = z.infer<typeof projectFormSchema>;
 
 export default function Projects() {
   const params = useParams();
@@ -173,7 +356,6 @@ export default function Projects() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const queryClient = useQueryClient();
 
@@ -239,7 +421,6 @@ export default function Projects() {
         description: "Project updated successfully!",
       });
       setSelectedProject(null);
-      setPreviewUrls([]);
     },
     onError: (error: Error) => {
       toast({
@@ -340,7 +521,6 @@ export default function Projects() {
         description: "Your project has been submitted successfully!",
       });
       form.reset();
-      setPreviewUrls([]);
       queryClient.invalidateQueries({ queryKey: ["/api/projects", serviceId] });
     } catch (error: any) {
       console.error("Project submission error:", error);
@@ -367,232 +547,8 @@ export default function Projects() {
   const handleFileChange = (files: FileList | null, isEdit = false) => {
     if (files) {
       const urls = Array.from(files).map((file) => URL.createObjectURL(file));
-      setPreviewUrls(urls);
+      //setPreviewUrls(urls); //removed because preview is managed in ProjectForm now
     }
-  };
-
-  const ProjectForm = ({ isEdit = false, onSubmit, form }: { isEdit?: boolean; onSubmit: any; form: any }) => {
-    const [fileInputKey, setFileInputKey] = useState(0);
-    const [localPreviewUrls, setLocalPreviewUrls] = useState<string[]>([]);
-
-    // Cleanup preview URLs when component unmounts or changes
-    useEffect(() => {
-      return () => {
-        localPreviewUrls.forEach(URL.revokeObjectURL);
-      };
-    }, [localPreviewUrls]);
-
-    // Handle local file changes
-    const handleLocalFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-      const files = event.target.files;
-      if (files && files.length > 0) {
-        // Cleanup previous preview URLs
-        localPreviewUrls.forEach(URL.revokeObjectURL);
-
-        // Create new preview URLs
-        const newUrls = Array.from(files).map(file => URL.createObjectURL(file));
-        setLocalPreviewUrls(newUrls);
-
-        // Update form state
-        form.setValue('imageFiles', files, { shouldValidate: true });
-      }
-    };
-
-    return (
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="title"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Project Title</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Project Description</FormLabel>
-                <FormControl>
-                  <Textarea {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="projectDate"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Project Date</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={`w-full pl-3 text-left font-normal ${!field.value && "text-muted-foreground"}`}
-                      >
-                        {field.value ? (
-                          format(field.value, "PPP")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                        <Calendar className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="imageFiles"
-            render={({ field: { value, onChange, ...field } }) => (
-              <FormItem>
-                <FormLabel>{isEdit ? "Add More Images" : "Project Images"}</FormLabel>
-                <FormControl>
-                  <Input
-                    key={fileInputKey}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleLocalFileChange}
-                    {...field}
-                    className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
-                  />
-                </FormControl>
-
-                {/* Display existing images in edit mode */}
-                {isEdit && selectedProject?.imageUrls?.length > 0 && (
-                  <div className="mt-4">
-                    <p className="text-sm text-muted-foreground mb-2">Current Images:</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {selectedProject.imageUrls.map((url, index) => (
-                        <div key={`existing-${index}`} className="relative group">
-                          <img
-                            src={url.startsWith('/') ? url : `/uploads/${url}`}
-                            alt={`Current ${index + 1}`}
-                            className="w-full h-24 object-cover rounded-md"
-                          />
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => {
-                              if (selectedProject.imageUrls.length <= 1) {
-                                toast({
-                                  title: "Error",
-                                  description: "Cannot delete the last image. Projects must have at least one image.",
-                                  variant: "destructive",
-                                });
-                                return;
-                              }
-                              deleteImageMutation.mutate({
-                                projectId: selectedProject.id,
-                                imageUrl: url,
-                              });
-                            }}
-                            type="button"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Display new image previews */}
-                {localPreviewUrls.length > 0 && (
-                  <div className="mt-4">
-                    <p className="text-sm text-muted-foreground mb-2">Selected Images:</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {localPreviewUrls.map((url, index) => (
-                        <img
-                          key={`preview-${index}`}
-                          src={url}
-                          alt={`Preview ${index + 1}`}
-                          className="w-full h-24 object-cover rounded-md"
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="comment"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Your Experience</FormLabel>
-                <FormControl>
-                  <Textarea {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="customerName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Your Name</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="sticky bottom-0 bg-background pt-4">
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isSubmitting || updateProjectMutation.isPending}
-            >
-              {(isSubmitting || updateProjectMutation.isPending) ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {isEdit ? "Updating..." : "Submitting..."}
-                </>
-              ) : (
-                isEdit ? "Update Project" : "Submit Project"
-              )}
-            </Button>
-          </div>
-        </form>
-      </Form>
-    );
   };
 
   if (serviceLoading || projectsLoading) {
