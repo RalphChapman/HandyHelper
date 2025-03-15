@@ -509,7 +509,6 @@ export default function Projects() {
     },
   });
 
-
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectFormSchema),
     defaultValues: {
@@ -545,27 +544,42 @@ export default function Projects() {
       formData.append("serviceId", serviceId.toString());
       formData.append("projectDate", data.projectDate.toISOString());
 
-      if (data.imageFiles) {
-        Array.from(data.imageFiles).forEach((file) => {
-          formData.append("images", file);
+      // Handle file uploads
+      if (data.imageFiles && data.imageFiles.length > 0) {
+        Array.from(data.imageFiles).forEach((file, index) => {
+          formData.append(`images`, file);
         });
       }
+
+      console.log('Submitting project with files:', data.imageFiles);
 
       const response = await fetch("/api/projects", {
         method: "POST",
         body: formData,
+        // Don't set Content-Type header, let the browser set it with the boundary
       });
 
-      const result = await response.json();
-
       if (!response.ok) {
-        throw new Error(result.message || "Failed to submit project");
+        let errorMessage = 'Failed to submit project';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          // If response is not JSON, try to get the text
+          const textError = await response.text();
+          console.error('Project submission error response:', textError);
+          errorMessage = textError || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
+
+      const result = await response.json();
 
       toast({
         title: "Success",
         description: "Your project has been submitted successfully!",
       });
+
       form.reset();
       queryClient.invalidateQueries({ queryKey: ["/api/projects", serviceId] });
     } catch (error: any) {
