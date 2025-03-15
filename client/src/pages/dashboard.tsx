@@ -56,6 +56,13 @@ export default function Dashboard() {
       amount: "$11,800.00",
       file: "/invoices/SampleInvoice2.pdf",
     },
+    {
+      id: 3,
+      name: "Miscellanious Projects Invoice",
+      date: "February 22, 2025",
+      amount: "$410.00",
+      file: "/invoices/INV-000001.pdf",
+    },
   ];
 
   return (
