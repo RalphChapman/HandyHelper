@@ -513,29 +513,52 @@ export default function Projects() {
 
   const deleteProjectMutation = useMutation({
     mutationFn: async (projectId: number) => {
-      const response = await fetch(`/api/projects/${projectId}`, {
-        method: "DELETE",
-      });
+      try {
+        const response = await fetch(`/api/projects/${projectId}`, {
+          method: "DELETE",
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
 
-      if (!response.ok) {
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to delete project');
+        }
+
         const result = await response.json();
-        throw new Error(result.message || "Failed to delete project");
+        return result;
+      } catch (error: any) {
+        console.error('Delete project error:', error);
+        throw new Error(error.message || 'An unexpected error occurred while deleting the project');
       }
-
-      return response.json();
+    },
+    onMutate: (projectId) => {
+      // Optimistically remove the project from the UI
+      const previousProjects = queryClient.getQueryData<Project[]>(["/api/projects", serviceId]);
+      if (previousProjects) {
+        queryClient.setQueryData<Project[]>(["/api/projects", serviceId], 
+          previousProjects.filter(p => p.id !== projectId)
+        );
+      }
+      return { previousProjects };
+    },
+    onError: (error: Error, projectId, context) => {
+      // Rollback to the previous state on error
+      if (context?.previousProjects) {
+        queryClient.setQueryData(["/api/projects", serviceId], context.previousProjects);
+      }
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete project",
+        variant: "destructive",
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects", serviceId] });
       toast({
         title: "Success",
         description: "Project deleted successfully!",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete project",
-        variant: "destructive",
       });
     },
   });
