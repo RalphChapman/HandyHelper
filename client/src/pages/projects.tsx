@@ -112,19 +112,21 @@ const ImageDisplay = ({ src, alt, className }: { src: string; alt: string; class
   if (error) {
     return (
       <div className={`flex items-center justify-center bg-muted ${className}`}>
-        <ImageIcon className="h-8 w-8 text-muted-foreground" />
+        <ImageIcon className="h-8 w-4 text-muted-foreground" />
       </div>
     );
   }
 
-  // Remove the normalization since the backend already returns correct paths
+  // Ensure the src starts with /uploads/
+  const imagePath = src.startsWith('/uploads/') ? src : `/uploads/${src.replace(/^\/+/, '')}`;
+
   return (
     <img
-      src={src}
+      src={imagePath}
       alt={alt}
       className={className}
       onError={(e) => {
-        console.error(`[ImageDisplay] Failed to load image:`, { src, error: e });
+        console.error(`[ImageDisplay] Failed to load image:`, { originalSrc: src, normalizedSrc: imagePath, error: e });
         setError(true);
       }}
     />
