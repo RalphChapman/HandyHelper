@@ -584,18 +584,38 @@ export default function Projects() {
       });
 
       let result;
+      if (!response.ok) {
+        const contentType = response.headers.get("content-type");
+        let errorMessage;
+
+        if (contentType?.includes("application/json")) {
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || 'Failed to submit project';
+          } catch (error) {
+            console.error('Error parsing JSON error response:', error);
+            errorMessage = 'Failed to submit project';
+          }
+        } else {
+          try {
+            errorMessage = await response.text();
+          } catch (error) {
+            console.error('Error reading error response:', error);
+            errorMessage = 'Failed to submit project';
+          }
+        }
+
+        throw new Error(errorMessage);
+      }
+
       try {
         result = await response.json();
+        console.log('Project submission result:', result);
       } catch (error) {
-        console.error('Error parsing response:', error);
-        throw new Error('Failed to parse server response');
+        console.error('Error parsing success response:', error);
+        // If we can't parse JSON but the response was OK, consider it a success
+        result = { success: true };
       }
-
-      if (!response.ok) {
-        throw new Error(result?.message || 'Failed to submit project');
-      }
-
-      console.log('Project submission result:', result);
 
       toast({
         title: "Success",
