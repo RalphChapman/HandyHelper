@@ -19,8 +19,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useAuth } from "@/hooks/use-auth";
 import { ReviewForm } from "@/components/review-form";
 import { ReviewsSection } from "@/components/reviews-section";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 
 // Project form schema
 const projectFormSchema = z.object({
@@ -511,71 +509,6 @@ export default function Projects() {
     },
   });
 
-  const deleteProjectMutation = useMutation({
-    mutationFn: async (projectId: number) => {
-      try {
-        const response = await fetch(`/api/projects/${projectId}`, {
-          method: "DELETE",
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          let errorMessage = 'Failed to delete project';
-          try {
-            const errorData = await response.json();
-            errorMessage = errorData.message || errorMessage;
-          } catch (e) {
-            // If response is not JSON, try to get the text
-            const textError = await response.text();
-            errorMessage = textError || errorMessage;
-          }
-          throw new Error(errorMessage);
-        }
-
-        // Only try to parse JSON if we have a content
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          return response.json();
-        }
-
-        // If no JSON content, just return success
-        return { success: true };
-      } catch (error: any) {
-        console.error('Delete project error:', error);
-        throw new Error(error.message || 'An unexpected error occurred while deleting the project');
-      }
-    },
-    onMutate: (projectId) => {
-      // Optimistically remove the project from the UI
-      const previousProjects = queryClient.getQueryData<Project[]>(["/api/projects", serviceId]);
-      if (previousProjects) {
-        queryClient.setQueryData<Project[]>(["/api/projects", serviceId],
-          previousProjects.filter(p => p.id !== projectId)
-        );
-      }
-      return { previousProjects };
-    },
-    onError: (error: Error, projectId, context) => {
-      // Rollback to the previous state on error
-      if (context?.previousProjects) {
-        queryClient.setQueryData(["/api/projects", serviceId], context.previousProjects);
-      }
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete project",
-        variant: "destructive",
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", serviceId] });
-      toast({
-        title: "Success",
-        description: "Project deleted successfully!",
-      });
-    },
-  });
 
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectFormSchema),
@@ -745,31 +678,6 @@ export default function Projects() {
                             />
                           </DialogContent>
                         </Dialog>
-
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Project</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete this project? This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => deleteProjectMutation.mutate(project.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
                       </div>
                     </div>
                     <p className="text-gray-600 mb-4">{project.description}</p>
