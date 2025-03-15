@@ -51,22 +51,25 @@ const ProjectForm = ({ isEdit = false, onSubmit, form }: { isEdit?: boolean; onS
     return () => {
       previewUrls.forEach(URL.revokeObjectURL);
     };
-  }, [previewUrls]);
+  }, []);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
-    // Cleanup old preview URLs
-    previewUrls.forEach(URL.revokeObjectURL);
-
     // Create new preview URLs
     const newUrls = Array.from(files).map(file => URL.createObjectURL(file));
-    setPreviewUrls(newUrls);
 
-    // Update form
+    // Update preview URLs
+    setPreviewUrls(prevUrls => {
+      // Cleanup old preview URLs
+      prevUrls.forEach(URL.revokeObjectURL);
+      return newUrls;
+    });
+
+    // Update form value
     form.setValue('imageFiles', files);
-  }, [form, previewUrls]);
+  }, [form]);
 
   return (
     <Form {...form}>
@@ -153,7 +156,47 @@ const ProjectForm = ({ isEdit = false, onSubmit, form }: { isEdit?: boolean; onS
                 />
               </FormControl>
 
-              {/* Preview new images */}
+              {/* Show existing images in edit mode */}
+              {isEdit && selectedProject?.imageUrls?.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm text-muted-foreground mb-2">Current Images:</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {selectedProject.imageUrls.map((url, index) => (
+                      <div key={`existing-${index}`} className="relative group">
+                        <img
+                          src={url.startsWith('/') ? url : `/uploads/${url}`}
+                          alt={`Current ${index + 1}`}
+                          className="w-full h-24 object-cover rounded-md"
+                        />
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => {
+                            if (selectedProject.imageUrls.length <= 1) {
+                              toast({
+                                title: "Error",
+                                description: "Cannot delete the last image. Projects must have at least one image.",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
+                            deleteImageMutation.mutate({
+                              projectId: selectedProject.id,
+                              imageUrl: url,
+                            });
+                          }}
+                          type="button"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Show selected image previews */}
               {previewUrls.length > 0 && (
                 <div className="mt-4">
                   <p className="text-sm text-muted-foreground mb-2">Selected Images:</p>
@@ -543,13 +586,6 @@ export default function Projects() {
     });
   }
 
-
-  const handleFileChange = (files: FileList | null, isEdit = false) => {
-    if (files) {
-      const urls = Array.from(files).map((file) => URL.createObjectURL(file));
-      //setPreviewUrls(urls); //removed because preview is managed in ProjectForm now
-    }
-  };
 
   if (serviceLoading || projectsLoading) {
     return (
