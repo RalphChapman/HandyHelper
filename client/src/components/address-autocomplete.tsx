@@ -21,76 +21,34 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
   // Debug: Log the API key status (not the actual key)
   console.log("[AddressAutocomplete] API Key status:", apiKey ? "Present" : "Missing");
 
-  // Load Google Maps script
-  const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: apiKey || "",
-    libraries: LIBRARIES
-  });
-
-  // Handle missing API key
-  useEffect(() => {
-    if (!apiKey) {
-      console.error("[AddressAutocomplete] Google Maps API key is missing in environment");
-      setIsKeyMissing(true);
-      onError?.("Address verification is temporarily unavailable. Please enter your address manually.");
-    }
-  }, [apiKey, onError]);
-
-  // Handle script load errors
-  useEffect(() => {
-    if (loadError) {
-      console.error("[AddressAutocomplete] Google Maps load error:", loadError);
-      setIsKeyMissing(true);
-      onError?.("Failed to load address verification. Please enter your address manually.");
-    }
-  }, [loadError, onError]);
-
-  // Handle place selection
-  const onPlaceChanged = () => {
-    if (autocomplete) {
-      const place = autocomplete.getPlace();
-      if (place.formatted_address) {
-        console.log("[AddressAutocomplete] Selected address:", place.formatted_address);
-        onChange(place.formatted_address);
-      } else {
-        console.warn("[AddressAutocomplete] No address returned from place selection");
-        onError?.("Could not verify the selected address. Please check and try again.");
-      }
-    }
-  };
-
-  // Return basic input if API key is missing or there's an error
-  if (isKeyMissing || loadError) {
+  // If API key is missing, just return the basic input
+  if (!apiKey) {
     return (
       <Input 
         value={value} 
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Enter your address manually"
+        placeholder="Enter your address"
       />
     );
   }
 
-  // Show loading state
-  if (!isLoaded) {
-    return <Input value={value} disabled placeholder="Loading address verification..." />;
+  // Return basic input if there's an error
+  if (isKeyMissing) {
+    return (
+      <Input 
+        value={value} 
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Enter your address"
+      />
+    );
   }
 
-  // Return Autocomplete component
+  // Return basic input while loading
   return (
-    <Autocomplete
-      onLoad={setAutocomplete}
-      onPlaceChanged={onPlaceChanged}
-      options={{
-        componentRestrictions: { country: "us" },
-        fields: ["formatted_address", "address_components"],
-        types: ["address"]
-      }}
-    >
-      <Input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Start typing your address..."
-      />
-    </Autocomplete>
+    <Input 
+      value={value} 
+      onChange={(e) => onChange(e.target.value)}
+      placeholder="Enter your address"
+    />
   );
 }
