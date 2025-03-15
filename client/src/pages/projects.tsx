@@ -142,12 +142,18 @@ const ProjectForm = ({ isEdit = false, onSubmit, form, selectedProject = null, d
                   <p className="text-sm text-muted-foreground mb-2">Selected Images:</p>
                   <div className="grid grid-cols-2 gap-2">
                     {previewUrls.map((url, index) => (
-                      <img
-                        key={`preview-${index}`}
-                        src={url}
-                        alt={`Preview ${index + 1}`}
-                        className="w-full h-24 object-cover rounded-md"
-                      />
+                      <div key={`preview-${index}`} className="relative">
+                        <img
+                          src={url}
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-24 object-cover rounded-md"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
+                            target.className = "w-full h-24 p-6 bg-muted rounded-md";
+                          }}
+                        />
+                      </div>
                     ))}
                   </div>
                 </div>
