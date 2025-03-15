@@ -37,8 +37,8 @@ const ImageGallery = ({ images }: { images: string[] }) => {
     <>
       <div className="grid grid-cols-2 gap-2">
         {images.map((url, index) => (
-          <div 
-            key={index} 
+          <div
+            key={index}
             className="relative cursor-pointer group"
             onClick={() => setSelectedImageIndex(index)}
           >
@@ -377,7 +377,9 @@ export default function Projects() {
     const handleLocalFileChange = (files: FileList | null) => {
       if (files && files.length > 0) {
         form.setValue('imageFiles', files);
-        handleFileChange(files, isEdit);  
+        // Create preview URLs for the selected files
+        const urls = Array.from(files).map((file) => URL.createObjectURL(file));
+        setPreviewUrls(urls);
       }
     };
 
@@ -467,7 +469,7 @@ export default function Projects() {
                   />
                 </FormControl>
                 {isEdit && selectedProject && selectedProject.imageUrls && selectedProject.imageUrls.length > 0 && (
-                  <div>
+                  <div className="mt-4">
                     <p className="text-sm text-muted-foreground mb-2">Current Images:</p>
                     <div className="grid grid-cols-2 gap-2">
                       {selectedProject.imageUrls.map((url, index) => (
@@ -505,8 +507,8 @@ export default function Projects() {
                   </div>
                 )}
                 {previewUrls.length > 0 && (
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-2">New Images:</p>
+                  <div className="mt-4">
+                    <p className="text-sm text-muted-foreground mb-2">Selected Images:</p>
                     <div className="grid grid-cols-2 gap-2">
                       {previewUrls.map((url, index) => (
                         <ImageDisplay
@@ -553,8 +555,8 @@ export default function Projects() {
           />
 
           <div className="sticky bottom-0 bg-background pt-4">
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full"
               disabled={isSubmitting || updateProjectMutation.isPending}
             >
