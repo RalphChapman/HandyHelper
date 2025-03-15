@@ -69,12 +69,29 @@ app.use(express.static(path.resolve(process.cwd(), "public"), {
     const server = createServer(app);
 
     if (process.env.NODE_ENV === 'production') {
-      // Serve static files in production
+      // Serve static files and uploads in production
       app.use(express.static(path.resolve(process.cwd(), "dist/public")));
+      app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads'), {
+        setHeaders: (res, filePath) => {
+          if (path.extname(filePath).toLowerCase() === '.jpeg' || 
+              path.extname(filePath).toLowerCase() === '.jpg') {
+            res.setHeader('Content-Type', 'image/jpeg');
+          }
+        }
+      }));
       app.get('*', (req, res) => {
         res.sendFile(path.resolve(process.cwd(), "dist/public/index.html"));
       });
     } else {
+      // Serve uploaded files
+      app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads'), {
+        setHeaders: (res, filePath) => {
+          if (path.extname(filePath).toLowerCase() === '.jpeg' || 
+              path.extname(filePath).toLowerCase() === '.jpg') {
+            res.setHeader('Content-Type', 'image/jpeg');
+          }
+        }
+      }));
       // Let Vite handle all routing in development
       await setupVite(app, server);
     }
