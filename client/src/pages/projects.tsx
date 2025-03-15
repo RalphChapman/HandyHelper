@@ -54,18 +54,27 @@ const ProjectForm = ({ isEdit = false, onSubmit, form, selectedProject = null, d
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0) {
+      console.log('No files selected');
+      return;
+    }
 
     // Clean up existing preview URLs
     previewUrls.forEach(url => URL.revokeObjectURL(url));
 
     // Create new preview URLs
-    const newUrls = Array.from(files).map(file => URL.createObjectURL(file));
-    console.log('Creating preview URLs:', newUrls);
+    const newUrls = Array.from(files).map(file => {
+      console.log('Processing file:', file.name, 'size:', file.size);
+      return URL.createObjectURL(file);
+    });
+    console.log('Created preview URLs:', newUrls);
 
     // Update state and form
     setPreviewUrls(newUrls);
     form.setValue('imageFiles', files, { shouldValidate: true });
+
+    // Log form state after update
+    console.log('Form value after file selection:', form.getValues('imageFiles'));
   }, [form, previewUrls]);
 
   console.log('Current preview URLs:', previewUrls);
@@ -546,17 +555,31 @@ export default function Projects() {
 
       // Handle file uploads
       if (data.imageFiles && data.imageFiles.length > 0) {
-        Array.from(data.imageFiles).forEach((file, index) => {
-          formData.append(`images`, file);
+        console.log('Number of files to upload:', data.imageFiles.length);
+        Array.from(data.imageFiles).forEach((file) => {
+          console.log('Appending file:', file.name, 'size:', file.size);
+          formData.append('images', file);
         });
+
+        // Log FormData contents for debugging
+        for (let [key, value] of formData.entries()) {
+          console.log(`FormData entry - ${key}:`, value instanceof File ? `File: ${value.name}` : value);
+        }
+      } else {
+        console.error('No files selected for upload');
+        toast({
+          title: "Error",
+          description: "Please select at least one image to upload",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
       }
 
-      console.log('Submitting project with files:', data.imageFiles);
-
+      console.log('Submitting project...');
       const response = await fetch("/api/projects", {
         method: "POST",
         body: formData,
-        // Don't set Content-Type header, let the browser set it with the boundary
       });
 
       if (!response.ok) {
@@ -565,7 +588,6 @@ export default function Projects() {
           const errorData = await response.json();
           errorMessage = errorData.message || errorMessage;
         } catch (e) {
-          // If response is not JSON, try to get the text
           const textError = await response.text();
           console.error('Project submission error response:', textError);
           errorMessage = textError || errorMessage;
@@ -574,6 +596,7 @@ export default function Projects() {
       }
 
       const result = await response.json();
+      console.log('Project submission result:', result);
 
       toast({
         title: "Success",
