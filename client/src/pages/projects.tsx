@@ -20,14 +20,9 @@ import { format } from "date-fns";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
+// Separate component for handling both server images and local previews
 const ImageDisplay = ({ src, alt, className }: { src: string; alt: string; className?: string }) => {
   const [error, setError] = useState(false);
-  const [imageSrc, setImageSrc] = useState(src);
-
-  useEffect(() => {
-    setImageSrc(src);
-    setError(false);
-  }, [src]);
 
   if (error) {
     return (
@@ -37,13 +32,16 @@ const ImageDisplay = ({ src, alt, className }: { src: string; alt: string; class
     );
   }
 
+  // Handle both blob URLs and server paths
+  const imageSrc = src.startsWith('blob:') ? src : src.startsWith('/') ? src : `/uploads/${src}`;
+
   return (
     <img
       src={imageSrc}
       alt={alt}
       className={className}
       onError={(e) => {
-        console.error(`Failed to load image:`, { src: imageSrc });
+        console.error('Image load error:', { src: imageSrc });
         setError(true);
       }}
     />
@@ -377,14 +375,14 @@ export default function Projects() {
     const [fileInputKey, setFileInputKey] = useState(0);
     const [localPreviewUrls, setLocalPreviewUrls] = useState<string[]>([]);
 
-    // Cleanup preview URLs when component unmounts
+    // Cleanup preview URLs when component unmounts or changes
     useEffect(() => {
       return () => {
         localPreviewUrls.forEach(URL.revokeObjectURL);
       };
     }, [localPreviewUrls]);
 
-    // Handle file change without affecting form state
+    // Handle local file changes
     const handleLocalFileChange = (files: FileList | null) => {
       if (files && files.length > 0) {
         // Cleanup previous preview URLs
@@ -484,7 +482,9 @@ export default function Projects() {
                     className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
                   />
                 </FormControl>
-                {isEdit && selectedProject && selectedProject.imageUrls && selectedProject.imageUrls.length > 0 && (
+
+                {/* Display existing images in edit mode */}
+                {isEdit && selectedProject?.imageUrls?.length > 0 && (
                   <div className="mt-4">
                     <p className="text-sm text-muted-foreground mb-2">Current Images:</p>
                     <div className="grid grid-cols-2 gap-2">
@@ -522,6 +522,8 @@ export default function Projects() {
                     </div>
                   </div>
                 )}
+
+                {/* Display new image previews */}
                 {localPreviewUrls.length > 0 && (
                   <div className="mt-4">
                     <p className="text-sm text-muted-foreground mb-2">Selected Images:</p>
@@ -537,6 +539,7 @@ export default function Projects() {
                     </div>
                   </div>
                 )}
+
                 <FormMessage />
               </FormItem>
             )}
