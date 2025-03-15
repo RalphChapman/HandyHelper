@@ -12,7 +12,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { ImageIcon, Loader2, Calendar, Edit, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { ImageIcon, Loader2, Calendar, Edit, X } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -54,18 +54,21 @@ const ProjectForm = ({ isEdit = false, onSubmit, form, selectedProject = null, d
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
+    if (!files || files.length === 0) return;
 
-    // Cleanup old preview URLs
+    // Clean up existing preview URLs
     previewUrls.forEach(url => URL.revokeObjectURL(url));
 
-    // Create new preview URLs and update state
+    // Create new preview URLs
     const newUrls = Array.from(files).map(file => URL.createObjectURL(file));
-    setPreviewUrls(newUrls);
+    console.log('Creating preview URLs:', newUrls);
 
-    // Update form value with the FileList
+    // Update state and form
+    setPreviewUrls(newUrls);
     form.setValue('imageFiles', files, { shouldValidate: true });
   }, [form, previewUrls]);
+
+  console.log('Current preview URLs:', previewUrls);
 
   return (
     <Form {...form}>
@@ -90,17 +93,40 @@ const ProjectForm = ({ isEdit = false, onSubmit, form, selectedProject = null, d
           )}
         />
 
+        {/* Image Preview Section */}
+        {previewUrls.length > 0 && (
+          <div className="mt-4 border rounded-lg p-4">
+            <p className="text-sm font-medium mb-2">Selected Images:</p>
+            <div className="grid grid-cols-2 gap-4">
+              {previewUrls.map((url, index) => (
+                <div key={`preview-${index}`} className="relative aspect-video">
+                  <img
+                    src={url}
+                    alt={`Preview ${index + 1}`}
+                    className="rounded-md object-cover w-full h-full"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>';
+                      target.className = "rounded-md object-contain w-full h-full p-4 bg-muted";
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Show existing images in edit mode */}
         {isEdit && selectedProject?.imageUrls?.length > 0 && (
-          <div className="mt-4">
-            <p className="text-sm text-muted-foreground mb-2">Current Images:</p>
-            <div className="grid grid-cols-2 gap-2">
+          <div className="mt-4 border rounded-lg p-4">
+            <p className="text-sm font-medium mb-2">Current Images:</p>
+            <div className="grid grid-cols-2 gap-4">
               {selectedProject.imageUrls.map((url, index) => (
-                <div key={`existing-${index}`} className="relative group">
+                <div key={`existing-${index}`} className="relative aspect-video group">
                   <img
                     src={url.startsWith('/') ? url : `/uploads/${url}`}
                     alt={`Current ${index + 1}`}
-                    className="w-full h-24 object-cover rounded-md"
+                    className="rounded-md object-cover w-full h-full"
                   />
                   <Button
                     variant="destructive"
@@ -124,29 +150,6 @@ const ProjectForm = ({ isEdit = false, onSubmit, form, selectedProject = null, d
                   >
                     <X className="h-4 w-4" />
                   </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Preview section for newly selected images */}
-        {previewUrls.length > 0 && (
-          <div className="mt-4 p-4 border rounded-lg">
-            <p className="text-sm text-muted-foreground mb-2">Selected Images:</p>
-            <div className="grid grid-cols-2 gap-2">
-              {previewUrls.map((url, index) => (
-                <div key={`preview-${index}`} className="relative">
-                  <img
-                    src={url}
-                    alt={`Preview ${index + 1}`}
-                    className="w-full h-24 object-cover rounded-md"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.className = "w-full h-24 p-6 bg-muted rounded-md";
-                      target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
-                    }}
-                  />
                 </div>
               ))}
             </div>
