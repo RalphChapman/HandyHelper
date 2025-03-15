@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Service } from "@shared/schema";
@@ -19,6 +19,36 @@ import { useAuth } from "@/hooks/use-auth";
 import { format } from "date-fns";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+const ImageDisplay = ({ src, alt, className }: { src: string; alt: string; className?: string }) => {
+  const [error, setError] = useState(false);
+  const [imageSrc, setImageSrc] = useState(src);
+
+  useEffect(() => {
+    setImageSrc(src);
+    setError(false);
+  }, [src]);
+
+  if (error) {
+    return (
+      <div className={`flex items-center justify-center bg-muted ${className}`}>
+        <ImageIcon className="h-8 w-8 text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={imageSrc}
+      alt={alt}
+      className={className}
+      onError={(e) => {
+        console.error(`Failed to load image:`, { src: imageSrc });
+        setError(true);
+      }}
+    />
+  );
+};
 
 const ImageGallery = ({ images }: { images: string[] }) => {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
@@ -103,33 +133,6 @@ const ImageGallery = ({ images }: { images: string[] }) => {
         </DialogContent>
       </Dialog>
     </>
-  );
-};
-
-const ImageDisplay = ({ src, alt, className }: { src: string; alt: string; className?: string }) => {
-  const [error, setError] = useState(false);
-
-  if (error) {
-    return (
-      <div className={`flex items-center justify-center bg-muted ${className}`}>
-        <ImageIcon className="h-8 w-4 text-muted-foreground" />
-      </div>
-    );
-  }
-
-  // Ensure the src starts with /uploads/
-  const imagePath = src.startsWith('/uploads/') ? src : `/uploads/${src.replace(/^\/+/, '')}`;
-
-  return (
-    <img
-      src={imagePath}
-      alt={alt}
-      className={className}
-      onError={(e) => {
-        console.error(`[ImageDisplay] Failed to load image:`, { originalSrc: src, normalizedSrc: imagePath, error: e });
-        setError(true);
-      }}
-    />
   );
 };
 
@@ -372,14 +375,27 @@ export default function Projects() {
 
   const ProjectForm = ({ isEdit = false, onSubmit, form }: { isEdit?: boolean; onSubmit: any; form: any }) => {
     const [fileInputKey, setFileInputKey] = useState(0);
+    const [localPreviewUrls, setLocalPreviewUrls] = useState<string[]>([]);
+
+    // Cleanup preview URLs when component unmounts
+    useEffect(() => {
+      return () => {
+        localPreviewUrls.forEach(URL.revokeObjectURL);
+      };
+    }, [localPreviewUrls]);
 
     // Handle file change without affecting form state
     const handleLocalFileChange = (files: FileList | null) => {
       if (files && files.length > 0) {
+        // Cleanup previous preview URLs
+        localPreviewUrls.forEach(URL.revokeObjectURL);
+
+        // Create new preview URLs
+        const newUrls = Array.from(files).map(file => URL.createObjectURL(file));
+        setLocalPreviewUrls(newUrls);
+
+        // Update form state
         form.setValue('imageFiles', files);
-        // Create preview URLs for the selected files
-        const urls = Array.from(files).map((file) => URL.createObjectURL(file));
-        setPreviewUrls(urls);
       }
     };
 
@@ -473,7 +489,7 @@ export default function Projects() {
                     <p className="text-sm text-muted-foreground mb-2">Current Images:</p>
                     <div className="grid grid-cols-2 gap-2">
                       {selectedProject.imageUrls.map((url, index) => (
-                        <div key={index} className="relative group">
+                        <div key={`existing-${index}`} className="relative group">
                           <ImageDisplay
                             src={url}
                             alt={`Current ${index + 1}`}
@@ -506,13 +522,13 @@ export default function Projects() {
                     </div>
                   </div>
                 )}
-                {previewUrls.length > 0 && (
+                {localPreviewUrls.length > 0 && (
                   <div className="mt-4">
                     <p className="text-sm text-muted-foreground mb-2">Selected Images:</p>
                     <div className="grid grid-cols-2 gap-2">
-                      {previewUrls.map((url, index) => (
+                      {localPreviewUrls.map((url, index) => (
                         <ImageDisplay
-                          key={index}
+                          key={`preview-${index}`}
                           src={url}
                           alt={`Preview ${index + 1}`}
                           className="w-full h-24 object-cover rounded-md"
