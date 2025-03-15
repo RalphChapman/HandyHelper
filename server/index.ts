@@ -1,4 +1,3 @@
-// Remove forced production mode to allow proper environment detection
 import express from "express";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
@@ -13,11 +12,11 @@ const app = express();
 // Trust proxies in the Replit environment
 app.set('trust proxy', 1);
 
-// Add permissive CSP headers
+// Add permissive CSP headers that allow PDFs
 app.use((req, res, next) => {
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;"
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; object-src 'self'; media-src 'self'"
   );
   next();
 });
