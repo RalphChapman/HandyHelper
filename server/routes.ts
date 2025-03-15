@@ -16,23 +16,49 @@ import fs from "fs";
 const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
-      // Ensure uploads directory exists
-      if (!fs.existsSync("./uploads")) {
-        fs.mkdirSync("./uploads", { recursive: true });
+      // Use path.join for cross-platform compatibility
+      const uploadDir = path.join(process.cwd(), 'uploads');
+      console.log('[API] Upload directory:', uploadDir);
+
+      // Ensure uploads directory exists with proper permissions
+      if (!fs.existsSync(uploadDir)) {
+        console.log('[API] Creating uploads directory');
+        try {
+          fs.mkdirSync(uploadDir, { recursive: true, mode: 0o755 });
+          console.log('[API] Created uploads directory successfully');
+        } catch (error) {
+          console.error('[API] Error creating uploads directory:', error);
+          cb(error as Error, uploadDir);
+          return;
+        }
       }
-      cb(null, "./uploads");
+
+      // Verify directory is writable
+      try {
+        fs.accessSync(uploadDir, fs.constants.W_OK);
+        console.log('[API] Uploads directory is writable');
+      } catch (error) {
+        console.error('[API] Uploads directory is not writable:', error);
+        cb(error as Error, uploadDir);
+        return;
+      }
+
+      cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
-      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1E9);
-      cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const filename = file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname);
+      console.log('[API] Generated filename:', filename);
+      cb(null, filename);
     }
   }),
   fileFilter: (req, file, cb) => {
-    console.log("[API] Processing file upload:", file.originalname);
+    console.log('[API] Processing file upload:', file.originalname, 'mimetype:', file.mimetype);
     // Accept only image files
     if (file.mimetype.startsWith("image/")) {
       cb(null, true);
     } else {
+      console.log('[API] Rejected file:', file.originalname, '- not an image');
       cb(new Error("Please upload only images"));
     }
   },
@@ -62,14 +88,29 @@ export async function registerRoutes(app: Express) {
   setupAuth(app);
 
   // Create uploads directory if it doesn't exist
-  if (!fs.existsSync("./uploads")) {
-    fs.mkdirSync("./uploads", { recursive: true });
+  const uploadDir = path.join(process.cwd(), 'uploads');
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true, mode: 0o755 });
   }
 
-  // Serve uploaded files - Add debug logging
+  // Serve uploaded files with proper debugging
   app.use("/uploads", (req, res, next) => {
     console.log("[API] Serving file from uploads:", req.url);
-    express.static("uploads")(req, res, next);
+    express.static(uploadDir, {
+      fallthrough: false, // Return 404 if file not found
+      index: false, // Disable directory listing
+    })(req, res, (err) => {
+      if (err) {
+        console.error("[API] Error serving file:", err);
+        if (err.status === 404) {
+          res.status(404).json({ message: "File not found" });
+        } else {
+          res.status(500).json({ message: "Error serving file" });
+        }
+      } else {
+        next();
+      }
+    });
   });
 
 
@@ -762,8 +803,7 @@ export async function registerRoutes(app: Express) {
 
       const files = req.files as Express.Multer.File[];
 
-      // Handle image URLs
-      let imageUrls = existingProject.imageUrls || [];
+      // Handle image URLs      let imageUrls = existingProject.imageUrls || [];
 
       // Add new image URLs if files were uploaded
       if (files && files.length > 0) {
