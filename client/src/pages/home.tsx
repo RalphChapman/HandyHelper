@@ -92,6 +92,13 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center mb-12">
             <h2 className="text-3xl font-bold mb-6">Meet Your Handyman</h2>
+            <div className="mb-8">
+              <img 
+                src="/uploads/IMG_0379.JPEG" 
+                alt="Ralph Chapman - Your Handyman"
+                className="rounded-lg mx-auto max-w-md w-full object-cover shadow-lg"
+              />
+            </div>
             <div className="space-y-4 text-left">
               <p className="text-gray-700 leading-relaxed">
                 Hello, I am Ralph Chapman, an electrical engineer with 18 years
