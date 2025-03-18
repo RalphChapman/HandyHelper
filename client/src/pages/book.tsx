@@ -21,19 +21,10 @@ const BUSINESS_HOURS = Array.from({ length: 9 }, (_, i) => i + 9); // 9 to 17 (5
 export default function Book() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const searchParams = new URLSearchParams(window.location.search);
-  const preselectedService = searchParams.get("service");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: services, isLoading: servicesLoading } = useQuery<Service[]>({
     queryKey: ["/api/services"],
-    queryFn: async () => {
-      const response = await fetch("/api/services");
-      if (!response.ok) {
-        throw new Error(`Failed to fetch services: ${response.statusText}`);
-      }
-      return response.json();
-    }
   });
 
   const form = useForm({
@@ -44,7 +35,7 @@ export default function Book() {
       clientEmail: "",
       clientPhone: "",
       appointmentDate: new Date().toISOString(),
-      notes: null,
+      notes: "",
     },
   });
 
@@ -74,25 +65,23 @@ export default function Book() {
   async function onSubmit(formData: any) {
     setIsSubmitting(true);
     try {
-      console.log("Raw form data:", formData);
-
+      // Ensure serviceId is a number
       const bookingData = {
+        ...formData,
         serviceId: Number(formData.serviceId),
-        clientName: formData.clientName,
-        clientEmail: formData.clientEmail,
-        clientPhone: formData.clientPhone,
-        appointmentDate: formData.appointmentDate,
-        notes: formData.notes === "" ? null : formData.notes,
+        // Ensure notes is empty string if null
+        notes: formData.notes || "",
+        // Ensure appointmentDate is ISO string
+        appointmentDate: new Date(formData.appointmentDate).toISOString()
       };
 
-      console.log("Sanitized booking data:", bookingData);
+      console.log("Submitting booking data:", bookingData);
 
       const response = await apiRequest("POST", "/api/bookings", bookingData);
-      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        console.error("Server response:", data);
-        throw new Error(data.message || `Failed to submit booking: ${response.status} ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to submit booking: ${response.status} ${response.statusText}`);
       }
 
       toast({
@@ -164,6 +153,9 @@ export default function Book() {
                             const newDate = new Date(date);
                             const currentDate = new Date(field.value);
                             newDate.setHours(currentDate.getHours());
+                            newDate.setMinutes(0);
+                            newDate.setSeconds(0);
+                            newDate.setMilliseconds(0);
                             field.onChange(newDate.toISOString());
                           }
                         }}
