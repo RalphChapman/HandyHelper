@@ -1,7 +1,6 @@
 import { Input } from "@/components/ui/input";
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Loader2 } from "lucide-react";
-import { useGoogleMapsScript } from "@/lib/maps-loader";
 
 interface AddressAutocompleteProps {
   value: string;
@@ -9,39 +8,51 @@ interface AddressAutocompleteProps {
 }
 
 export function AddressAutocomplete({ value, onChange }: AddressAutocompleteProps) {
-  const { isLoaded, error } = useGoogleMapsScript();
-  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (isLoaded && inputRef.current && !autocomplete) {
-      const newAutocomplete = new google.maps.places.Autocomplete(inputRef.current, {
-        componentRestrictions: { country: "us" },
-        types: ['address']
-      });
+    // Load Google Maps JavaScript API script
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places`;
+    script.async = true;
+    script.defer = true;
 
-      newAutocomplete.addListener('place_changed', () => {
-        const place = newAutocomplete.getPlace();
-        if (place.formatted_address) {
-          onChange(place.formatted_address);
-        }
-      });
+    script.onload = () => {
+      setIsLoading(false);
 
-      setAutocomplete(newAutocomplete);
-    }
-  }, [isLoaded, onChange]);
+      if (inputRef.current) {
+        // Initialize Google Places Autocomplete
+        const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
+          componentRestrictions: { country: "us" },
+          types: ["address"],
+          fields: ["formatted_address"]
+        });
 
-  if (error) {
-    return (
-      <Input 
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Enter your address"
-      />
-    );
-  }
+        // Add place_changed event listener
+        autocomplete.addListener("place_changed", () => {
+          const place = autocomplete.getPlace();
+          if (place.formatted_address) {
+            onChange(place.formatted_address);
+          }
+        });
+      }
+    };
 
-  if (!isLoaded) {
+    script.onerror = () => {
+      console.error("Failed to load Google Maps JavaScript API");
+      setIsLoading(false);
+    };
+
+    document.head.appendChild(script);
+
+    // Cleanup
+    return () => {
+      document.head.removeChild(script);
+    };
+  }, [onChange]);
+
+  if (isLoading) {
     return (
       <div className="flex items-center gap-2">
         <Input disabled placeholder="Loading address search..." />
