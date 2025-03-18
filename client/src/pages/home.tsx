@@ -69,7 +69,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Moved Schedule a Service section here */}
+      {/* Schedule a Service section */}
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center mb-8">
@@ -77,8 +77,7 @@ export default function Home() {
           </h2>
           <div className="max-w-lg mx-auto text-center">
             <p className="text-gray-600 mb-6">
-              Ready to get started? Click below to book a service or request a
-              quote.
+              Ready to get started? Book now for immediate scheduling or find out how much your project will cost by requesting a quote.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/book">
@@ -86,15 +85,20 @@ export default function Home() {
                   Book Now
                 </Button>
               </Link>
-              <Link href="/quote">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="w-full sm:w-auto"
-                >
-                  Request Quote
-                </Button>
-              </Link>
+              <div className="flex flex-col items-center">
+                <Link href="/quote">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-full sm:w-auto mb-2"
+                  >
+                    Request Quote
+                  </Button>
+                </Link>
+                <p className="text-sm text-gray-500">
+                  Find out how much it costs by requesting a quote
+                </p>
+              </div>
             </div>
           </div>
         </div>
