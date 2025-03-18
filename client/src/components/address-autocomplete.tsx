@@ -33,9 +33,15 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
     try {
       if (autocomplete) {
         const place = autocomplete.getPlace();
+        if (!place.geometry) {
+          onError?.('Please select a valid address from the dropdown');
+          return;
+        }
         const formattedAddress = place.formatted_address;
         if (formattedAddress) {
           onChange(formattedAddress);
+        } else {
+          onError?.('Selected place does not have a valid address');
         }
       }
     } catch (error) {
