@@ -1,9 +1,6 @@
-import { useLoadScript } from "@react-google-maps/api";
 import { Input } from "@/components/ui/input";
-import { useState, useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
-
-const libraries: ("places")[] = ["places"];
 
 interface AddressAutocompleteProps {
   value: string;
@@ -12,41 +9,41 @@ interface AddressAutocompleteProps {
 
 export function AddressAutocomplete({ value, onChange }: AddressAutocompleteProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
-
-  const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? "",
-    libraries,
-  });
+  const [isScriptLoaded, setIsScriptLoaded] = useState(false);
 
   useEffect(() => {
-    if (isLoaded && inputRef.current && !autocomplete) {
-      const newAutocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-        componentRestrictions: { country: "us" },
-        types: ["address"]
-      });
+    const checkScript = setInterval(() => {
+      if (window.google?.maps?.places) {
+        setIsScriptLoaded(true);
+        clearInterval(checkScript);
+      }
+    }, 100);
 
-      newAutocomplete.addListener("place_changed", () => {
-        const place = newAutocomplete.getPlace();
-        if (place.formatted_address) {
-          onChange(place.formatted_address);
-        }
-      });
+    return () => clearInterval(checkScript);
+  }, []);
 
-      setAutocomplete(newAutocomplete);
-    }
-  }, [isLoaded, onChange]);
+  useEffect(() => {
+    if (!inputRef.current || !isScriptLoaded) return;
 
-  if (loadError) {
-    console.error("Google Maps Error:", loadError);
-    return (
-      <Input 
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Enter your address"
-      />
-    );
-  }
+    const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
+      componentRestrictions: { country: "us" },
+      types: ["address"],
+      fields: ["formatted_address"]
+    });
+
+    autocomplete.addListener("place_changed", () => {
+      const place = autocomplete.getPlace();
+      if (place.formatted_address) {
+        onChange(place.formatted_address);
+      }
+    });
+
+    return () => {
+      if (window.google?.maps?.event) {
+        window.google.maps.event.clearInstanceListeners(autocomplete);
+      }
+    };
+  }, [isScriptLoaded, onChange]);
 
   return (
     <div className="relative">
@@ -55,10 +52,10 @@ export function AddressAutocomplete({ value, onChange }: AddressAutocompleteProp
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Start typing your address"
+        placeholder={isScriptLoaded ? "Start typing your address" : "Loading address search..."}
         className="pr-8"
       />
-      {!isLoaded && (
+      {!isScriptLoaded && (
         <div className="absolute right-2 top-1/2 -translate-y-1/2">
           <Loader2 className="h-4 w-4 animate-spin" />
         </div>

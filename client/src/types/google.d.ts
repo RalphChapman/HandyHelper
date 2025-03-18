@@ -4,4 +4,8 @@ declare global {
   }
 }
 
+declare namespace google.maps {
+  export type Libraries = Array<'drawing' | 'geometry' | 'localContext' | 'places' | 'visualization'>;
+}
+
 export {};
