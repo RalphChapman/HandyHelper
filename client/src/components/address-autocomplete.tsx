@@ -1,5 +1,5 @@
 import { Input } from "@/components/ui/input";
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
 interface AddressAutocompleteProps {
@@ -12,43 +12,53 @@ export function AddressAutocomplete({ value, onChange }: AddressAutocompleteProp
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // Check if script is already loaded
+    if (window.google?.maps?.places) {
+      setIsLoading(false);
+      initializeAutocomplete();
+      return;
+    }
+
     // Load Google Maps JavaScript API script
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places`;
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
     script.async = true;
-    script.defer = true;
 
     script.onload = () => {
       setIsLoading(false);
-
-      if (inputRef.current) {
-        // Initialize Google Places Autocomplete
-        const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-          componentRestrictions: { country: "us" },
-          types: ["address"],
-          fields: ["formatted_address"]
-        });
-
-        // Add place_changed event listener
-        autocomplete.addListener("place_changed", () => {
-          const place = autocomplete.getPlace();
-          if (place.formatted_address) {
-            onChange(place.formatted_address);
-          }
-        });
-      }
+      initializeAutocomplete();
     };
 
-    script.onerror = () => {
-      console.error("Failed to load Google Maps JavaScript API");
+    script.onerror = (error) => {
+      console.error("Failed to load Google Maps JavaScript API:", error);
       setIsLoading(false);
     };
 
     document.head.appendChild(script);
 
-    // Cleanup
+    function initializeAutocomplete() {
+      if (!inputRef.current || !window.google?.maps?.places) return;
+
+      const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
+        componentRestrictions: { country: "us" },
+        types: ["address"],
+        fields: ["formatted_address"]
+      });
+
+      autocomplete.addListener("place_changed", () => {
+        const place = autocomplete.getPlace();
+        if (place.formatted_address) {
+          onChange(place.formatted_address);
+        }
+      });
+    }
+
     return () => {
-      document.head.removeChild(script);
+      const script = document.querySelector(`script[src^="https://maps.googleapis.com/maps/api/js"]`);
+      if (script) {
+        document.head.removeChild(script);
+      }
     };
   }, [onChange]);
 
