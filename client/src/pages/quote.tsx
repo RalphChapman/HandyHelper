@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
@@ -40,8 +40,15 @@ export default function Quote() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: services } = useQuery<Service[]>({
+  const { data: services } = useQuery({
     queryKey: ["/api/services"],
+    queryFn: async () => {
+      const response = await fetch("/api/services");
+      if (!response.ok) {
+        throw new Error("Failed to fetch services");
+      }
+      return response.json() as Promise<Service[]>;
+    }
   });
 
   const form = useForm<InsertQuoteRequest>({
