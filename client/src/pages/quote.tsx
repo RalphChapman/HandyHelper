@@ -18,8 +18,35 @@ import { useAuth } from "@/hooks/use-auth";
 function extractLocationFromAddress(address: string): string {
   try {
     if (!address) return "Charleston, South Carolina";
-    const match = address.match(/([^,]+),\s*([A-Z]{2})/);
-    return match ? `${match[1].trim()}, ${match[2]}` : "Charleston, South Carolina";
+
+    // First try to match the format "city, state" at the end of the address
+    const match = address.match(/,?\s*([^,]+),\s*([A-Za-z]{2})\s*$/);
+    if (match) {
+      const city = match[1].trim();
+      // Convert state to uppercase
+      const state = match[2].toUpperCase();
+
+      // Map state abbreviations to full names
+      const stateMap: { [key: string]: string } = {
+        'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas',
+        'CA': 'California', 'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware',
+        'FL': 'Florida', 'GA': 'Georgia', 'HI': 'Hawaii', 'ID': 'Idaho',
+        'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa', 'KS': 'Kansas',
+        'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland',
+        'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi',
+        'MO': 'Missouri', 'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada',
+        'NH': 'New Hampshire', 'NJ': 'New Jersey', 'NM': 'New Mexico', 'NY': 'New York',
+        'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio', 'OK': 'Oklahoma',
+        'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina',
+        'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah',
+        'VT': 'Vermont', 'VA': 'Virginia', 'WA': 'Washington', 'WV': 'West Virginia',
+        'WI': 'Wisconsin', 'WY': 'Wyoming'
+      };
+
+      return `${city}, ${stateMap[state] || state}`;
+    }
+
+    return "Charleston, South Carolina";
   } catch (error) {
     console.error('Error parsing address:', error);
     return "Charleston, South Carolina";
