@@ -1,6 +1,7 @@
 import { useLoadScript, Autocomplete } from "@react-google-maps/api";
 import { Input } from "@/components/ui/input";
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
+import { Loader2 } from "lucide-react";
 
 interface AddressAutocompleteProps {
   value: string;
@@ -13,42 +14,64 @@ const LIBRARIES: ("places")[] = ["places"];
 
 export function AddressAutocomplete({ value, onChange, onError }: AddressAutocompleteProps) {
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
-  const [isKeyMissing, setIsKeyMissing] = useState(false);
 
   // Get API key from environment
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
-  // Debug: Log the API key status (not the actual key)
-  console.log("[AddressAutocomplete] API Key status:", apiKey ? "Present" : "Missing");
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: apiKey || "",
+    libraries: LIBRARIES,
+  });
 
-  // If API key is missing, just return the basic input
-  if (!apiKey) {
+  const onLoad = useCallback((autocomplete: google.maps.places.Autocomplete) => {
+    setAutocomplete(autocomplete);
+  }, []);
+
+  const onPlaceChanged = useCallback(() => {
+    if (autocomplete) {
+      const place = autocomplete.getPlace();
+      const formattedAddress = place.formatted_address;
+      if (formattedAddress) {
+        onChange(formattedAddress);
+      }
+    }
+  }, [autocomplete, onChange]);
+
+  // Handle loading error
+  if (loadError) {
+    console.error('Error loading Google Maps:', loadError);
+    onError?.('Failed to load Google Maps. Please try entering your address manually.');
     return (
       <Input 
         value={value} 
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Enter your address"
+        placeholder="Enter your address manually"
       />
     );
   }
 
-  // Return basic input if there's an error
-  if (isKeyMissing) {
+  // Show loading state
+  if (!isLoaded) {
     return (
-      <Input 
-        value={value} 
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Enter your address"
-      />
+      <div className="flex items-center gap-2">
+        <Input disabled placeholder="Loading address search..." />
+        <Loader2 className="h-4 w-4 animate-spin" />
+      </div>
     );
   }
 
-  // Return basic input while loading
+  // Return the Autocomplete component when everything is loaded
   return (
-    <Input 
-      value={value} 
-      onChange={(e) => onChange(e.target.value)}
-      placeholder="Enter your address"
-    />
+    <Autocomplete
+      onLoad={onLoad}
+      onPlaceChanged={onPlaceChanged}
+      options={{ componentRestrictions: { country: "us" } }}
+    >
+      <Input 
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Start typing your address"
+      />
+    </Autocomplete>
   );
 }
