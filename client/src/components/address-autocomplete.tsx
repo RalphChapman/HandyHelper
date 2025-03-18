@@ -10,10 +10,18 @@ interface AddressAutocompleteProps {
 const addressSchema = z.string().min(5, "Please enter a complete address");
 
 // Common address components for suggestions
-const streetSuffixes = [
-  "Street", "St", "Avenue", "Ave", "Road", "Rd", "Boulevard", "Blvd",
-  "Lane", "Ln", "Drive", "Dr", "Court", "Ct", "Circle", "Cir",
-  "Place", "Pl", "Way", "Parkway", "Pkwy"
+const streetTypes = [
+  "Street", "Avenue", "Road", "Boulevard", "Lane", "Drive", "Court", "Circle",
+  "Place", "Way", "Parkway", "Plaza", "Terrace", "Walk"
+];
+
+const streetDirections = ["N", "S", "E", "W", "NE", "NW", "SE", "SW"];
+
+const unitTypes = ["Apt", "Unit", "Suite", "#"];
+
+const commonStreetNames = [
+  "Main", "Oak", "Pine", "Maple", "Cedar", "Elm", "Washington", "Park",
+  "Lake", "Hill", "River", "Valley", "Forest", "Highland", "Madison"
 ];
 
 export function AddressAutocomplete({ value, onChange }: AddressAutocompleteProps) {
@@ -33,22 +41,50 @@ export function AddressAutocomplete({ value, onChange }: AddressAutocompleteProp
     }
   };
 
+  const generateSuggestions = (input: string) => {
+    const parts = input.trim().split(/\s+/);
+    const lastWord = parts[parts.length - 1].toLowerCase();
+    const prevWord = parts[parts.length - 2]?.toLowerCase();
+    let newSuggestions: string[] = [];
+
+    // If starts with number, suggest street names
+    if (parts.length === 1 && /^\d+$/.test(lastWord)) {
+      newSuggestions = commonStreetNames.map(name => `${lastWord} ${name}`);
+    }
+    // If previous word is a number, suggest street names
+    else if (parts.length === 2 && /^\d+$/.test(parts[0])) {
+      newSuggestions = commonStreetNames
+        .filter(name => name.toLowerCase().startsWith(lastWord))
+        .map(name => `${parts[0]} ${name}`);
+    }
+    // If previous word is a street name, suggest street types
+    else if (parts.length >= 2 && commonStreetNames.some(name => 
+      name.toLowerCase() === prevWord?.toLowerCase())) {
+      newSuggestions = streetTypes
+        .filter(type => type.toLowerCase().startsWith(lastWord))
+        .map(type => `${parts.slice(0, -1).join(" ")} ${type}`);
+    }
+    // If last word might be starting a unit/apt number
+    else if (parts.length >= 3 && unitTypes.some(type => type.toLowerCase().startsWith(lastWord))) {
+      newSuggestions = unitTypes.map(type => `${parts.slice(0, -1).join(" ")} ${type}`);
+    }
+    // Suggest directions if appropriate
+    else if (parts.length >= 3 && streetDirections.some(dir => dir.toLowerCase().startsWith(lastWord))) {
+      newSuggestions = streetDirections
+        .filter(dir => dir.toLowerCase().startsWith(lastWord))
+        .map(dir => `${parts.slice(0, -1).join(" ")} ${dir}`);
+    }
+
+    return newSuggestions;
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     onChange(newValue);
 
-    // Generate suggestions based on the last word being typed
-    const words = newValue.split(' ');
-    const lastWord = words[words.length - 1].toLowerCase();
-
-    if (lastWord.length > 0) {
-      const matchingSuffixes = streetSuffixes.filter(suffix => 
-        suffix.toLowerCase().startsWith(lastWord)
-      );
-      setSuggestions(matchingSuffixes);
-    } else {
-      setSuggestions([]);
-    }
+    // Generate suggestions
+    const newSuggestions = generateSuggestions(newValue);
+    setSuggestions(newSuggestions);
 
     if (isDirty) {
       validateAddress(newValue);
@@ -56,17 +92,13 @@ export function AddressAutocomplete({ value, onChange }: AddressAutocompleteProp
   };
 
   const handleBlur = () => {
-    // Hide suggestions after a short delay to allow clicking them
     setTimeout(() => setSuggestions([]), 200);
     setIsDirty(true);
     validateAddress(value);
   };
 
   const applySuggestion = (suggestion: string) => {
-    const words = value.split(' ');
-    words[words.length - 1] = suggestion;
-    const newValue = words.join(' ');
-    onChange(newValue);
+    onChange(suggestion);
     setSuggestions([]);
     if (inputRef.current) {
       inputRef.current.focus();
@@ -81,14 +113,14 @@ export function AddressAutocomplete({ value, onChange }: AddressAutocompleteProp
         value={value}
         onChange={handleChange}
         onBlur={handleBlur}
-        placeholder="Enter your full address (e.g. 123 Main St)"
+        placeholder="Enter address (e.g. 123 Main Street)"
         className={error && isDirty ? "border-red-500" : ""}
       />
       {error && isDirty && (
         <p className="text-sm text-red-500">{error}</p>
       )}
       {suggestions.length > 0 && (
-        <div className="absolute z-10 w-full bg-white border rounded-md shadow-lg mt-1">
+        <div className="absolute z-10 w-full bg-white border rounded-md shadow-lg mt-1 max-h-48 overflow-y-auto">
           {suggestions.map((suggestion, index) => (
             <div
               key={index}
