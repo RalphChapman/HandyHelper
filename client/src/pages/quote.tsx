@@ -64,7 +64,17 @@ export default function Quote() {
   });
 
   useEffect(() => {
-    if (services && preselectedService) {
+    // Set default service to "general" if available
+    if (services && !preselectedService) {
+      const generalService = services.find(s => 
+        s.name.toLowerCase().includes('general')
+      );
+      if (generalService) {
+        form.setValue("serviceId", generalService.id);
+      }
+    }
+    // Handle preselected service if provided
+    else if (services && preselectedService) {
       const serviceId = parseInt(preselectedService, 10);
       const service = services.find(s => s.id === serviceId);
       if (service) {
