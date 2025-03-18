@@ -197,7 +197,7 @@ export default function Quote() {
                 <FormItem>
                   <FormLabel>Service</FormLabel>
                   <Select
-                    value={field.value?.toString()}
+                    value={field.value ? field.value.toString() : undefined}
                     onValueChange={(value) => field.onChange(Number(value))}
                   >
                     <FormControl>

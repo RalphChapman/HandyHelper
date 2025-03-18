@@ -62,6 +62,8 @@ export const quoteRequests = pgTable("quote_requests", {
   serviceId: integer("service_id").notNull(),
   description: text("description").notNull(),
   address: text("address").notNull(),
+  serviceName: text("service_name"),
+  analysis: text("analysis"),
 });
 
 export const users = pgTable("users", {
@@ -91,7 +93,13 @@ export const serviceProviders = pgTable("service_providers", {
 });
 
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true });
-export const insertQuoteRequestSchema = createInsertSchema(quoteRequests).omit({ id: true });
+export const insertQuoteRequestSchema = createInsertSchema(quoteRequests)
+  .omit({ id: true })
+  .extend({
+    serviceId: z.coerce.number().int().positive(),
+    serviceName: z.string().optional(),
+    analysis: z.string().optional(),
+  });
 export const insertBookingSchema = createInsertSchema(bookings)
   .omit({ id: true, status: true, confirmed: true })
   .extend({
