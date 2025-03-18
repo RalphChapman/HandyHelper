@@ -24,16 +24,26 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
   });
 
   const onLoad = useCallback((autocomplete: google.maps.places.Autocomplete) => {
-    setAutocomplete(autocomplete);
+    try {
+      setAutocomplete(autocomplete);
+    } catch (error) {
+      console.error('Error initializing autocomplete:', error);
+      onError?.('Failed to initialize address search');
+    }
   }, []);
 
   const onPlaceChanged = useCallback(() => {
-    if (autocomplete) {
-      const place = autocomplete.getPlace();
-      const formattedAddress = place.formatted_address;
-      if (formattedAddress) {
-        onChange(formattedAddress);
+    try {
+      if (autocomplete) {
+        const place = autocomplete.getPlace();
+        const formattedAddress = place.formatted_address;
+        if (formattedAddress) {
+          onChange(formattedAddress);
+        }
       }
+    } catch (error) {
+      console.error('Error getting place details:', error);
+      onError?.('Failed to get address details');
     }
   }, [autocomplete, onChange]);
 
@@ -65,7 +75,10 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
     <Autocomplete
       onLoad={onLoad}
       onPlaceChanged={onPlaceChanged}
-      options={{ componentRestrictions: { country: "us" } }}
+      options={{ 
+        componentRestrictions: { country: "us" },
+        types: ['address']
+      }}
     >
       <Input 
         value={value}
