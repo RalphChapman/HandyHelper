@@ -18,35 +18,57 @@ export async function analyzeProjectDescription(description: string, address?: s
     }
 
     const prompt = `
-      Analyze this home improvement project description for ${location}:
+      This is a project analysis request for a specific location: ${location}
+      Please analyze this home improvement project description, focusing exclusively on resources and considerations for ${location}:
+
+      Project Description:
       "${description}"
 
-      Please provide a detailed analysis including:
-      1. A comprehensive breakdown of what the project entails
-      2. List at least 3-4 reputable and established companies in ${location} that specialize in this type of work:
-         For each company include:
-         - Company name
-         - Phone number
-         - Website URL
-         - Areas of expertise
-         - Years in business
-         - Typical pricing range
-         - Notable projects or specialties in ${location}
-      3. Important considerations specific to ${location}'s:
-         - Historic preservation requirements if applicable
-         - Local climate challenges
-         - Local building codes and permits
-         - Architectural style compatibility
-      4. Estimated timeline, including permit processing times in ${location}
-      5. Local material availability and recommendations from ${location} suppliers
-      6. Cost considerations:
-         - Estimated cost range based on ${location} market rates
-         - Factors that could affect the final cost
-         - Typical payment schedules in ${location}
-         - Any potential cost savings opportunities
+      IMPORTANT: All information, especially company recommendations, must be specifically for ${location} only.
+      Do not include companies or references from other locations.
 
-      Format this as a professional assessment that highlights local expertise and considerations.
-      Be specific about local companies and include their contact information, specialties, reputation, and typical pricing in ${location}.
+      Please provide:
+
+      1. Project Scope Analysis:
+         - Detailed breakdown of required work
+         - Local permit requirements specific to ${location}
+         - ${location}-specific building codes that apply
+
+      2. Local Service Providers:
+         IMPORTANT: List ONLY companies that are based in and serve ${location}.
+         For each company in ${location}, provide:
+         - Company name
+         - Local ${location} phone number
+         - Physical address in ${location}
+         - Years serving ${location} community
+         - Specific experience with similar projects in ${location}
+         - Local pricing ranges for ${location} market
+         - Notable ${location} projects and references
+
+      3. ${location}-Specific Considerations:
+         - Local climate and weather impacts
+         - Municipal regulations unique to ${location}
+         - Local architectural requirements
+         - ${location} historic preservation rules (if applicable)
+
+      4. Timeline and Process:
+         - Current permit processing times in ${location}
+         - Typical project duration for ${location} area
+         - Local inspection requirements
+
+      5. Materials and Resources:
+         - Local suppliers in ${location}
+         - ${location}-specific material costs
+         - Local availability and lead times
+
+      6. Cost Analysis for ${location} Market:
+         - Current local market rates
+         - ${location}-specific pricing factors
+         - Local payment terms and schedules
+         - Regional cost-saving opportunities
+
+      Remember: Focus exclusively on ${location}. Do not include information or companies from other areas.
+      Format this as a professional assessment that demonstrates deep local knowledge of ${location}'s home improvement market.
     `;
 
     const response = await openai.chat.completions.create({
