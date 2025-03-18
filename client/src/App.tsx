@@ -1,9 +1,11 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { Navigation } from "@/components/navigation";
 import { AuthProvider } from "@/hooks/use-auth";
+import { useAnalytics } from "@/hooks/use-analytics";
+import { useEffect } from "react";
 import Home from "@/pages/home";
 import Services from "@/pages/services";
 import Projects from "@/pages/projects";
@@ -15,6 +17,14 @@ import ResetPassword from "@/pages/reset-password";
 import NotFound from "@/pages/not-found";
 
 export default function App() {
+  const [location] = useLocation();
+  const { trackPageView } = useAnalytics();
+
+  // Track page views
+  useEffect(() => {
+    trackPageView(location);
+  }, [location, trackPageView]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
