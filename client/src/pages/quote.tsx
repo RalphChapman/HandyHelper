@@ -40,14 +40,12 @@ export default function Quote() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: services } = useQuery({
+  const { data: services } = useQuery<Service[]>({
     queryKey: ["/api/services"],
     queryFn: async () => {
-      const response = await fetch("/api/services");
-      if (!response.ok) {
-        throw new Error("Failed to fetch services");
-      }
-      return response.json() as Promise<Service[]>;
+      const response = await apiRequest("GET", "/api/services");
+      const data = await response.json();
+      return data;
     }
   });
 
