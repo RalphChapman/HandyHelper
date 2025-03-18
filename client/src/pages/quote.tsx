@@ -15,19 +15,11 @@ import { Loader2 } from "lucide-react";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { useAuth } from "@/hooks/use-auth";
 
-// Helper function to extract city and state from address
 function extractLocationFromAddress(address: string): string {
   try {
     if (!address) return "Charleston, South Carolina";
-
-    // Basic extraction: Look for "City, ST" pattern
     const match = address.match(/([^,]+),\s*([A-Z]{2})/);
-    if (match) {
-      const [, city, state] = match;
-      return `${city.trim()}, ${state}`;
-    }
-
-    return "Charleston, South Carolina";
+    return match ? `${match[1].trim()}, ${match[2]}` : "Charleston, South Carolina";
   } catch (error) {
     console.error('Error parsing address:', error);
     return "Charleston, South Carolina";
@@ -47,17 +39,9 @@ export default function Quote() {
   const [analysis, setAnalysis] = useState<string>("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [addressVerified, setAddressVerified] = useState(false);
 
   const { data: services } = useQuery<Service[]>({
     queryKey: ["/api/services"],
-    queryFn: async () => {
-      const response = await fetch("/api/services");
-      if (!response.ok) {
-        throw new Error("Failed to fetch services");
-      }
-      return response.json();
-    },
   });
 
   const form = useForm<InsertQuoteRequest>({
@@ -98,7 +82,6 @@ export default function Quote() {
     setIsAnalyzing(true);
     try {
       const location = extractLocationFromAddress(address);
-
       const response = await apiRequest("POST", "/api/analyze-project", {
         description,
         address,
@@ -123,15 +106,6 @@ export default function Quote() {
   }
 
   async function onSubmit(data: InsertQuoteRequest) {
-    if (!addressVerified) {
-      toast({
-        title: "Error",
-        description: "Please select an address from the suggestions",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       const service = services?.find(s => s.id === data.serviceId);
@@ -258,18 +232,7 @@ export default function Quote() {
                   <FormControl>
                     <AddressAutocomplete
                       value={field.value}
-                      onChange={(value) => {
-                        field.onChange(value);
-                        setAddressVerified(true);
-                      }}
-                      onError={(error) => {
-                        setAddressVerified(false);
-                        toast({
-                          title: "Address Format Error",
-                          description: error,
-                          variant: "destructive",
-                        });
-                      }}
+                      onChange={field.onChange}
                     />
                   </FormControl>
                   <FormMessage />

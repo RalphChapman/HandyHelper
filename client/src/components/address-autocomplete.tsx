@@ -16,8 +16,8 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [isAddressSelected, setIsAddressSelected] = useState(false);
 
-  const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
     libraries,
   });
 
@@ -34,16 +34,6 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
       }
     }
   }, [autocomplete, onChange]);
-
-  if (loadError) {
-    return (
-      <Input 
-        value={value} 
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Enter your address"
-      />
-    );
-  }
 
   if (!isLoaded) {
     return (
