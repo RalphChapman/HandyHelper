@@ -1,64 +1,41 @@
 import { Input } from "@/components/ui/input";
-import { useRef, useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { useState } from "react";
+import { z } from "zod";
 
-interface AddressAutocompleteProps {
+interface AddressInputProps {
   value: string;
   onChange: (address: string) => void;
 }
 
-export function AddressAutocomplete({ value, onChange }: AddressAutocompleteProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [isScriptLoaded, setIsScriptLoaded] = useState(false);
+const addressSchema = z.string().min(5, "Address must be at least 5 characters long");
 
-  useEffect(() => {
-    const checkScript = setInterval(() => {
-      if (window.google?.maps?.places) {
-        setIsScriptLoaded(true);
-        clearInterval(checkScript);
+export function AddressInput({ value, onChange }: AddressInputProps) {
+  const [error, setError] = useState<string | null>(null);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    try {
+      addressSchema.parse(newValue);
+      setError(null);
+      onChange(newValue);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        setError(err.errors[0].message);
       }
-    }, 100);
-
-    return () => clearInterval(checkScript);
-  }, []);
-
-  useEffect(() => {
-    if (!inputRef.current || !isScriptLoaded) return;
-
-    const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-      componentRestrictions: { country: "us" },
-      types: ["address"],
-      fields: ["formatted_address"]
-    });
-
-    autocomplete.addListener("place_changed", () => {
-      const place = autocomplete.getPlace();
-      if (place.formatted_address) {
-        onChange(place.formatted_address);
-      }
-    });
-
-    return () => {
-      if (window.google?.maps?.event) {
-        window.google.maps.event.clearInstanceListeners(autocomplete);
-      }
-    };
-  }, [isScriptLoaded, onChange]);
+    }
+  };
 
   return (
-    <div className="relative">
+    <div className="space-y-2">
       <Input
-        ref={inputRef}
         type="text"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={isScriptLoaded ? "Start typing your address" : "Loading address search..."}
-        className="pr-8"
+        onChange={handleChange}
+        placeholder="Enter your full address"
+        className={error ? "border-red-500" : ""}
       />
-      {!isScriptLoaded && (
-        <div className="absolute right-2 top-1/2 -translate-y-1/2">
-          <Loader2 className="h-4 w-4 animate-spin" />
-        </div>
+      {error && (
+        <p className="text-sm text-red-500">{error}</p>
       )}
     </div>
   );
