@@ -97,6 +97,8 @@ export default function Quote() {
     setIsAnalyzing(true);
     try {
       const location = extractLocationFromAddress(address);
+      console.log('Extracted location:', location); // Debug log
+
       const response = await apiRequest("POST", "/api/analyze-project", {
         description,
         address,
@@ -108,8 +110,10 @@ export default function Quote() {
       }
 
       const data = await response.json();
+      console.log('Analysis response:', data); // Debug log
       setAnalysis(data.analysis);
     } catch (error) {
+      console.error('Analysis error:', error); // Debug log
       toast({
         title: "Error",
         description: "Failed to analyze project. Please try again.",
