@@ -20,19 +20,11 @@ function extractLocationFromAddress(address: string): string {
   try {
     if (!address) return "Charleston, South Carolina";
 
-    // Split address by commas
-    const parts = address.split(',').map(part => part.trim());
-
-    // Address format is typically: "Street, City, State ZIP"
-    if (parts.length >= 2) {
-      // Get state and ZIP from last part
-      const stateZipPart = parts[parts.length - 1].trim().split(' ');
-      const state = stateZipPart[0]; // State abbreviation
-
-      // Get city from second to last part
-      const city = parts[parts.length - 2].trim();
-
-      return `${city}, ${state}`;
+    // Basic extraction: Look for "City, ST" pattern
+    const match = address.match(/([^,]+),\s*([A-Z]{2})/);
+    if (match) {
+      const [, city, state] = match;
+      return `${city.trim()}, ${state}`;
     }
 
     return "Charleston, South Carolina";
@@ -143,7 +135,7 @@ export default function Quote() {
     if (!addressVerified) {
       toast({
         title: "Error",
-        description: "Please select a valid address from the dropdown",
+        description: "Please enter a complete address in the correct format",
         variant: "destructive",
       });
       return;
@@ -277,12 +269,12 @@ export default function Quote() {
                       value={field.value}
                       onChange={(value) => {
                         field.onChange(value);
-                        setAddressVerified(true);
+                        setAddressVerified(value.match(/\d+[^,]+,\s*[A-Z]{2}\s*\d{5}/) !== null);
                       }}
                       onError={(error) => {
                         setAddressVerified(false);
                         toast({
-                          title: "Address Verification Error",
+                          title: "Address Format Error",
                           description: error,
                           variant: "destructive",
                         });

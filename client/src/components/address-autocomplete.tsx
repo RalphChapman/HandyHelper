@@ -1,8 +1,5 @@
-import { useLoadScript, Autocomplete } from "@react-google-maps/api";
-import type { Libraries } from "@react-google-maps/api";
 import { Input } from "@/components/ui/input";
-import { useState, useCallback, useRef, useEffect } from "react";
-import { Loader2 } from "lucide-react";
+import { useState } from "react";
 
 interface AddressAutocompleteProps {
   value: string;
@@ -10,129 +7,37 @@ interface AddressAutocompleteProps {
   onError?: (error: string) => void;
 }
 
-// Define libraries array as a constant to prevent unnecessary reloads
-const libraries: Libraries = ["places"];
-
 export function AddressAutocomplete({ value, onChange, onError }: AddressAutocompleteProps) {
-  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
-  const [isAddressSelected, setIsAddressSelected] = useState(false);
-  const mountedRef = useRef(true);
+  const [isValid, setIsValid] = useState(false);
 
-  // Get API key from environment
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  const validateAddress = (address: string) => {
+    // Basic validation: Must contain street number, street name, city, state, and ZIP
+    const hasStreetNumber = /\d+/.test(address);
+    const hasStreetName = /[a-zA-Z]+/.test(address);
+    const hasCityState = /[a-zA-Z]+,\s*[A-Z]{2}/.test(address);
+    const hasZip = /\d{5}/.test(address);
 
-  // Debug: Log API key presence
-  useEffect(() => {
-    if (!apiKey) {
-      console.error('Google Maps API key is missing');
-      onError?.('Google Maps API key is not configured');
-    } else {
-      console.log('Google Maps API key is available');
+    const isValidAddress = hasStreetNumber && hasStreetName && hasCityState && hasZip;
+    setIsValid(isValidAddress);
+
+    if (!isValidAddress && address.length > 0) {
+      onError?.('Please enter a complete address (e.g., 123 Main St, Charleston, SC 12345)');
     }
 
-    return () => {
-      mountedRef.current = false;
-    };
-  }, [apiKey, onError]);
+    return isValidAddress;
+  };
 
-  const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: apiKey || "",
-    libraries,
-  });
+  const handleChange = (newValue: string) => {
+    onChange(newValue);
+    validateAddress(newValue);
+  };
 
-  // Debug: Log loading status
-  useEffect(() => {
-    if (loadError) {
-      console.error('Google Maps loading error:', loadError);
-    }
-    if (isLoaded) {
-      console.log('Google Maps API loaded successfully');
-    }
-  }, [isLoaded, loadError]);
-
-  const onLoad = useCallback((autocomplete: google.maps.places.Autocomplete) => {
-    if (mountedRef.current) {
-      console.log('Autocomplete component loaded successfully');
-      setAutocomplete(autocomplete);
-    }
-  }, []);
-
-  const onPlaceChanged = useCallback(() => {
-    try {
-      if (autocomplete && mountedRef.current) {
-        const place = autocomplete.getPlace();
-        console.log('Place selected:', JSON.stringify(place, null, 2));
-
-        if (!place.geometry) {
-          console.error('No geometry returned for selected place');
-          onError?.('Please select a valid address from the dropdown');
-          setIsAddressSelected(false);
-          return;
-        }
-
-        const formattedAddress = place.formatted_address;
-        if (formattedAddress) {
-          console.log('Selected address:', formattedAddress);
-          onChange(formattedAddress);
-          setIsAddressSelected(true);
-        } else {
-          console.error('No formatted address returned');
-          onError?.('Selected place does not have a valid address');
-          setIsAddressSelected(false);
-        }
-      }
-    } catch (error) {
-      console.error('Error getting place details:', error);
-      onError?.('Failed to get address details');
-      setIsAddressSelected(false);
-    }
-  }, [autocomplete, onChange, onError]);
-
-  // Handle loading error
-  if (loadError) {
-    console.error('Error loading Google Maps:', loadError);
-    onError?.('Failed to load Google Maps. Please try entering your address manually.');
-    return (
-      <Input 
-        value={value} 
-        onChange={(e) => {
-          onChange(e.target.value);
-          setIsAddressSelected(false);
-        }}
-        placeholder="Enter your address manually"
-      />
-    );
-  }
-
-  // Show loading state
-  if (!isLoaded) {
-    return (
-      <div className="flex items-center gap-2">
-        <Input disabled placeholder="Loading address search..." />
-        <Loader2 className="h-4 w-4 animate-spin" />
-      </div>
-    );
-  }
-
-  // Return the Autocomplete component when everything is loaded
   return (
-    <Autocomplete
-      onLoad={onLoad}
-      onPlaceChanged={onPlaceChanged}
-      options={{ 
-        componentRestrictions: { country: "us" },
-        types: ['address']
-      }}
-    >
-      <Input 
-        value={value}
-        onChange={(e) => {
-          onChange(e.target.value);
-          setIsAddressSelected(false);
-        }}
-        placeholder={isAddressSelected ? "Address selected" : "Start typing your address"}
-        className={isAddressSelected ? "border-green-500" : undefined}
-      />
-    </Autocomplete>
+    <Input 
+      value={value}
+      onChange={(e) => handleChange(e.target.value)}
+      placeholder="Enter full address (e.g., 123 Main St, Charleston, SC 12345)"
+      className={isValid ? "border-green-500" : undefined}
+    />
   );
 }
