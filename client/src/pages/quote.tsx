@@ -57,8 +57,15 @@ export default function Quote() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [addressVerified, setAddressVerified] = useState(false);
 
-  const { data: services, isLoading: servicesLoading } = useQuery<Service[]>({
+  const { data: services } = useQuery<Service[]>({
     queryKey: ["/api/services"],
+    queryFn: async () => {
+      const response = await fetch("/api/services");
+      if (!response.ok) {
+        throw new Error("Failed to fetch services");
+      }
+      return response.json();
+    },
   });
 
   const form = useForm({
