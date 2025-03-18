@@ -11,7 +11,7 @@ export async function analyzeProjectDescription(description: string, address?: s
     // Extract location from address or use default
     let location = "Charleston, South Carolina";
     if (address) {
-      const match = address.match(/([^,]+),\s*([A-Z]{2})/);
+      const match = address.match(/,?\s*([^,]+),\s*([A-Za-z]{2})\s*$/);
       if (match) {
         location = `${match[1].trim()}, ${match[2]}`;
       }
