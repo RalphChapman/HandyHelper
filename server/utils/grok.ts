@@ -6,15 +6,24 @@ if (!process.env.XAI_API_KEY) {
 
 const openai = new OpenAI({ baseURL: "https://api.x.ai/v1", apiKey: process.env.XAI_API_KEY });
 
-export async function analyzeProjectDescription(description: string): Promise<string> {
+export async function analyzeProjectDescription(description: string, address?: string): Promise<string> {
   try {
+    // Extract location from address or use default
+    let location = "Charleston, South Carolina";
+    if (address) {
+      const match = address.match(/([^,]+),\s*([A-Z]{2})/);
+      if (match) {
+        location = `${match[1].trim()}, ${match[2]}`;
+      }
+    }
+
     const prompt = `
-      Analyze this home improvement project description for Charleston, South Carolina:
+      Analyze this home improvement project description for ${location}:
       "${description}"
 
       Please provide a detailed analysis including:
       1. A comprehensive breakdown of what the project entails
-      2. List at least 3-4 reputable and established companies in Charleston, SC that specialize in this type of work:
+      2. List at least 3-4 reputable and established companies in ${location} that specialize in this type of work:
          For each company include:
          - Company name
          - Phone number
@@ -22,22 +31,22 @@ export async function analyzeProjectDescription(description: string): Promise<st
          - Areas of expertise
          - Years in business
          - Typical pricing range
-         - Notable projects or specialties in Charleston
-      3. Important considerations specific to Charleston's:
+         - Notable projects or specialties in ${location}
+      3. Important considerations specific to ${location}'s:
          - Historic preservation requirements if applicable
-         - Coastal climate challenges
+         - Local climate challenges
          - Local building codes and permits
-         - Architectural style compatibility with Charleston's historic character
-      4. Estimated timeline, including permit processing times in Charleston
-      5. Local material availability and recommendations from Charleston suppliers
+         - Architectural style compatibility
+      4. Estimated timeline, including permit processing times in ${location}
+      5. Local material availability and recommendations from ${location} suppliers
       6. Cost considerations:
-         - Estimated cost range based on Charleston market rates
+         - Estimated cost range based on ${location} market rates
          - Factors that could affect the final cost
-         - Typical payment schedules in Charleston
+         - Typical payment schedules in ${location}
          - Any potential cost savings opportunities
 
-      Format this as a professional assessment that highlights local Charleston expertise and considerations.
-      Be specific about local companies and include their contact information, specialties, reputation, and typical pricing in the Charleston area.
+      Format this as a professional assessment that highlights local expertise and considerations.
+      Be specific about local companies and include their contact information, specialties, reputation, and typical pricing in ${location}.
     `;
 
     const response = await openai.chat.completions.create({
@@ -64,7 +73,7 @@ export async function estimateProjectCost(description: string, parameters: {
 }> {
   try {
     const prompt = `
-      Provide a detailed cost estimate for this home improvement project in Charleston, South Carolina:
+      Provide a detailed cost estimate for this home improvement project in ${parameters.location}:
       "${description}"
 
       Project Parameters:
@@ -74,10 +83,10 @@ export async function estimateProjectCost(description: string, parameters: {
       - Location: ${parameters.location}
 
       Please provide:
-      1. Total cost estimate based on Charleston, SC market rates
+      1. Total cost estimate based on ${parameters.location} market rates
       2. Cost breakdown by major components
       3. Key factors affecting the estimate
-      4. Local market considerations specific to Charleston, SC
+      4. Local market considerations specific to ${parameters.location}
 
       Return the response in this exact JSON format:
       {
