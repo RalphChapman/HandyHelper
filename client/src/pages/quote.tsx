@@ -108,7 +108,7 @@ export default function Quote() {
     }
   }, [services, form, preselectedService]);
 
-  async function analyzeProject() {
+  const analyzeProject = async () => {
     const description = form.getValues("description");
     const address = form.getValues("address");
 
@@ -149,7 +149,7 @@ export default function Quote() {
     } finally {
       setIsAnalyzing(false);
     }
-  }
+  };
 
   async function onSubmit(data: InsertQuoteRequest) {
     setIsSubmitting(true);
