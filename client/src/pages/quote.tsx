@@ -71,7 +71,7 @@ export default function Quote() {
   const form = useForm<InsertQuoteRequest>({
     resolver: zodResolver(insertQuoteRequestSchema),
     defaultValues: {
-      serviceId: preselectedService ? parseInt(preselectedService) : undefined,
+      serviceId: preselectedService ? parseInt(preselectedService, 10) : undefined,
       name: prefilledName || user?.username || "",
       email: prefilledEmail || user?.email || "",
       phone: prefilledPhone || "",
@@ -82,7 +82,7 @@ export default function Quote() {
 
   useEffect(() => {
     if (services && preselectedService) {
-      const serviceId = parseInt(preselectedService);
+      const serviceId = parseInt(preselectedService, 10);
       const service = services.find(s => s.id === serviceId);
       if (service) {
         form.setValue("serviceId", serviceId);
@@ -198,8 +198,13 @@ export default function Quote() {
                 <FormItem>
                   <FormLabel>Service</FormLabel>
                   <Select
-                    value={field.value?.toString()}
-                    onValueChange={(value) => field.onChange(parseInt(value))}
+                    value={field.value?.toString() ?? ""}
+                    onValueChange={(value) => {
+                      const numValue = parseInt(value, 10);
+                      if (!isNaN(numValue)) {
+                        field.onChange(numValue);
+                      }
+                    }}
                   >
                     <FormControl>
                       <SelectTrigger>
