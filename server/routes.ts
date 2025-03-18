@@ -348,55 +348,84 @@ export async function registerRoutes(app: Express) {
   app.post("/api/bookings", async (req, res) => {
     try {
       console.log("[API] Creating new booking with data:", req.body);
-      const booking = insertBookingSchema.parse(req.body);
-      const service = await storage.getService(booking.serviceId);
 
+      // Parse and validate the booking data
+      let booking;
+      try {
+        booking = insertBookingSchema.parse(req.body);
+        console.log("[API] Validated booking data:", booking);
+      } catch (parseError) {
+        console.error("[API] Schema validation error:", parseError);
+        return res.status(400).json({ 
+          message: "Invalid booking data", 
+          errors: parseError instanceof Error ? parseError.message : "Unknown validation error" 
+        });
+      }
+
+      // Verify service exists
+      const service = await storage.getService(booking.serviceId);
       if (!service) {
         console.log(`[API] Service not found: ${booking.serviceId}`);
-        res.status(404).json({ message: "Service not found" });
-        return;
+        return res.status(404).json({ message: "Service not found" });
       }
 
-      // Create the booking first
-      const newBooking = await storage.createBooking({
-        ...booking,
-        notes: booking.notes || null // Ensure notes is null if not provided
-      });
-      console.log(`[API] Successfully created booking #${newBooking.id}`);
-
-      // Then try to create calendar event (but don't fail if calendar fails)
+      // Create the booking with explicit data mapping
       try {
-        await createCalendarEvent({
-          ...newBooking,
-          serviceName: service.name
-        });
-        console.log("[API] Calendar event created successfully");
-      } catch (calendarError: any) {
-        console.error("[API] Calendar error:", calendarError);
-        // Continue with booking confirmation even if calendar fails
-      }
+        const bookingData = {
+          serviceId: booking.serviceId,
+          clientName: booking.clientName,
+          clientEmail: booking.clientEmail,
+          clientPhone: booking.clientPhone,
+          appointmentDate: new Date(booking.appointmentDate),
+          notes: booking.notes || null,
+          status: "pending",
+          confirmed: false
+        };
 
-      // Send email confirmation
-      try {
-        await sendBookingConfirmation({
-          ...newBooking,
-          serviceName: service.name
-        });
-        console.log("[API] Booking confirmation email sent");
-      } catch (emailError) {
-        console.error("[API] Failed to send booking confirmation email:", emailError);
-        // Don't fail the request if email fails
-      }
+        console.log("[API] Attempting to create booking with data:", bookingData);
+        const newBooking = await storage.createBooking(bookingData);
+        console.log(`[API] Successfully created booking #${newBooking.id}`);
 
-      res.status(201).json(newBooking);
+        // Try to create calendar event (but don't fail if calendar fails)
+        try {
+          await createCalendarEvent({
+            ...newBooking,
+            serviceName: service.name
+          });
+          console.log("[API] Calendar event created successfully");
+        } catch (calendarError) {
+          console.error("[API] Calendar error:", calendarError);
+        }
+
+        // Send email confirmation
+        try {
+          await sendBookingConfirmation({
+            ...newBooking,
+            serviceName: service.name
+          });
+          console.log("[API] Booking confirmation email sent");
+        } catch (emailError) {
+          console.error("[API] Failed to send booking confirmation email:", emailError);
+        }
+
+        return res.status(201).json(newBooking);
+      } catch (storageError) {
+        console.error("[API] Storage error creating booking:", storageError);
+        throw storageError;
+      }
     } catch (error) {
-      if (error instanceof ZodError) {
-        console.error("[API] Invalid booking data:", error.errors);
-        res.status(400).json({ message: "Invalid booking data", errors: error.errors });
-        return;
+      console.error("[API] Error in booking creation:", error);
+      if (error instanceof Error) {
+        console.error("[API] Full error details:", {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
       }
-      console.error("[API] Error creating booking:", error);
-      res.status(500).json({ message: "Failed to create booking", error: (error as Error).message });
+      return res.status(500).json({ 
+        message: "Failed to create booking", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
     }
   });
 
