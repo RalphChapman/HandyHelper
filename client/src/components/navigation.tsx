@@ -2,10 +2,20 @@ import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { Menu, X } from "lucide-react";
+import { useState } from "react";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 
 export function Navigation() {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
 
   const links = [
     { href: "/", label: "Home" },
@@ -25,6 +35,7 @@ export function Navigation() {
             </Link>
           </div>
 
+          {/* Desktop Navigation */}
           <div className="hidden sm:flex sm:items-center space-x-4">
             {links.map((link) => (
               <Link
@@ -57,8 +68,69 @@ export function Navigation() {
               </Link>
             )}
           </div>
+
+          {/* Mobile menu button */}
+          <div className="flex sm:hidden">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-gray-600"
+              onClick={() => setIsOpen(true)}
+            >
+              <Menu className="h-6 w-6" />
+              <span className="sr-only">Open menu</span>
+            </Button>
+          </div>
         </div>
       </div>
+
+      {/* Mobile Navigation Drawer */}
+      <Drawer open={isOpen} onOpenChange={setIsOpen}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Menu</DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4 py-2">
+            <div className="flex flex-col space-y-3">
+              {links.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setIsOpen(false)}
+                  className={cn(
+                    "px-3 py-2 rounded-md text-sm font-medium",
+                    location === link.href
+                      ? "bg-primary text-white"
+                      : "text-gray-600 hover:text-primary"
+                  )}
+                >
+                  {link.label}
+                </Link>
+              ))}
+              {user ? (
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    logoutMutation.mutate();
+                    setIsOpen(false);
+                  }}
+                  className="text-sm font-medium text-gray-600 hover:text-primary justify-start"
+                >
+                  Logout
+                </Button>
+              ) : (
+                <Link
+                  href="/auth"
+                  onClick={() => setIsOpen(false)}
+                  className="px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-primary"
+                >
+                  Login
+                </Link>
+              )}
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
     </nav>
   );
 }
