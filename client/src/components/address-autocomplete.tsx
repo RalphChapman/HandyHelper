@@ -17,7 +17,7 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
 
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: apiKey || "",
-    libraries: ["places"] as ("places")[]
+    libraries: ["places"] as const,
   });
 
   const onLoad = useCallback((autocomplete: google.maps.places.Autocomplete) => {
@@ -48,7 +48,7 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
       console.error('Error getting place details:', error);
       onError?.('Failed to get address details');
     }
-  }, [autocomplete, onChange]);
+  }, [autocomplete, onChange, onError]);
 
   // Handle loading error
   if (loadError) {
