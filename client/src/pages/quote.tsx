@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { insertQuoteRequestSchema, type Service } from "@shared/schema";
+import { insertQuoteRequestSchema, type Service, type InsertQuoteRequest } from "@shared/schema";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -68,10 +68,10 @@ export default function Quote() {
     },
   });
 
-  const form = useForm({
+  const form = useForm<InsertQuoteRequest>({
     resolver: zodResolver(insertQuoteRequestSchema),
     defaultValues: {
-      serviceId: undefined,
+      serviceId: preselectedService ? parseInt(preselectedService) : undefined,
       name: prefilledName || user?.username || "",
       email: prefilledEmail || user?.email || "",
       phone: prefilledPhone || "",
@@ -82,9 +82,10 @@ export default function Quote() {
 
   useEffect(() => {
     if (services && preselectedService) {
-      const service = services.find(s => s.id === parseInt(preselectedService));
+      const serviceId = parseInt(preselectedService);
+      const service = services.find(s => s.id === serviceId);
       if (service) {
-        form.setValue("serviceId", service.id);
+        form.setValue("serviceId", serviceId);
       }
     }
   }, [services, form, preselectedService]);
@@ -138,7 +139,7 @@ export default function Quote() {
     }
   }
 
-  async function onSubmit(data: any) {
+  async function onSubmit(data: InsertQuoteRequest) {
     if (!addressVerified) {
       toast({
         title: "Error",
@@ -197,8 +198,8 @@ export default function Quote() {
                 <FormItem>
                   <FormLabel>Service</FormLabel>
                   <Select
-                    value={field.value ? field.value.toString() : undefined}
-                    onValueChange={(value) => field.onChange(Number(value))}
+                    value={field.value?.toString()}
+                    onValueChange={(value) => field.onChange(parseInt(value))}
                   >
                     <FormControl>
                       <SelectTrigger>
