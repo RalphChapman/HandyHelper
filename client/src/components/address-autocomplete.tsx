@@ -15,6 +15,7 @@ const libraries: Libraries = ["places"];
 
 export function AddressAutocomplete({ value, onChange, onError }: AddressAutocompleteProps) {
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+  const [isAddressSelected, setIsAddressSelected] = useState(false);
 
   // Get API key from environment
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -24,6 +25,8 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
     if (!apiKey) {
       console.error('Google Maps API key is missing');
       onError?.('Google Maps API key is not configured');
+    } else {
+      console.log('Google Maps API key is available');
     }
   }, [apiKey, onError]);
 
@@ -46,11 +49,12 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
     try {
       if (autocomplete) {
         const place = autocomplete.getPlace();
-        console.log('Place selected:', place);
+        console.log('Place selected:', JSON.stringify(place, null, 2));
 
         if (!place.geometry) {
           console.error('No geometry returned for selected place');
           onError?.('Please select a valid address from the dropdown');
+          setIsAddressSelected(false);
           return;
         }
 
@@ -58,14 +62,17 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
         if (formattedAddress) {
           console.log('Selected address:', formattedAddress);
           onChange(formattedAddress);
+          setIsAddressSelected(true);
         } else {
           console.error('No formatted address returned');
           onError?.('Selected place does not have a valid address');
+          setIsAddressSelected(false);
         }
       }
     } catch (error) {
       console.error('Error getting place details:', error);
       onError?.('Failed to get address details');
+      setIsAddressSelected(false);
     }
   }, [autocomplete, onChange, onError]);
 
@@ -76,7 +83,10 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
     return (
       <Input 
         value={value} 
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setIsAddressSelected(false);
+        }}
         placeholder="Enter your address manually"
       />
     );
@@ -104,8 +114,12 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
     >
       <Input 
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Start typing your address"
+        onChange={(e) => {
+          onChange(e.target.value);
+          setIsAddressSelected(false);
+        }}
+        placeholder={isAddressSelected ? "Address selected" : "Start typing your address"}
+        className={isAddressSelected ? "border-green-500" : undefined}
       />
     </Autocomplete>
   );
