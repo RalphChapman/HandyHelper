@@ -2,14 +2,14 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { z } from "zod";
 
-interface AddressInputProps {
+interface AddressAutocompleteProps {
   value: string;
   onChange: (address: string) => void;
 }
 
 const addressSchema = z.string().min(5, "Address must be at least 5 characters long");
 
-export function AddressInput({ value, onChange }: AddressInputProps) {
+export function AddressAutocomplete({ value, onChange }: AddressAutocompleteProps) {
   const [error, setError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
