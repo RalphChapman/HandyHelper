@@ -24,7 +24,11 @@ export default function App() {
   useEffect(() => {
     // Ensure we have a valid location before tracking
     if (location) {
-      trackPageView(location);
+      try {
+        trackPageView(location);
+      } catch (error) {
+        console.error('Failed to track page view:', error);
+      }
     }
   }, [location, trackPageView]);
 
