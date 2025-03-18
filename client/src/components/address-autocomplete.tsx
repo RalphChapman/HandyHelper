@@ -7,22 +7,35 @@ interface AddressAutocompleteProps {
   onChange: (address: string) => void;
 }
 
-const addressSchema = z.string().min(5, "Address must be at least 5 characters long");
+const addressSchema = z.string().min(5, "Please enter a complete address");
 
 export function AddressAutocomplete({ value, onChange }: AddressAutocompleteProps) {
   const [error, setError] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
+  const validateAddress = (address: string) => {
     try {
-      addressSchema.parse(newValue);
+      addressSchema.parse(address);
       setError(null);
-      onChange(newValue);
     } catch (err) {
       if (err instanceof z.ZodError) {
         setError(err.errors[0].message);
       }
     }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    onChange(newValue);
+
+    if (isDirty) {
+      validateAddress(newValue);
+    }
+  };
+
+  const handleBlur = () => {
+    setIsDirty(true);
+    validateAddress(value);
   };
 
   return (
@@ -31,10 +44,11 @@ export function AddressAutocomplete({ value, onChange }: AddressAutocompleteProp
         type="text"
         value={value}
         onChange={handleChange}
+        onBlur={handleBlur}
         placeholder="Enter your full address"
-        className={error ? "border-red-500" : ""}
+        className={error && isDirty ? "border-red-500" : ""}
       />
-      {error && (
+      {error && isDirty && (
         <p className="text-sm text-red-500">{error}</p>
       )}
     </div>
