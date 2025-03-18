@@ -39,7 +39,7 @@ export default function Book() {
   const form = useForm({
     resolver: zodResolver(insertBookingSchema),
     defaultValues: {
-      serviceId: preselectedService ? Number(preselectedService) : undefined,
+      serviceId: 19, // General Home Maintenance
       clientName: "",
       clientEmail: "",
       clientPhone: "",
