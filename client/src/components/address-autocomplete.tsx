@@ -1,7 +1,7 @@
 import { useLoadScript, Autocomplete } from "@react-google-maps/api";
 import type { Libraries } from "@react-google-maps/api";
 import { Input } from "@/components/ui/input";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
 interface AddressAutocompleteProps {
@@ -16,6 +16,7 @@ const libraries: Libraries = ["places"];
 export function AddressAutocomplete({ value, onChange, onError }: AddressAutocompleteProps) {
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [isAddressSelected, setIsAddressSelected] = useState(false);
+  const mountedRef = useRef(true);
 
   // Get API key from environment
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -28,6 +29,10 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
     } else {
       console.log('Google Maps API key is available');
     }
+
+    return () => {
+      mountedRef.current = false;
+    };
   }, [apiKey, onError]);
 
   const { isLoaded, loadError } = useLoadScript({
@@ -35,19 +40,26 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
     libraries,
   });
 
+  // Debug: Log loading status
+  useEffect(() => {
+    if (loadError) {
+      console.error('Google Maps loading error:', loadError);
+    }
+    if (isLoaded) {
+      console.log('Google Maps API loaded successfully');
+    }
+  }, [isLoaded, loadError]);
+
   const onLoad = useCallback((autocomplete: google.maps.places.Autocomplete) => {
-    try {
+    if (mountedRef.current) {
       console.log('Autocomplete component loaded successfully');
       setAutocomplete(autocomplete);
-    } catch (error) {
-      console.error('Error initializing autocomplete:', error);
-      onError?.('Failed to initialize address search');
     }
-  }, [onError]);
+  }, []);
 
   const onPlaceChanged = useCallback(() => {
     try {
-      if (autocomplete) {
+      if (autocomplete && mountedRef.current) {
         const place = autocomplete.getPlace();
         console.log('Place selected:', JSON.stringify(place, null, 2));
 
