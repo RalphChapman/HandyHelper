@@ -177,7 +177,11 @@ export default function Quote() {
   return (
     <div className="py-12">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Request a Quote</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">Request a Quote</h1>
+        <p className="text-gray-600 mb-8">
+          Get instant project analysis and cost estimates for your home improvement needs. Our AI-powered system 
+          will analyze your project details and provide immediate insights, followed by a detailed quote from our team.
+        </p>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -300,7 +304,7 @@ export default function Quote() {
                         'Analyze Project'
                       )}
                     </Button>
-                    <span className="text-sm text-gray-500">This will display the analysis results below</span>
+                    <span className="text-sm text-gray-500">Click to get immediate AI analysis of your project</span>
                   </div>
                 </FormItem>
               )}
@@ -324,7 +328,7 @@ export default function Quote() {
                   'Submit Quote Request'
                 )}
               </Button>
-              <span className="text-sm text-gray-500">This will analyze and email the results to you</span>
+              <span className="text-sm text-gray-500">Get a detailed cost estimate and find local service providers</span>
             </div>
           </form>
         </Form>
