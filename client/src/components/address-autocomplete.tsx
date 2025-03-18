@@ -9,9 +9,6 @@ interface AddressAutocompleteProps {
   onError?: (error: string) => void;
 }
 
-// Make libraries array static to avoid unnecessary reloads
-const LIBRARIES: ("places")[] = ["places"];
-
 export function AddressAutocomplete({ value, onChange, onError }: AddressAutocompleteProps) {
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
 
@@ -20,7 +17,7 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
 
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: apiKey || "",
-    libraries: LIBRARIES,
+    libraries: ["places"] as ("places")[]
   });
 
   const onLoad = useCallback((autocomplete: google.maps.places.Autocomplete) => {
