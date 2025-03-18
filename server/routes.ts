@@ -347,7 +347,7 @@ export async function registerRoutes(app: Express) {
   // Booking routes
   app.post("/api/bookings", async (req, res) => {
     try {
-      console.log("[API] Creating new booking with data:", req.body);
+      console.log("[API] Creating new booking with raw data:", req.body);
 
       // Parse and validate the booking data
       let booking;
@@ -356,9 +356,9 @@ export async function registerRoutes(app: Express) {
         console.log("[API] Validated booking data:", booking);
       } catch (parseError) {
         console.error("[API] Schema validation error:", parseError);
-        return res.status(400).json({ 
-          message: "Invalid booking data", 
-          errors: parseError instanceof Error ? parseError.message : "Unknown validation error" 
+        return res.status(400).json({
+          message: "Invalid booking data",
+          errors: parseError instanceof Error ? parseError.message : "Unknown validation error"
         });
       }
 
@@ -376,7 +376,7 @@ export async function registerRoutes(app: Express) {
           clientName: booking.clientName,
           clientEmail: booking.clientEmail,
           clientPhone: booking.clientPhone,
-          appointmentDate: new Date(booking.appointmentDate),
+          appointmentDate: booking.appointmentDate,
           notes: booking.notes || null,
           status: "pending",
           confirmed: false
@@ -422,9 +422,9 @@ export async function registerRoutes(app: Express) {
           name: error.name
         });
       }
-      return res.status(500).json({ 
-        message: "Failed to create booking", 
-        error: error instanceof Error ? error.message : "Unknown error" 
+      return res.status(500).json({
+        message: "Failed to create booking",
+        error: error instanceof Error ? error.message : "Unknown error"
       });
     }
   });
@@ -791,7 +791,7 @@ export async function registerRoutes(app: Express) {
       if (!user) {
         console.log("[API] No user found with email:", email);
         // Don't reveal if email exists or not
-        return res.json({ message: "If an account exists with that email, you will receive a password reset link" });
+        returnres.json({ message: "If an account exists with that email, you will receive a password reset link" });
       }
 
       console.log("[API] Reset token set successfully for user:", user.id);
@@ -813,7 +813,8 @@ export async function registerRoutes(app: Express) {
       console.error("[API] Error in forgot password:", error);
       if (error instanceof Error) {
         console.error("[API] Error stack:", error.stack);
-      }      res.status(500).json({ message: "Failed to process password reset request" });
+      }
+      res.status(500).json({ message: "Failed to process password reset request" });
     }
   });
   app.patch("/api/projects/:id", upload.array("images", 10), async (req, res) => {
