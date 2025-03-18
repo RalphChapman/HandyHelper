@@ -64,7 +64,7 @@ export default function Quote() {
   useEffect(() => {
     // Set default service to "general" if available
     if (services && !preselectedService) {
-      const generalService = services.find(s => 
+      const generalService = services.find(s =>
         s.name.toLowerCase().includes('general')
       );
       if (generalService) {
@@ -157,7 +157,7 @@ export default function Quote() {
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">Request a Quote</h1>
         <p className="text-gray-600 mb-8">
-          Get instant project analysis and cost estimates for your home improvement needs. Our AI-powered system 
+          Get instant project analysis and cost estimates for your home improvement needs. Our AI-powered system
           will analyze your project details and provide immediate insights, followed by a detailed quote from our team.
         </p>
 
