@@ -21,7 +21,7 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
     setIsValid(isValidAddress);
 
     if (!isValidAddress && address.length > 0) {
-      onError?.('Please enter a complete address (e.g., 123 Main St, Charleston, SC 12345)');
+      onError?.('Please enter your complete address including street number, name, city, state abbreviation, and ZIP code');
     }
 
     return isValidAddress;
@@ -33,11 +33,16 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
   };
 
   return (
-    <Input 
-      value={value}
-      onChange={(e) => handleChange(e.target.value)}
-      placeholder="Enter full address (e.g., 123 Main St, Charleston, SC 12345)"
-      className={isValid ? "border-green-500" : undefined}
-    />
+    <div className="space-y-2">
+      <Input 
+        value={value}
+        onChange={(e) => handleChange(e.target.value)}
+        placeholder="123 Main St, Charleston, SC 29401"
+        className={isValid ? "border-green-500" : undefined}
+      />
+      <p className="text-sm text-muted-foreground">
+        Format: Street Number & Name, City, State (2 letters) ZIP
+      </p>
+    </div>
   );
 }
