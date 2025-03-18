@@ -22,7 +22,10 @@ export default function App() {
 
   // Track page views
   useEffect(() => {
-    trackPageView(location);
+    // Ensure we have a valid location before tracking
+    if (location) {
+      trackPageView(location);
+    }
   }, [location, trackPageView]);
 
   return (
