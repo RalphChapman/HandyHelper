@@ -6,6 +6,7 @@ import { setupVite, log } from "./vite";
 import { createServer } from "http";
 import path from "path";
 import fs from 'fs';
+import { storage } from "./storage";
 
 const app = express();
 
@@ -60,10 +61,14 @@ app.use(express.static(path.resolve(process.cwd(), "public"), {
   }
 }));
 
-
 (async () => {
   try {
-    // Register API routes first
+    // Initialize storage first
+    console.log("[Server] Initializing database storage...");
+    await storage.initialize();
+    console.log("[Server] Database storage initialized successfully");
+
+    // Register API routes
     await registerRoutes(app);
 
     const server = createServer(app);
@@ -100,7 +105,7 @@ app.use(express.static(path.resolve(process.cwd(), "public"), {
       log(`[Server] Server running on port 5000 (${process.env.NODE_ENV || 'development'} mode)`);
     });
   } catch (error) {
-    console.error("Failed to start server:", error);
+    console.error("[Server] Failed to start server:", error);
     process.exit(1);
   }
 })();

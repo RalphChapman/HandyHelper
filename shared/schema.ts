@@ -2,7 +2,6 @@ import { pgTable, text, serial, integer, varchar, timestamp, boolean, json } fro
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Keep existing tables
 export const services = pgTable("services", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
@@ -12,7 +11,6 @@ export const services = pgTable("services", {
   rating: integer("rating").notNull().default(5),
 });
 
-// Update projects table to include multiple images
 export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
   title: varchar("title", { length: 200 }).notNull(),
@@ -20,12 +18,11 @@ export const projects = pgTable("projects", {
   imageUrls: text("image_urls").array().notNull(),
   comment: text("comment").notNull(),
   customerName: varchar("customer_name", { length: 100 }).notNull(),
-  projectDate: timestamp("project_date").notNull(),
+  projectDate: timestamp("project_date", { mode: 'date', withTimezone: true }).notNull(),
   serviceId: integer("service_id").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// Add reviews table
 export const reviews = pgTable("reviews", {
   id: serial("id").primaryKey(),
   serviceId: integer("service_id").notNull(),
@@ -36,7 +33,6 @@ export const reviews = pgTable("reviews", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// Add testimonials table
 export const testimonials = pgTable("testimonials", {
   id: serial("id").primaryKey(),
   serviceId: integer("service_id").notNull(),
@@ -68,7 +64,6 @@ export const quoteRequests = pgTable("quote_requests", {
   address: text("address").notNull(),
 });
 
-// Users table with role support
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: varchar("username", { length: 100 }).notNull().unique(),
@@ -80,7 +75,6 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// Add service provider table
 export const serviceProviders = pgTable("service_providers", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
@@ -96,7 +90,6 @@ export const serviceProviders = pgTable("service_providers", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// Create schemas and types
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true });
 export const insertQuoteRequestSchema = createInsertSchema(quoteRequests).omit({ id: true });
 export const insertBookingSchema = createInsertSchema(bookings)
@@ -106,7 +99,7 @@ export const insertBookingSchema = createInsertSchema(bookings)
     clientName: z.string().min(1, "Name is required"),
     clientEmail: z.string().email("Invalid email address"),
     clientPhone: z.string().min(10, "Phone number is required"),
-    appointmentDate: z.string().transform((str) => str), // Keep as string for storage layer
+    appointmentDate: z.string().transform((str) => new Date(str).toISOString()),
     notes: z.string().nullable().optional(),
   });
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
@@ -118,7 +111,6 @@ export const insertReviewSchema = createInsertSchema(reviews)
     rating: z.number().min(1).max(5),
     review: z.string().min(10, "Review must be at least 10 characters long"),
   });
-// Update insertProjectSchema
 export const insertProjectSchema = createInsertSchema(projects)
   .omit({ id: true, createdAt: true })
   .extend({

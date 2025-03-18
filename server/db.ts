@@ -12,20 +12,17 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Create connection pool with error handling and retry logic
+// Create connection pool with error handling
 const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
   connectionTimeoutMillis: 5000, // 5 second timeout
   max: 20, // Maximum pool size
-  idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-  retryDelay: 1000, // Time between retries
-  maxRetries: 3 // Maximum number of retries
+  idleTimeoutMillis: 30000 // Close idle clients after 30 seconds
 });
 
 // Add error handler for the pool
 pool.on('error', (err) => {
   console.error('Unexpected error on idle database client:', err);
-  // Don't exit the process, just log the error
   console.error('Database connection error occurred, will attempt to reconnect');
 });
 
@@ -56,4 +53,4 @@ testConnection().catch(error => {
 });
 
 // Initialize Drizzle with the pool and schema
-export const db = drizzle({ client: pool, schema });
+export const db = drizzle(pool, { schema });

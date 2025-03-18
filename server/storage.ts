@@ -1,6 +1,6 @@
 import { 
   users, type User, type InsertUser,
-  services, testimonials, reviews, projects, quoteRequests,
+  services, testimonials, reviews, projects, quoteRequests, bookings,
   type Service, type InsertService, 
   type QuoteRequest, type InsertQuoteRequest,
   type Booking, type InsertBooking,
