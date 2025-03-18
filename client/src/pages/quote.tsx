@@ -45,7 +45,7 @@ function extractLocationFromAddress(address: string): string {
 export default function Quote() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { user } = useAuth(); // Get user info for pre-filling
+  const { user } = useAuth();
   const searchParams = new URLSearchParams(window.location.search);
   const preselectedService = searchParams.get("service");
   const prefilledName = searchParams.get("name");
@@ -55,16 +55,10 @@ export default function Quote() {
   const [analysis, setAnalysis] = useState<string>("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [addressVerified, setAddressVerified] = useState(false);
 
   const { data: services, isLoading: servicesLoading } = useQuery<Service[]>({
     queryKey: ["/api/services"],
-    queryFn: async () => {
-      const response = await fetch("/api/services");
-      if (!response.ok) {
-        throw new Error(`Failed to fetch services: ${response.statusText}`);
-      }
-      return response.json();
-    }
   });
 
   const form = useForm({
@@ -85,13 +79,6 @@ export default function Quote() {
       if (service) {
         form.setValue("serviceId", service.id);
       }
-    } else if (services && !form.getValues("serviceId")) {
-      const generalService = services.find(service =>
-        service.name.toLowerCase() === "general home maintenance"
-      );
-      if (generalService) {
-        form.setValue("serviceId", generalService.id);
-      }
     }
   }, [services, form, preselectedService]);
 
@@ -108,9 +95,17 @@ export default function Quote() {
       return;
     }
 
+    if (!addressVerified) {
+      toast({
+        title: "Error",
+        description: "Please select a valid address from the dropdown",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsAnalyzing(true);
     try {
-      // Extract location from address if available, otherwise use default
       const location = extractLocationFromAddress(address);
 
       const response = await apiRequest("POST", "/api/analyze-project", {
@@ -137,6 +132,15 @@ export default function Quote() {
   }
 
   async function onSubmit(data: any) {
+    if (!addressVerified) {
+      toast({
+        title: "Error",
+        description: "Please select a valid address from the dropdown",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const service = services?.find(s => s.id === data.serviceId);
@@ -144,12 +148,6 @@ export default function Quote() {
         ...data,
         serviceName: service?.name,
         analysis,
-        contactInfo: {
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
-          address: data.address
-        }
       });
 
       if (!response.ok) {
@@ -264,8 +262,12 @@ export default function Quote() {
                   <FormControl>
                     <AddressAutocomplete
                       value={field.value}
-                      onChange={field.onChange}
+                      onChange={(value) => {
+                        field.onChange(value);
+                        setAddressVerified(true);
+                      }}
                       onError={(error) => {
+                        setAddressVerified(false);
                         toast({
                           title: "Address Verification Error",
                           description: error,

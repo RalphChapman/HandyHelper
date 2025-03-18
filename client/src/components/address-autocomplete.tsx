@@ -1,6 +1,6 @@
 import { useLoadScript, Autocomplete } from "@react-google-maps/api";
 import { Input } from "@/components/ui/input";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
 interface AddressAutocompleteProps {
@@ -15,6 +15,14 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
   // Get API key from environment
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
+  // Debug: Log API key presence
+  useEffect(() => {
+    if (!apiKey) {
+      console.error('Google Maps API key is missing');
+      onError?.('Google Maps API key is not configured');
+    }
+  }, [apiKey, onError]);
+
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: apiKey || "",
     libraries: ["places"] as const,
@@ -22,25 +30,32 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
 
   const onLoad = useCallback((autocomplete: google.maps.places.Autocomplete) => {
     try {
+      console.log('Autocomplete component loaded successfully');
       setAutocomplete(autocomplete);
     } catch (error) {
       console.error('Error initializing autocomplete:', error);
       onError?.('Failed to initialize address search');
     }
-  }, []);
+  }, [onError]);
 
   const onPlaceChanged = useCallback(() => {
     try {
       if (autocomplete) {
         const place = autocomplete.getPlace();
+        console.log('Place selected:', place);
+
         if (!place.geometry) {
+          console.error('No geometry returned for selected place');
           onError?.('Please select a valid address from the dropdown');
           return;
         }
+
         const formattedAddress = place.formatted_address;
         if (formattedAddress) {
+          console.log('Selected address:', formattedAddress);
           onChange(formattedAddress);
         } else {
+          console.error('No formatted address returned');
           onError?.('Selected place does not have a valid address');
         }
       }
