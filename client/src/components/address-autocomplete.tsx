@@ -17,29 +17,23 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
   const [isAddressSelected, setIsAddressSelected] = useState(false);
   const [fallbackMode, setFallbackMode] = useState(false);
 
-  // Ensure API key exists
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-
-  useEffect(() => {
-    if (!apiKey) {
-      console.error('Google Maps API key is missing');
-      setFallbackMode(true);
-    }
-  }, [apiKey]);
-
+  // Load the Google Maps script
   const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: apiKey || '',
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
     libraries,
   });
 
+  // Monitor loading status
   useEffect(() => {
+    console.log('Google Maps loading status:', { isLoaded, loadError });
     if (loadError) {
       console.error('Google Maps loading error:', loadError);
       setFallbackMode(true);
     }
-  }, [loadError]);
+  }, [isLoaded, loadError]);
 
   const onLoad = useCallback((autocomplete: google.maps.places.Autocomplete) => {
+    console.log('Autocomplete component loaded');
     setAutocomplete(autocomplete);
   }, []);
 
@@ -47,13 +41,24 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
     if (autocomplete) {
       const place = autocomplete.getPlace();
       if (place.formatted_address) {
+        console.log('Selected address:', place.formatted_address);
         onChange(place.formatted_address);
         setIsAddressSelected(true);
       }
     }
   }, [autocomplete, onChange]);
 
-  // Show regular input if in fallback mode
+  // Show loading state
+  if (!isLoaded && !fallbackMode) {
+    return (
+      <div className="flex items-center gap-2">
+        <Input disabled placeholder="Loading address search..." />
+        <Loader2 className="h-4 w-4 animate-spin" />
+      </div>
+    );
+  }
+
+  // Show fallback input if Google Maps fails to load
   if (fallbackMode) {
     return (
       <Input 
@@ -61,16 +66,6 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
         onChange={(e) => onChange(e.target.value)}
         placeholder="Enter your address"
       />
-    );
-  }
-
-  // Show loading state
-  if (!isLoaded) {
-    return (
-      <div className="flex items-center gap-2">
-        <Input disabled placeholder="Loading address search..." />
-        <Loader2 className="h-4 w-4 animate-spin" />
-      </div>
     );
   }
 
