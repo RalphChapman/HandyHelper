@@ -358,7 +358,10 @@ export async function registerRoutes(app: Express) {
       }
 
       // Create the booking first
-      const newBooking = await storage.createBooking(booking);
+      const newBooking = await storage.createBooking({
+        ...booking,
+        notes: booking.notes || null // Ensure notes is null if not provided
+      });
       console.log(`[API] Successfully created booking #${newBooking.id}`);
 
       // Then try to create calendar event (but don't fail if calendar fails)
@@ -369,10 +372,6 @@ export async function registerRoutes(app: Express) {
         });
         console.log("[API] Calendar event created successfully");
       } catch (calendarError: any) {
-        if (calendarError.message === 'Time slot is already booked') {
-          res.status(409).json({ message: "This time slot is already booked. Please select a different time." });
-          return;
-        }
         console.error("[API] Calendar error:", calendarError);
         // Continue with booking confirmation even if calendar fails
       }
@@ -785,13 +784,9 @@ export async function registerRoutes(app: Express) {
       console.error("[API] Error in forgot password:", error);
       if (error instanceof Error) {
         console.error("[API] Error stack:", error.stack);
-      }
-      res.status(500).json({ message: "Failed to process password reset request" });
+      }      res.status(500).json({ message: "Failed to process password reset request" });
     }
   });
-
-
-
   app.patch("/api/projects/:id", upload.array("images", 10), async (req, res) => {
     try {
       const projectId = parseInt(req.params.id);
