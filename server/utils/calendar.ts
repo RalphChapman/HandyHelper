@@ -13,6 +13,12 @@ oauth2Client.setCredentials({
 const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
 export async function checkCalendarConflicts(startTime: Date, endTime: Date): Promise<boolean> {
+  // If calendar credentials are not set, skip conflict check
+  if (!process.env.GOOGLE_CALENDAR_CLIENT_ID) {
+    console.log('[CALENDAR] Calendar integration not configured, skipping conflict check');
+    return false;
+  }
+
   try {
     const response = await calendar.events.list({
       calendarId: 'primary',
@@ -25,11 +31,18 @@ export async function checkCalendarConflicts(startTime: Date, endTime: Date): Pr
     return (response.data.items || []).length > 0;
   } catch (error) {
     console.error('[CALENDAR] Error checking conflicts:', error);
-    throw error;
+    // Don't throw error, just return false to allow booking
+    return false;
   }
 }
 
 export async function createCalendarEvent(booking: any) {
+  // If calendar credentials are not set, skip calendar event creation
+  if (!process.env.GOOGLE_CALENDAR_CLIENT_ID) {
+    console.log('[CALENDAR] Calendar integration not configured, skipping event creation');
+    return null;
+  }
+
   try {
     console.log('[CALENDAR] Creating calendar event for booking:', booking);
 
@@ -63,8 +76,7 @@ ${booking.notes ? `Additional Notes: ${booking.notes}` : ''}
         timeZone: 'America/New_York',
       },
       attendees: [
-        { email: booking.clientEmail },
-        { email: 'chapman.ralph@gmail.com' }
+        { email: booking.clientEmail }
       ],
       sendUpdates: 'all', // Send email notifications to attendees
     };
@@ -78,6 +90,7 @@ ${booking.notes ? `Additional Notes: ${booking.notes}` : ''}
     return response.data;
   } catch (error) {
     console.error('[CALENDAR] Error creating event:', error);
-    throw error;
+    // Don't throw error, just return null to allow booking without calendar event
+    return null;
   }
 }

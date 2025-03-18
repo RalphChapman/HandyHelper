@@ -11,13 +11,14 @@ import { setupAuth, hashPassword, comparePasswords } from "./auth";
 import { analyzeProjectDescription, estimateProjectCost } from "./utils/grok";
 import { randomBytes } from "crypto";
 import fs from "fs";
+import { createCalendarEvent } from "./utils/calendar";
 
 // Configure multer for handling file uploads
 const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
       // Use absolute path that works in both dev and production
-      const uploadDir = process.env.REPL_SLUG 
+      const uploadDir = process.env.REPL_SLUG
         ? path.join('/home/runner', process.env.REPL_SLUG, 'uploads')
         : path.join(process.cwd(), 'uploads');
 
@@ -102,7 +103,7 @@ export async function registerRoutes(app: Express) {
   setupAuth(app);
 
   // Set up static file serving for uploads
-  const uploadDir = process.env.REPL_SLUG 
+  const uploadDir = process.env.REPL_SLUG
     ? path.join('/home/runner', process.env.REPL_SLUG, 'uploads')
     : path.join(process.cwd(), 'uploads');
 
@@ -356,23 +357,25 @@ export async function registerRoutes(app: Express) {
         return;
       }
 
-      // Create calendar event first to check for conflicts
+      // Create the booking first
+      const newBooking = await storage.createBooking(booking);
+      console.log(`[API] Successfully created booking #${newBooking.id}`);
+
+      // Then try to create calendar event (but don't fail if calendar fails)
       try {
         await createCalendarEvent({
-          ...booking,
+          ...newBooking,
           serviceName: service.name
         });
+        console.log("[API] Calendar event created successfully");
       } catch (calendarError: any) {
         if (calendarError.message === 'Time slot is already booked') {
           res.status(409).json({ message: "This time slot is already booked. Please select a different time." });
           return;
         }
         console.error("[API] Calendar error:", calendarError);
-        // Continue with booking creation even if calendar fails
+        // Continue with booking confirmation even if calendar fails
       }
-
-      const newBooking = await storage.createBooking(booking);
-      console.log(`[API] Successfully created booking #${newBooking.id}`);
 
       // Send email confirmation
       try {
@@ -747,7 +750,7 @@ export async function registerRoutes(app: Express) {
 
       if (!email) {
         console.log("[API] Missing email in request");
-        return res.status(40).json({ message: "Email is required" });
+        return res.status(400).json({ message: "Email is required" });
       }
 
       // Generate reset token
@@ -873,7 +876,7 @@ export async function registerRoutes(app: Express) {
 
       try {
         // Delete the actual file from the uploads directory
-        const filePath = `./uploads${imageUrl}`; 
+        const filePath = `./uploads${imageUrl}`;
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);
           console.log(`[API] Deleted file: ${filePath}`);
