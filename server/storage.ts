@@ -216,25 +216,44 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createBooking(booking: InsertBooking): Promise<Booking> {
-    const [newBooking] = await db.insert(Booking).values({...booking, status: "pending", confirmed: false}).returning();
-    return newBooking;
+    try {
+      console.log("[Storage] Creating booking:", booking);
+      const [newBooking] = await db
+        .insert(bookings)
+        .values({
+          serviceId: booking.serviceId,
+          clientName: booking.clientName,
+          clientEmail: booking.clientEmail,
+          clientPhone: booking.clientPhone,
+          appointmentDate: new Date(booking.appointmentDate),
+          notes: booking.notes,
+          status: "pending",
+          confirmed: false
+        })
+        .returning();
+      console.log("[Storage] Created booking:", newBooking);
+      return newBooking;
+    } catch (error) {
+      console.error("[Storage] Error creating booking:", error);
+      throw error;
+    }
   }
 
   async getBooking(id: number): Promise<Booking | undefined> {
-    const [booking] = await db.select().from(Booking).where(eq(Booking.id, id));
+    const [booking] = await db.select().from(bookings).where(eq(bookings.id, id));
     return booking;
   }
 
   async getBookings(): Promise<Booking[]> {
-    return await db.select().from(Booking);
+    return await db.select().from(bookings);
   }
 
   async getBookingsByEmail(email: string): Promise<Booking[]> {
-    return await db.select().from(Booking).where(eq(Booking.clientEmail, email));
+    return await db.select().from(bookings).where(eq(bookings.clientEmail, email));
   }
 
   async updateBookingStatus(id: number, status: string): Promise<Booking | undefined> {
-    const [updatedBooking] = await db.update(Booking).set({status}).where(eq(Booking.id, id)).returning();
+    const [updatedBooking] = await db.update(bookings).set({ status }).where(eq(bookings.id, id)).returning();
     return updatedBooking;
   }
 
