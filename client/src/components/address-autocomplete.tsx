@@ -1,6 +1,7 @@
 import { Input } from "@/components/ui/input";
 import { useState, useRef, useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import { loadGoogleMapsScript } from "@/lib/maps-loader";
 
 interface AddressAutocompleteProps {
   value: string;
@@ -12,19 +13,10 @@ export function AddressAutocomplete({ value, onChange }: AddressAutocompleteProp
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    console.log('Starting Maps script load...');
-    const script = document.createElement('script');
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-    console.log('API Key available:', !!apiKey);
+    loadGoogleMapsScript()
+      .then(() => {
+        if (!inputRef.current) return;
 
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-    script.async = true;
-
-    script.onload = () => {
-      console.log('Maps script loaded successfully');
-      if (!inputRef.current) return;
-
-      try {
         const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
           componentRestrictions: { country: "us" },
           types: ["address"]
@@ -38,26 +30,11 @@ export function AddressAutocomplete({ value, onChange }: AddressAutocompleteProp
         });
 
         setIsLoading(false);
-        console.log('Autocomplete initialized successfully');
-      } catch (error) {
-        console.error('Error initializing autocomplete:', error);
+      })
+      .catch((error) => {
+        console.error('Error loading Google Maps:', error);
         setIsLoading(false);
-      }
-    };
-
-    script.onerror = (error) => {
-      console.error('Error loading Maps script:', error);
-      setIsLoading(false);
-    };
-
-    document.head.appendChild(script);
-
-    return () => {
-      const loadedScript = document.querySelector(`script[src^="https://maps.googleapis.com/maps/api/js"]`);
-      if (loadedScript && loadedScript.parentNode) {
-        loadedScript.parentNode.removeChild(loadedScript);
-      }
-    };
+      });
   }, []);
 
   return (
