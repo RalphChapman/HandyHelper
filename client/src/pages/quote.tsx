@@ -95,15 +95,6 @@ export default function Quote() {
       return;
     }
 
-    if (!addressVerified) {
-      toast({
-        title: "Error",
-        description: "Please select a valid address from the dropdown",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsAnalyzing(true);
     try {
       const location = extractLocationFromAddress(address);
@@ -135,7 +126,7 @@ export default function Quote() {
     if (!addressVerified) {
       toast({
         title: "Error",
-        description: "Please enter a complete address in the correct format",
+        description: "Please select an address from the suggestions",
         variant: "destructive",
       });
       return;
@@ -269,7 +260,7 @@ export default function Quote() {
                       value={field.value}
                       onChange={(value) => {
                         field.onChange(value);
-                        setAddressVerified(value.match(/\d+[^,]+,\s*[A-Z]{2}\s*\d{5}/) !== null);
+                        setAddressVerified(true);
                       }}
                       onError={(error) => {
                         setAddressVerified(false);

@@ -1,5 +1,8 @@
+import { useLoadScript, Autocomplete } from "@react-google-maps/api";
+import type { Libraries } from "@react-google-maps/api";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { Loader2 } from "lucide-react";
 
 interface AddressAutocompleteProps {
   value: string;
@@ -7,42 +10,68 @@ interface AddressAutocompleteProps {
   onError?: (error: string) => void;
 }
 
+const libraries: Libraries = ["places"];
+
 export function AddressAutocomplete({ value, onChange, onError }: AddressAutocompleteProps) {
-  const [isValid, setIsValid] = useState(false);
+  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+  const [isAddressSelected, setIsAddressSelected] = useState(false);
 
-  const validateAddress = (address: string) => {
-    // Basic validation: Must contain street number, street name, city, state, and ZIP
-    const hasStreetNumber = /\d+/.test(address);
-    const hasStreetName = /[a-zA-Z]+/.test(address);
-    const hasCityState = /[a-zA-Z]+,\s*[A-Z]{2}/.test(address);
-    const hasZip = /\d{5}/.test(address);
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
+    libraries,
+  });
 
-    const isValidAddress = hasStreetNumber && hasStreetName && hasCityState && hasZip;
-    setIsValid(isValidAddress);
+  const onLoad = useCallback((autocomplete: google.maps.places.Autocomplete) => {
+    setAutocomplete(autocomplete);
+  }, []);
 
-    if (!isValidAddress && address.length > 0) {
-      onError?.('Please enter your complete address including street number, name, city, state abbreviation, and ZIP code');
+  const onPlaceChanged = useCallback(() => {
+    if (autocomplete) {
+      const place = autocomplete.getPlace();
+      if (place.formatted_address) {
+        onChange(place.formatted_address);
+        setIsAddressSelected(true);
+      }
     }
+  }, [autocomplete, onChange]);
 
-    return isValidAddress;
-  };
+  if (loadError) {
+    return (
+      <Input 
+        value={value} 
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Enter your address"
+      />
+    );
+  }
 
-  const handleChange = (newValue: string) => {
-    onChange(newValue);
-    validateAddress(newValue);
-  };
+  if (!isLoaded) {
+    return (
+      <div className="flex items-center gap-2">
+        <Input disabled placeholder="Loading address search..." />
+        <Loader2 className="h-4 w-4 animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-2">
+    <Autocomplete
+      onLoad={onLoad}
+      onPlaceChanged={onPlaceChanged}
+      options={{ 
+        componentRestrictions: { country: "us" },
+        types: ['address']
+      }}
+    >
       <Input 
         value={value}
-        onChange={(e) => handleChange(e.target.value)}
-        placeholder="123 Main St, Charleston, SC 29401"
-        className={isValid ? "border-green-500" : undefined}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setIsAddressSelected(false);
+        }}
+        placeholder="Start typing your address"
+        className={isAddressSelected ? "border-green-500" : undefined}
       />
-      <p className="text-sm text-muted-foreground">
-        Format: Street Number & Name, City, State (2 letters) ZIP
-      </p>
-    </div>
+    </Autocomplete>
   );
 }
