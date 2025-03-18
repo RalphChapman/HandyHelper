@@ -1,4 +1,5 @@
 import { useLoadScript, Autocomplete } from "@react-google-maps/api";
+import type { Libraries } from "@react-google-maps/api";
 import { Input } from "@/components/ui/input";
 import { useState, useCallback, useEffect } from "react";
 import { Loader2 } from "lucide-react";
@@ -8,6 +9,9 @@ interface AddressAutocompleteProps {
   onChange: (address: string) => void;
   onError?: (error: string) => void;
 }
+
+// Define libraries array as a constant to prevent unnecessary reloads
+const libraries: Libraries = ["places"];
 
 export function AddressAutocomplete({ value, onChange, onError }: AddressAutocompleteProps) {
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
@@ -25,7 +29,7 @@ export function AddressAutocomplete({ value, onChange, onError }: AddressAutocom
 
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: apiKey || "",
-    libraries: ["places"] as const,
+    libraries,
   });
 
   const onLoad = useCallback((autocomplete: google.maps.places.Autocomplete) => {
