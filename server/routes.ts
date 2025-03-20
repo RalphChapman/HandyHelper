@@ -31,7 +31,7 @@ const upload = multer({
       if (!fs.existsSync(uploadDir)) {
         try {
           fs.mkdirSync(uploadDir, { recursive: true, mode: 0o775 });
-          console.log('[API] Created uploads directory:', uploadDir);
+          console.log('[API] Created uploads directory at:', uploadDir);
 
           const stats = fs.statSync(uploadDir);
           console.log('[API] Directory permissions:', stats.mode.toString(8));
@@ -477,62 +477,62 @@ export async function registerRoutes(app: Express) {
           size: f.size
         })) : 'No files uploaded');
 
-      const files = req.files as Express.Multer.File[];
-      if (!files || files.length === 0) {
-        console.log("[API] No images provided");
-        return res.status(400).json({ message: "At least one image is required" });
-      }
-
-      // Create array of image URLs with absolute paths
-      const imageUrls = files.map(file => {
-        const relativeUrl = `/uploads/${file.filename}`;
-        console.log('[API] Generated image URL:', relativeUrl);
-        console.log('[API] Actual file path:', file.path);
-
-        // Verify file was actually saved
-        try {
-          fs.accessSync(file.path, fs.constants.F_OK);
-          console.log('[API] Verified file exists at:', file.path);
-        } catch (error) {
-          console.error('[API] Error accessing uploaded file:', error);
-          throw new Error(`Failed to verify uploaded file: ${file.filename}`);
-        }
-
-        return relativeUrl;
-      });
-
-      const projectData = {
-        title: req.body.title,
-        description: req.body.description,
-        imageUrls,
-        comment: req.body.comment,
-        customerName: req.body.customerName,
-        projectDate: new Date(req.body.projectDate),
-        serviceId: parseInt(req.body.serviceId)
-      };
-
-      console.log('[API] Project data for creation:', JSON.stringify(projectData, null, 2));
-
-      try {
-        const newProject = await storage.createProject(projectData);
-        console.log(`[API] Successfully created project #${newProject.id}`);
-        console.log('[API] Project image URLs:', newProject.imageUrls);
-        res.status(201).json(newProject);
-      } catch (storageError) {
-        console.error("[API] Storage error creating project:", storageError);
-        if (storageError instanceof Error) {
-          console.error("[API] Storage error stack:", storageError.stack);
-        }
-        throw storageError;
-      }
-    } catch (error) {
-      console.error("[API] Error creating project:", error);
-      if (error instanceof Error) {
-        console.error("[API] Error stack:", error.stack);
-      }
-      res.status(500).json({ message: "Failed to create project", error: (error as Error).message });
+    const files = req.files as Express.Multer.File[];
+    if (!files || files.length === 0) {
+      console.log("[API] No images provided");
+      return res.status(400).json({ message: "At least one image is required" });
     }
-  });
+
+    // Create array of image URLs with absolute paths
+    const imageUrls = files.map(file => {
+      const relativeUrl = `/uploads/${file.filename}`;
+      console.log('[API] Generated image URL:', relativeUrl);
+      console.log('[API] Actual file path:', file.path);
+
+      // Verify file was actually saved
+      try {
+        fs.accessSync(file.path, fs.constants.F_OK);
+        console.log('[API] Verified file exists at:', file.path);
+      } catch (error) {
+        console.error('[API] Error accessing uploaded file:', error);
+        throw new Error(`Failed to verify uploaded file: ${file.filename}`);
+      }
+
+      return relativeUrl;
+    });
+
+    const projectData = {
+      title: req.body.title,
+      description: req.body.description,
+      imageUrls,
+      comment: req.body.comment,
+      customerName: req.body.customerName,
+      projectDate: new Date(req.body.projectDate),
+      serviceId: parseInt(req.body.serviceId)
+    };
+
+    console.log('[API] Project data for creation:', JSON.stringify(projectData, null, 2));
+
+    try {
+      const newProject = await storage.createProject(projectData);
+      console.log(`[API] Successfully created project #${newProject.id}`);
+      console.log('[API] Project image URLs:', newProject.imageUrls);
+      res.status(201).json(newProject);
+    } catch (storageError) {
+      console.error("[API] Storage error creating project:", storageError);
+      if (storageError instanceof Error) {
+        console.error("[API] Storage error stack:", storageError.stack);
+      }
+      throw storageError;
+    }
+  } catch (error) {
+    console.error("[API] Error creating project:", error);
+    if (error instanceof Error) {
+      console.error("[API] Error stack:", error.stack);
+    }
+    res.status(500).json({ message: "Failed to create project", error: (error as Error).message });
+  }
+});
 
   // Individual service route
   app.get("/api/services/:id", async (req, res) => {
