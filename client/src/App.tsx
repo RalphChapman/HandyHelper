@@ -21,12 +21,10 @@ export default function App() {
   const [location] = useLocation();
   const { trackPageView } = useAnalytics();
 
-  // Initialize GA on mount
+  // Initialize GA on mount - we only initialize on mount
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('js', new Date());
-      window.gtag('config', 'G-8Z36SFYZBB');
-      console.log('[Analytics] Google Analytics initialized with config');
+    if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+      console.log('[Analytics] Google Analytics initialization verified');
     } else {
       console.warn('[Analytics] Google Analytics not available');
     }
@@ -36,6 +34,15 @@ export default function App() {
   useEffect(() => {
     if (location) {
       console.log('[Analytics] Page changed:', location);
+      // For GA4, we want to explicitly set the page_title and page_location
+      window.gtag('event', 'page_view', {
+        page_title: document.title,
+        page_path: location,
+        page_location: window.location.href,
+        send_to: 'G-8Z36SFYZBB'
+      });
+      
+      // Also track using our custom method
       trackPageView(location);
     }
   }, [location, trackPageView]);
