@@ -64,13 +64,26 @@ export async function registerRoutes(app: Express) {
   // Project upload endpoint
   app.post("/api/projects", upload.array("images", 10), handleUploadError, async (req, res) => {
     try {
+      console.log("[API] Creating new project, payload:", {
+        body: req.body,
+        files: req.files ? (req.files as Express.Multer.File[]).length : 0
+      });
+
       const files = req.files as Express.Multer.File[];
       if (!files || files.length === 0) {
         return res.status(400).json({ message: "At least one image is required" });
       }
 
       // Create array of image URLs
-      const imageUrls = files.map(file => `/uploads/${file.filename}`);
+      const imageUrls = files.map(file => {
+        console.log("[API] Processing uploaded file:", {
+          originalname: file.originalname,
+          filename: file.filename,
+          path: file.path,
+          size: file.size
+        });
+        return `/uploads/${file.filename}`;
+      });
 
       const projectData = {
         title: req.body.title,
@@ -82,10 +95,12 @@ export async function registerRoutes(app: Express) {
         serviceId: parseInt(req.body.serviceId)
       };
 
+      console.log("[API] Creating project with data:", projectData);
       const newProject = await storage.createProject(projectData);
+      console.log("[API] Project created successfully:", newProject.id);
       res.status(201).json(newProject);
     } catch (error) {
-      console.error("Error creating project:", error);
+      console.error("[API] Error creating project:", error);
       res.status(500).json({ message: "Failed to create project" });
     }
   });
