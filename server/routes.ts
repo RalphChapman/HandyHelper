@@ -163,17 +163,45 @@ export async function registerRoutes(app: Express) {
     
     // Check if uploads directory exists and is writable
     const uploadsDir = path.resolve(process.cwd(), "uploads");
+    console.log("[API Upload] Uploads directory absolute path:", uploadsDir);
+    
     try {
+      // Always ensure uploads directory exists
       if (!fs.existsSync(uploadsDir)) {
         console.log("[API Upload] Creating uploads directory");
         fs.mkdirSync(uploadsDir, { recursive: true });
+        // Set permissions
+        fs.chmodSync(uploadsDir, 0o755);
       }
+      
+      // Double check it's there and writable
       fs.accessSync(uploadsDir, fs.constants.W_OK);
+      
+      // Get directory stats
+      const stats = fs.statSync(uploadsDir);
+      console.log("[API Upload] Uploads directory info:", {
+        isDirectory: stats.isDirectory(),
+        mode: stats.mode.toString(8),
+        size: stats.size,
+        uid: stats.uid,
+        gid: stats.gid
+      });
+      
+      // List all files in the upload directory
+      const files = fs.readdirSync(uploadsDir);
+      console.log("[API Upload] Current files in uploads directory:", 
+        files.length === 0 ? "No files" : files);
+        
       console.log("[API Upload] Uploads directory exists and is writable:", uploadsDir);
     } catch (error) {
       console.error("[API Upload] Error with uploads directory:", error);
+      return res.status(500).json({
+        message: "Server error: Unable to access uploads directory",
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
     
+    console.log("[API Upload] Proceeding to multer upload handler");
     next();
   }, upload.array("images", 10), handleUploadError, async (req, res) => {
     try {

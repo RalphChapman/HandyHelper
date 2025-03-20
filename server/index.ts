@@ -143,12 +143,27 @@ try {
         console.error("[Server] Error with uploads directory:", error);
       }
       
-      // Serve static files in production
-      app.use(express.static(path.resolve(process.cwd(), "dist/public")));
+      // IMPORTANT: Set up specific routes for each type of content in production
+      console.log("[Server] Production mode: Setting up dedicated routes");
       
-      // IMPORTANT: Create a route for uploads before the catch-all route
-      console.log("[Server] Setting up uploads route for production");
-      app.use('/uploads', express.static(productionUploadsDir, {
+      // First, handle uploads directory with expanded logging
+      const uploadsDistDir = path.resolve(process.cwd(), "uploads");
+      console.log("[Server] Production uploads directory absolute path:", uploadsDistDir);
+      
+      // List all files in the uploads directory
+      try {
+        const files = fs.readdirSync(uploadsDistDir);
+        console.log("[Server] Files in production uploads directory:", files.length === 0 ? "No files" : files);
+      } catch (error) {
+        console.error("[Server] Error reading production uploads directory:", error);
+      }
+      
+      // Setup dedicated uploads route with improved logging and error handling
+      app.use('/uploads', (req, res, next) => {
+        console.log('[Server] Uploads request in production:', req.path);
+        // Continue to the static middleware
+        next();
+      }, express.static(uploadsDistDir, {
         setHeaders: (res, filePath) => {
           console.log('[Server] Serving uploaded file in production:', filePath);
           const ext = path.extname(filePath).toLowerCase();
@@ -164,15 +179,23 @@ try {
           
           // Add cache control
           res.setHeader('Cache-Control', 'public, max-age=31536000');
-        }
+        },
+        fallthrough: false // Return 404 for files not found instead of continuing to next middleware
       }));
       
-      // Catch-all route for client-side routing
+      // Then serve static client files
+      console.log("[Server] Setting up static files route for production");
+      app.use(express.static(path.resolve(process.cwd(), "dist/public")));
+      
+      // Finally, add the catch-all route for client-side routing
+      // Skip API requests, but don't need to check uploads since we've set fallthrough: false above
       app.get('*', (req, res, next) => {
-        // Skip the catch-all for API requests and uploads
-        if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/')) {
+        if (req.path.startsWith('/api/')) {
+          console.log('[Server] API request, letting it through:', req.path);
           return next();
         }
+        
+        console.log('[Server] Catch-all serving index.html for:', req.path);
         res.sendFile(path.resolve(process.cwd(), "dist/public/index.html"));
       });
     } else {

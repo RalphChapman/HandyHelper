@@ -551,6 +551,8 @@ export default function Projects() {
     setIsSubmitting(true);
     
     try {
+      console.log('Upload process started - Environment:', process.env.NODE_ENV || 'development');
+      
       // Step 1: Prepare FormData
       const formData = new FormData();
       formData.append("title", data.title);
@@ -572,39 +574,86 @@ export default function Projects() {
         return;
       }
       
-      console.log('Number of files to upload:', data.imageFiles.length);
-      Array.from(data.imageFiles).forEach((file) => {
-        console.log('Appending file:', file.name, 'size:', file.size);
+      // Verify files before appending
+      const validFiles = Array.from(data.imageFiles).filter(file => {
+        // Check file size
+        if (file.size === 0) {
+          console.error(`File ${file.name} has zero size, skipping`);
+          return false;
+        }
+        
+        // Check file type
+        const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+        if (!validTypes.includes(file.type)) {
+          console.error(`File ${file.name} has invalid type: ${file.type}, skipping`);
+          return false;
+        }
+        
+        return true;
+      });
+      
+      if (validFiles.length === 0) {
+        toast({
+          title: "Error",
+          description: "No valid image files selected. Please select JPG, PNG, or GIF images.",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
+      console.log('Number of valid files to upload:', validFiles.length);
+      
+      // Add each valid file to form data
+      validFiles.forEach((file, index) => {
+        console.log(`Appending file ${index + 1}/${validFiles.length}:`, {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          lastModified: new Date(file.lastModified).toISOString()
+        });
         formData.append('images', file); // 'images' matches server configuration
       });
 
       // Step 3: Debug log FormData contents
-      console.log('Submitting project with FormData:');
+      console.log('Submitting project with FormData entries:');
       for (const pair of Array.from(formData.entries())) {
         console.log(pair[0], pair[1] instanceof File ? 
           `File: ${(pair[1] as File).name}, size: ${(pair[1] as File).size}, type: ${(pair[1] as File).type}` : 
           pair[1]);
       }
       
-      // Step 4: Send the request
+      // Step 4: Send the request with progress tracking
+      toast({
+        title: "Uploading...",
+        description: "Uploading files, please wait...",
+      });
+      
+      console.log('Sending POST request to /api/projects');
       const response = await fetch("/api/projects", {
         method: "POST",
         // Note: Do not set Content-Type header for multipart/form-data
         body: formData,
       });
       
-      console.log('Upload response status:', response.status);
+      console.log('Upload response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
+      });
 
       // Step 5: Handle response
       if (!response.ok) {
         // Handle error response
         const contentType = response.headers.get("content-type");
         let errorMessage = 'Failed to submit project';
+        let errorDetails = null;
         
         if (contentType?.includes("application/json")) {
           try {
             const errorData = await response.json();
             errorMessage = errorData.message || errorMessage;
+            errorDetails = errorData;
             console.error('Server error (JSON):', errorData);
           } catch (error) {
             console.error('Error parsing JSON error response:', error);
@@ -617,6 +666,17 @@ export default function Projects() {
           } catch (error) {
             console.error('Error reading error response:', error);
           }
+        }
+        
+        // More detailed error
+        toast({
+          title: "Upload Failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        
+        if (errorDetails) {
+          console.error("Error details:", errorDetails);
         }
         
         throw new Error(errorMessage);
