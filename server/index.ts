@@ -133,6 +133,7 @@ app.use('/uploads', express.static(uploadDir, {
     const port = process.env.PORT || 5000;
     server.listen(port, "0.0.0.0", () => {
       log(`[Server] Server running on port ${port} (${process.env.NODE_ENV || 'development'} mode)`);
+      log(`[Server] For production, using port ${port} mapped to external port 80`);
     });
   } catch (error) {
     console.error("[Server] Failed to start server:", error);
