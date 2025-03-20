@@ -46,7 +46,7 @@ export default function Dashboard() {
       id: 1,
       name: "Projects Invoice",
       date: "February 28, 2025",
-      amount: "$19,050.00",
+      amount: "$17,500.00",
       file: "/invoices/SampleInvoice1.pdf",
     },
     {

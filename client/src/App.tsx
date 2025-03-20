@@ -22,12 +22,9 @@ export default function App() {
 
   // Initialize GA on mount
   useEffect(() => {
-    // Initialize GA
     if (typeof window !== 'undefined' && window.gtag) {
       window.gtag('js', new Date());
-      window.gtag('config', 'G-8Z36SFYZBB', {
-        page_path: location,
-      });
+      window.gtag('config', 'G-8Z36SFYZBB');
       console.log('[Analytics] Google Analytics initialized with config');
     } else {
       console.warn('[Analytics] Google Analytics not available');
@@ -38,11 +35,7 @@ export default function App() {
   useEffect(() => {
     if (location) {
       console.log('[Analytics] Page changed:', location);
-      try {
-        trackPageView(location);
-      } catch (error) {
-        console.error('[Analytics] Failed to track page view:', error);
-      }
+      trackPageView(location);
     }
   }, [location, trackPageView]);
 
