@@ -157,51 +157,84 @@ try {
     if (process.env.NODE_ENV === 'production') {
       console.log("[Server] Running in PRODUCTION mode");
       
-      // Create and verify uploads directory in production
+      // -------------------- CRITICAL UPLOADS CONFIGURATION ---------------------
+      // Get absolute paths for uploads directory
       const productionUploadsDir = path.resolve(process.cwd(), "uploads");
-      console.log("[Server] Production uploads directory:", productionUploadsDir);
+      console.log("[Server] PRODUCTION UPLOADS CONFIG:", {
+        uploadsDirectory: productionUploadsDir,
+        cwd: process.cwd(),
+        envPORT: process.env.PORT || "not set",
+        platformDetails: {
+          platform: process.platform,
+          arch: process.arch,
+          nodeVersion: process.version
+        }
+      });
       
+      // Ensure uploads directory exists with correct permissions
       try {
         if (!fs.existsSync(productionUploadsDir)) {
           console.log("[Server] Creating uploads directory for production");
           fs.mkdirSync(productionUploadsDir, { recursive: true });
+          
+          // Set permissions to 0755 (rwxr-xr-x)
+          fs.chmodSync(productionUploadsDir, 0o755); 
+          console.log("[Server] Created uploads directory with 0755 permissions");
         }
         
-        // Check if directory is writable
-        fs.accessSync(productionUploadsDir, fs.constants.W_OK);
-        console.log("[Server] Uploads directory is writable");
+        // Check if directory is writable by writing a test file
+        const testFile = path.join(productionUploadsDir, `prod-test-${Date.now()}.txt`);
+        fs.writeFileSync(testFile, 'Production test file');
+        console.log("[Server] Successfully wrote test file to uploads directory");
+        
+        // Clean up test file
+        fs.unlinkSync(testFile);
+        console.log("[Server] Removed test file, directory is writable");
+        
+        // Get directory stats
+        const dirStats = fs.statSync(productionUploadsDir);
+        console.log("[Server] Uploads directory stats:", {
+          isDirectory: dirStats.isDirectory(),
+          mode: dirStats.mode.toString(8),
+          uid: dirStats.uid,
+          gid: dirStats.gid,
+          size: dirStats.size
+        });
         
         // List files in uploads directory
         const files = fs.readdirSync(productionUploadsDir);
-        console.log("[Server] Files in production uploads directory:", files);
+        console.log("[Server] Files in production uploads directory:", 
+          files.length === 0 ? "No files" : files);
       } catch (error) {
-        console.error("[Server] Error with uploads directory:", error);
+        console.error("[Server] CRITICAL ERROR with uploads directory:", error);
+        // We'll continue instead of exiting to allow the app to start, 
+        // but uploads functionality will be broken
       }
       
-      // IMPORTANT: Set up specific routes for each type of content in production
-      console.log("[Server] Production mode: Setting up dedicated routes");
+      // --------------- ROUTE CONFIGURATION FOR PRODUCTION ---------------------
+      console.log("[Server] Setting up production routes in priority order");
       
-      // First, handle uploads directory with expanded logging
-      const uploadsDistDir = path.resolve(process.cwd(), "uploads");
-      console.log("[Server] Production uploads directory absolute path:", uploadsDistDir);
+      // 1. First, setup API routes before any static routes
+      //    API routes are already configured via registerRoutes(app) above
       
-      // List all files in the uploads directory
-      try {
-        const files = fs.readdirSync(uploadsDistDir);
-        console.log("[Server] Files in production uploads directory:", files.length === 0 ? "No files" : files);
-      } catch (error) {
-        console.error("[Server] Error reading production uploads directory:", error);
-      }
-      
-      // Setup dedicated uploads route with improved logging and error handling
+      // 2. Set up a dedicated uploads route with comprehensive logging
+      console.log("[Server] Setting up dedicated /uploads route");
       app.use('/uploads', (req, res, next) => {
-        console.log('[Server] Uploads request in production:', req.path);
-        // Continue to the static middleware
+        // Log all uploads requests in production
+        console.log('[Server] PRODUCTION UPLOADS REQUEST:', {
+          path: req.path,
+          method: req.method,
+          originalUrl: req.originalUrl,
+          ip: req.ip
+        });
         next();
-      }, express.static(uploadsDistDir, {
+      }, express.static(productionUploadsDir, {
         setHeaders: (res, filePath) => {
-          console.log('[Server] Serving uploaded file in production:', filePath);
+          // Set appropriate content type based on extension
           const ext = path.extname(filePath).toLowerCase();
+          console.log('[Server] Serving uploaded file:', { path: filePath, ext });
+          
+          // Set correct content type
           if (ext === '.jpg' || ext === '.jpeg') {
             res.setHeader('Content-Type', 'image/jpeg');
           } else if (ext === '.png') {
@@ -212,25 +245,32 @@ try {
             res.setHeader('Content-Type', 'image/webp');
           }
           
-          // Add cache control
+          // Add cache control for better performance
           res.setHeader('Cache-Control', 'public, max-age=31536000');
         },
-        fallthrough: false // Return 404 for files not found instead of continuing to next middleware
+        index: false, // Disable directory listing
+        fallthrough: false // Return 404 for files not found (don't pass to next middleware)
       }));
       
-      // Then serve static client files
+      // 3. Then serve static client files from the dist directory
       console.log("[Server] Setting up static files route for production");
-      app.use(express.static(path.resolve(process.cwd(), "dist/public")));
+      app.use(express.static(path.resolve(process.cwd(), "dist/public"), {
+        index: false // Disable directory listing
+      }));
       
-      // Finally, add the catch-all route for client-side routing
-      // Skip API requests, but don't need to check uploads since we've set fallthrough: false above
+      // 4. Finally, add the catch-all route for client-side routing
       app.get('*', (req, res, next) => {
+        // Skip API requests and let them go to 404 if not matched
         if (req.path.startsWith('/api/')) {
-          console.log('[Server] API request, letting it through:', req.path);
+          console.log('[Server] Unmatched API request:', req.path);
           return next();
         }
         
-        console.log('[Server] Catch-all serving index.html for:', req.path);
+        // Uploads should have been handled by the uploads middleware above
+        // due to fallthrough: false
+        
+        // Serve index.html for all other routes for client-side routing
+        console.log('[Server] Serving index.html for client route:', req.path);
         res.sendFile(path.resolve(process.cwd(), "dist/public/index.html"));
       });
     } else {
