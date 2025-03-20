@@ -14,15 +14,20 @@ const upload = multer({
     destination: async (req, file, cb) => {
       try {
         await fileManager.initialize();
-        cb(null, '/home/runner/workspace/uploads');
+        const uploadsDir = path.resolve(process.cwd(), "uploads");
+        console.log('[Multer] Using uploads directory:', uploadsDir);
+        cb(null, uploadsDir);
       } catch (error) {
+        console.error('[Multer] Error setting destination:', error);
         cb(error as Error, '');
       }
     },
     filename: (req, file, cb) => {
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
       const ext = path.extname(file.originalname);
-      cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+      const filename = file.fieldname + '-' + uniqueSuffix + ext;
+      console.log('[Multer] Generated filename:', filename);
+      cb(null, filename);
     }
   }),
   fileFilter: (req, file, cb) => {
@@ -58,9 +63,12 @@ export async function registerRoutes(app: Express) {
   await storage.initialize();
   await fileManager.initialize();
 
-  // Serve uploaded files
-  app.use('/uploads', express.static('/home/runner/workspace/uploads', {
+  // Serve uploaded files - use path.resolve with process.cwd() for better compatibility
+  const uploadsDir = path.resolve(process.cwd(), "uploads");
+  console.log("[API] Serving uploads from:", uploadsDir);
+  app.use('/uploads', express.static(uploadsDir, {
     setHeaders: (res, filePath) => {
+      console.log('[API] Serving uploaded file:', filePath);
       const ext = path.extname(filePath).toLowerCase();
       if (ext === '.jpg' || ext === '.jpeg') {
         res.setHeader('Content-Type', 'image/jpeg');
@@ -68,7 +76,12 @@ export async function registerRoutes(app: Express) {
         res.setHeader('Content-Type', 'image/png');
       } else if (ext === '.gif') {
         res.setHeader('Content-Type', 'image/gif');
+      } else if (ext === '.webp') {
+        res.setHeader('Content-Type', 'image/webp');
       }
+      
+      // Add cache control
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
     }
   }));
 

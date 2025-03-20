@@ -120,9 +120,37 @@ try {
     const server = createServer(app);
 
     if (process.env.NODE_ENV === 'production') {
-      // Serve static files and uploads in production
+      // Serve static files in production
       app.use(express.static(path.resolve(process.cwd(), "dist/public")));
-      app.get('*', (req, res) => {
+      
+      // IMPORTANT: Create a route for uploads before the catch-all route
+      const uploadsDir = path.resolve(process.cwd(), "uploads");
+      console.log("[Server] Serving uploads from:", uploadsDir);
+      app.use('/uploads', express.static(uploadsDir, {
+        setHeaders: (res, filePath) => {
+          console.log('[Server] Serving uploaded file in production:', filePath);
+          const ext = path.extname(filePath).toLowerCase();
+          if (ext === '.jpg' || ext === '.jpeg') {
+            res.setHeader('Content-Type', 'image/jpeg');
+          } else if (ext === '.png') {
+            res.setHeader('Content-Type', 'image/png');
+          } else if (ext === '.gif') {
+            res.setHeader('Content-Type', 'image/gif');
+          } else if (ext === '.webp') {
+            res.setHeader('Content-Type', 'image/webp');
+          }
+          
+          // Add cache control
+          res.setHeader('Cache-Control', 'public, max-age=31536000');
+        }
+      }));
+      
+      // Catch-all route for client-side routing
+      app.get('*', (req, res, next) => {
+        // Skip the catch-all for API requests and uploads
+        if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/')) {
+          return next();
+        }
         res.sendFile(path.resolve(process.cwd(), "dist/public/index.html"));
       });
     } else {

@@ -62,4 +62,4 @@ export class FileManager {
   }
 }
 
-export const fileManager = new FileManager('/home/runner/workspace/uploads');
+export const fileManager = new FileManager(path.resolve(process.cwd(), 'uploads'));
