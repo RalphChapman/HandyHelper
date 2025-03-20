@@ -172,6 +172,117 @@ export class FileManager {
     const sanitizedName = path.basename(filename);
     return `/uploads/${sanitizedName}`;
   }
+  
+  /**
+   * Performs diagnostic checks on the upload directory
+   * Used for troubleshooting production issues
+   */
+  async diagnosticCheck(): Promise<{ 
+    status: 'ok' | 'warning' | 'error',
+    message: string,
+    details: any 
+  }> {
+    try {
+      // Ensure the directory exists
+      if (!fs.existsSync(this.uploadDir)) {
+        try {
+          console.log(`[FileManager] Creating missing uploads directory: ${this.uploadDir}`);
+          fs.mkdirSync(this.uploadDir, { recursive: true });
+          fs.chmodSync(this.uploadDir, 0o755); // rwxr-xr-x permissions
+        } catch (mkdirError) {
+          return {
+            status: 'error',
+            message: 'Failed to create uploads directory',
+            details: {
+              error: mkdirError instanceof Error ? mkdirError.message : String(mkdirError),
+              path: this.uploadDir,
+              environment: process.env.NODE_ENV || 'development'
+            }
+          };
+        }
+      }
+      
+      // Check directory permissions and stats
+      try {
+        const stats = fs.statSync(this.uploadDir);
+        const isWritable = await this.isDirectoryWritable();
+        
+        // List files in the directory
+        const files = fs.readdirSync(this.uploadDir);
+        
+        // Try to create a test file
+        const testFile = `diagnostic-test-${Date.now()}.txt`;
+        const testPath = path.join(this.uploadDir, testFile);
+        let testFileCreated = false;
+        
+        try {
+          fs.writeFileSync(testPath, 'FileManager diagnostic test');
+          testFileCreated = true;
+          // Clean up
+          fs.unlinkSync(testPath);
+        } catch (writeError) {
+          console.error(`[FileManager] Failed to write test file:`, writeError);
+        }
+        
+        return {
+          status: isWritable ? 'ok' : 'warning',
+          message: isWritable 
+            ? 'Uploads directory is properly configured' 
+            : 'Uploads directory exists but may not be writable',
+          details: {
+            path: this.uploadDir,
+            exists: true,
+            isWritable,
+            testFileCreated,
+            stats: {
+              mode: stats.mode.toString(8),
+              uid: stats.uid,
+              gid: stats.gid,
+              size: stats.size,
+              isDirectory: stats.isDirectory()
+            },
+            fileCount: files.length,
+            environment: process.env.NODE_ENV || 'development',
+            platform: process.platform,
+            nodeVersion: process.version
+          }
+        };
+      } catch (statError) {
+        return {
+          status: 'error',
+          message: 'Could not get file statistics for uploads directory',
+          details: {
+            error: statError instanceof Error ? statError.message : String(statError),
+            path: this.uploadDir
+          }
+        };
+      }
+    } catch (error) {
+      return {
+        status: 'error',
+        message: 'Diagnostic check failed',
+        details: {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
+        }
+      };
+    }
+  }
+  
+  /**
+   * Check if the uploads directory is writable
+   */
+  private async isDirectoryWritable(): Promise<boolean> {
+    const testFile = path.join(this.uploadDir, `.write-test-${Date.now()}`);
+    try {
+      fs.writeFileSync(testFile, 'Test write permissions');
+      fs.unlinkSync(testFile);
+      return true;
+    } catch (error) {
+      console.error(`[FileManager] Directory not writable:`, error);
+      return false;
+    }
+  }
 }
 
 export const fileManager = new FileManager(path.resolve(process.cwd(), 'uploads'));

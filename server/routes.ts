@@ -464,12 +464,134 @@ export async function registerRoutes(app: Express) {
         server: {
           cwd: process.cwd(),
           platform: process.platform,
+          arch: process.arch,
+          nodeVersion: process.version,
           uptime: process.uptime()
         }
       });
     } catch (error) {
       res.status(500).json({
         message: "Error checking uploads",
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+    }
+  });
+  
+  // Special simple upload test endpoint for production troubleshooting
+  app.post("/api/upload-test", upload.single("testFile"), (req, res) => {
+    console.log("[API] Production upload test received");
+    
+    try {
+      // Check if we have a file
+      const file = req.file;
+      if (!file) {
+        console.error("[API] No file received in test upload");
+        return res.status(400).json({ 
+          success: false,
+          message: "No file received"
+        });
+      }
+      
+      console.log("[API] Test file received:", {
+        filename: file.filename,
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+        path: file.path
+      });
+      
+      // Verify the file exists on disk
+      const fullPath = path.resolve(process.cwd(), 'uploads', file.filename);
+      const fileExists = fs.existsSync(fullPath);
+      let fileSize = 0;
+      
+      if (fileExists) {
+        try {
+          const fileStats = fs.statSync(fullPath);
+          fileSize = fileStats.size;
+          console.log("[API] File verification successful:", {
+            path: fullPath,
+            stats: {
+              size: fileStats.size,
+              mode: fileStats.mode.toString(8),
+              created: fileStats.birthtime.toISOString()
+            }
+          });
+        } catch (statError) {
+          console.error("[API] Error checking file stats:", statError);
+        }
+      } else {
+        console.error("[API] CRITICAL: File missing from disk after upload:", fullPath);
+      }
+      
+      // Create a URL for the file
+      const fileUrl = `/uploads/${file.filename}`;
+      
+      // Return detailed response to help debug
+      res.json({
+        success: fileExists && fileSize > 0,
+        environment: process.env.NODE_ENV || 'development',
+        file: {
+          originalName: file.originalname,
+          savedAs: file.filename,
+          mimetype: file.mimetype,
+          size: file.size,
+          url: fileUrl
+        },
+        verification: {
+          exists: fileExists,
+          path: fullPath,
+          size: fileSize,
+          directory: path.dirname(fullPath)
+        },
+        server: {
+          cwd: process.cwd(),
+          platform: process.platform,
+          arch: process.arch,
+          nodeVersion: process.version
+        }
+      });
+    } catch (error) {
+      console.error("[API] Upload test error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Upload test failed",
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+    }
+  });
+  
+  // FileManager diagnostic endpoint
+  app.get("/api/filemanager-diagnostics", async (req, res) => {
+    console.log("[API] Running FileManager diagnostics");
+    
+    try {
+      // Run diagnostics on the FileManager
+      const results = await fileManager.diagnosticCheck();
+      
+      // Add more system information
+      const enhancedResults = {
+        ...results,
+        system: {
+          env: process.env.NODE_ENV || 'development',
+          cwd: process.cwd(),
+          platform: process.platform,
+          arch: process.arch,
+          nodeVersion: process.version,
+          uptime: process.uptime(),
+          memoryUsage: process.memoryUsage(),
+          timestamp: new Date().toISOString()
+        }
+      };
+      
+      res.json(enhancedResults);
+    } catch (error) {
+      console.error("[API] FileManager diagnostics error:", error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Failed to run FileManager diagnostics',
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined
       });
