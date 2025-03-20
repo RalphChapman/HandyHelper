@@ -8,6 +8,8 @@ import { storage } from "./storage";
 import { fileManager } from "./utils/fileManager";
 import { insertQuoteRequestSchema, insertBookingSchema } from "@shared/schema";
 import { ZodError } from "zod";
+import { sendQuoteNotification, sendBookingConfirmation } from "./utils/email";
+import { analyzeProjectDescription, estimateProjectCost } from "./utils/grok";
 
 // Initialize multer with our upload directory
 // Create explicit upload directory path using cwd
@@ -297,6 +299,34 @@ export async function registerRoutes(app: Express) {
       const quoteRequest = insertQuoteRequestSchema.parse(req.body);
       const newQuoteRequest = await storage.createQuoteRequest(quoteRequest);
       console.log(`[API] Successfully created quote request #${newQuoteRequest.id}`);
+      
+      // Fetch service name
+      let serviceName = "Unknown Service";
+      try {
+        const service = await storage.getService(quoteRequest.serviceId);
+        if (service) {
+          serviceName = service.name;
+        }
+      } catch (err) {
+        console.error("[API] Error fetching service name:", err);
+      }
+
+      // Send email notification
+      try {
+        // Prepare the quote request with service name for email
+        const quoteRequestWithService = {
+          ...newQuoteRequest,
+          serviceName
+        };
+        
+        console.log("[API] Sending quote email notification with data:", quoteRequestWithService);
+        await sendQuoteNotification(quoteRequestWithService);
+        console.log("[API] Quote notification email sent successfully");
+      } catch (emailError) {
+        // Don't fail the API call if email sending fails
+        console.error("[API] Failed to send email notification:", emailError);
+      }
+      
       res.status(201).json(newQuoteRequest);
     } catch (error) {
       if (error instanceof ZodError) {
@@ -328,6 +358,17 @@ export async function registerRoutes(app: Express) {
       let booking = insertBookingSchema.parse(req.body);
       const newBooking = await storage.createBooking(booking);
       console.log(`[API] Successfully created booking #${newBooking.id}`);
+      
+      // Send booking confirmation email
+      try {
+        console.log("[API] Sending booking confirmation email");
+        await sendBookingConfirmation(newBooking);
+        console.log("[API] Booking confirmation email sent successfully");
+      } catch (emailError) {
+        // Don't fail the API call if email sending fails
+        console.error("[API] Failed to send booking confirmation email:", emailError);
+      }
+      
       res.status(201).json(newBooking);
     } catch (error) {
       if (error instanceof ZodError) {
