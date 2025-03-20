@@ -61,27 +61,8 @@ app.use(express.static(path.resolve(process.cwd(), "public"), {
   }
 }));
 
-// Serve uploaded files from the existing directory
-const uploadDir = '/home/runner/workspace/uploads';
-
-// Log environment details
-console.log('[Server] Environment configuration:', {
-  NODE_ENV: process.env.NODE_ENV,
-  cwd: process.cwd(),
-  uploadDir
-});
-
-// Log the uploads directory contents
-console.log('[Server] Serving uploaded files from:', uploadDir);
-try {
-  const files = fs.readdirSync(uploadDir);
-  console.log('[Server] Files in uploads directory:', files);
-} catch (error) {
-  console.error('[Server] Error reading uploads directory:', error);
-}
-
-// Serve uploaded files
-app.use('/uploads', express.static(uploadDir, {
+// Add proper MIME type handling for uploaded files
+app.use('/uploads', express.static(path.resolve(process.cwd(), "uploads"), {
   setHeaders: (res, filePath) => {
     console.log('[Server] Serving file:', filePath);
 
@@ -102,9 +83,28 @@ app.use('/uploads', express.static(uploadDir, {
 
     // Log response headers for debugging
     console.log('[Server] Response headers:', res.getHeaders());
-  },
-  fallthrough: false // Return 404 instead of falling through to next middleware
+  }
 }));
+
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.resolve(process.cwd(), "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Log environment and directory contents
+console.log('[Server] Environment configuration:', {
+  NODE_ENV: process.env.NODE_ENV,
+  cwd: process.cwd(),
+  uploadsDir
+});
+
+try {
+  const files = fs.readdirSync(uploadsDir);
+  console.log('[Server] Files in uploads directory:', files);
+} catch (error) {
+  console.error('[Server] Error reading uploads directory:', error);
+}
 
 
 (async () => {

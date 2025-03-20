@@ -290,8 +290,10 @@ const ImageDisplay = ({ src, alt, className }: { src: string; alt: string; class
     );
   }
 
-  // Handle both blob URLs and server paths
-  const imageSrc = src.startsWith('blob:') ? src : src.startsWith('/') ? src : `/uploads/${src}`;
+  // Handle both relative and absolute URLs
+  const imageSrc = src.startsWith('http') ? src : (src.startsWith('/') ? src : `/uploads/${src}`);
+
+  console.log('Attempting to load image:', { original: src, resolved: imageSrc });
 
   return (
     <img
