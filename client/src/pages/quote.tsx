@@ -123,10 +123,9 @@ export default function Quote() {
   async function onSubmit(data: InsertQuoteRequest) {
     setIsSubmitting(true);
     try {
-      const service = services?.find(s => s.id === data.serviceId);
+      // Don't include serviceName as it's not in the database structure
       const response = await apiRequest("POST", "/api/quote-requests", {
         ...data,
-        serviceName: service?.name,
         analysis,
       });
 

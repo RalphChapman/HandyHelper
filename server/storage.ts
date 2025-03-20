@@ -188,13 +188,16 @@ export class DatabaseStorage implements IStorage {
   async createQuoteRequest(request: InsertQuoteRequest): Promise<QuoteRequest> {
     try {
       console.log("[Storage] Creating quote request:", request);
+      
+      // Extract only the fields that exist in the database schema
+      // Remove serviceName field which caused the error
+      const { serviceName, ...validRequestData } = request as any;
+      
       const [newRequest] = await db
         .insert(quoteRequests)
-        .values({
-          ...request,
-          createdAt: new Date()
-        })
+        .values(validRequestData)
         .returning();
+        
       console.log("[Storage] Created quote request:", newRequest);
       return newRequest;
     } catch (error) {
