@@ -13,72 +13,42 @@ import { randomBytes } from "crypto";
 import fs from "fs";
 import { createCalendarEvent } from "./utils/calendar";
 
-// Configure multer for handling file uploads
+// Update multer configuration for better file handling
 const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
-      // Use absolute path that works in both dev and production
-      const uploadDir = process.env.REPL_SLUG
-        ? path.join('/home/runner', process.env.REPL_SLUG, 'uploads')
-        : path.join(process.cwd(), 'uploads');
-
+      const uploadDir = path.resolve(process.cwd(), 'uploads');
       console.log('[API] Upload directory path:', uploadDir);
-      console.log('[API] Environment:', {
-        REPL_SLUG: process.env.REPL_SLUG,
-        cwd: process.cwd(),
-        absPath: uploadDir
-      });
 
-      // Ensure uploads directory exists with proper permissions
+      // Ensure directory exists
       if (!fs.existsSync(uploadDir)) {
-        console.log('[API] Creating uploads directory');
-        try {
-          fs.mkdirSync(uploadDir, { recursive: true });
-          console.log('[API] Created uploads directory successfully');
-        } catch (error) {
-          console.error('[API] Error creating uploads directory:', error);
-          cb(error as Error, uploadDir);
-          return;
-        }
-      }
-
-      // Double-check directory permissions
-      try {
-        const stats = fs.statSync(uploadDir);
-        console.log('[API] Directory permissions:', stats.mode.toString(8));
-
-        // Verify directory is writable
-        fs.accessSync(uploadDir, fs.constants.W_OK);
-        console.log('[API] Uploads directory is writable');
-      } catch (error) {
-        console.error('[API] Directory permission error:', error);
-        cb(error as Error, uploadDir);
-        return;
+        fs.mkdirSync(uploadDir, { recursive: true });
+        console.log('[API] Created uploads directory');
       }
 
       cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
-      // Generate a unique filename
+      // Generate a unique filename while preserving extension
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      const safeName = Buffer.from(file.originalname).toString('base64url');
-      const filename = `${file.fieldname}-${uniqueSuffix}-${safeName}${path.extname(file.originalname)}`;
+      const ext = path.extname(file.originalname);
+      const filename = `${file.fieldname}-${uniqueSuffix}${ext}`;
       console.log('[API] Generated filename:', filename);
       cb(null, filename);
     }
   }),
   fileFilter: (req, file, cb) => {
-    console.log('[API] Processing file upload:', file.originalname, 'mimetype:', file.mimetype);
-    // Accept only image files
-    if (file.mimetype.startsWith("image/")) {
+    // Accept common image formats
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      console.log('[API] Rejected file:', file.originalname, '- not an image');
-      cb(new Error("Please upload only images"));
+      console.log('[API] Rejected file:', file.originalname, '- invalid type:', file.mimetype);
+      cb(new Error('Only image files are allowed'));
     }
   },
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit per file
+    fileSize: 5 * 1024 * 1024 // 5MB limit
   }
 });
 
@@ -103,9 +73,7 @@ export async function registerRoutes(app: Express) {
   setupAuth(app);
 
   // Set up static file serving for uploads
-  const uploadDir = process.env.REPL_SLUG
-    ? path.join('/home/runner', process.env.REPL_SLUG, 'uploads')
-    : path.join(process.cwd(), 'uploads');
+  const uploadDir = path.resolve(process.cwd(), 'uploads');
 
   console.log('[API] Setting up static file serving from:', uploadDir);
 
@@ -791,7 +759,7 @@ export async function registerRoutes(app: Express) {
       if (!user) {
         console.log("[API] No user found with email:", email);
         // Don't reveal if email exists or not
-        returnres.json({ message: "If an account exists with that email, you will receive a password reset link" });
+        return res.json({ message: "If an account exists with that email, you will receive a password reset link" });
       }
 
       console.log("[API] Reset token set successfully for user:", user.id);
@@ -901,7 +869,7 @@ export async function registerRoutes(app: Express) {
 
       try {
         // Delete the actual file from the uploads directory
-        const filePath = `./uploads${imageUrl}`;
+        const filePath = path.resolve(process.cwd(), 'uploads', path.basename(imageUrl));
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);
           console.log(`[API] Deleted file: ${filePath}`);

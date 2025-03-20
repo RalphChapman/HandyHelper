@@ -61,6 +61,36 @@ app.use(express.static(path.resolve(process.cwd(), "public"), {
   }
 }));
 
+// Update static file serving configuration
+app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads'), {
+  setHeaders: (res, filePath) => {
+    // Set proper MIME types for images
+    const ext = path.extname(filePath).toLowerCase();
+    if (ext === '.jpg' || ext === '.jpeg') {
+      res.setHeader('Content-Type', 'image/jpeg');
+    } else if (ext === '.png') {
+      res.setHeader('Content-Type', 'image/png');
+    } else if (ext === '.gif') {
+      res.setHeader('Content-Type', 'image/gif');
+    } else if (ext === '.webp') {
+      res.setHeader('Content-Type', 'image/webp');
+    }
+    // Add cache control headers
+    res.setHeader('Cache-Control', 'public, max-age=31536000');
+  }
+}));
+
+// Ensure uploads directory exists
+const uploadDir = path.resolve(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+  console.log('[Server] Created uploads directory at:', uploadDir);
+}
+
+// Log the uploads directory path
+console.log('[Server] Serving uploaded files from:', uploadDir);
+
+
 (async () => {
   try {
     // Initialize storage first
@@ -76,27 +106,10 @@ app.use(express.static(path.resolve(process.cwd(), "public"), {
     if (process.env.NODE_ENV === 'production') {
       // Serve static files and uploads in production
       app.use(express.static(path.resolve(process.cwd(), "dist/public")));
-      app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads'), {
-        setHeaders: (res, filePath) => {
-          if (path.extname(filePath).toLowerCase() === '.jpeg' || 
-              path.extname(filePath).toLowerCase() === '.jpg') {
-            res.setHeader('Content-Type', 'image/jpeg');
-          }
-        }
-      }));
       app.get('*', (req, res) => {
         res.sendFile(path.resolve(process.cwd(), "dist/public/index.html"));
       });
     } else {
-      // Serve uploaded files
-      app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads'), {
-        setHeaders: (res, filePath) => {
-          if (path.extname(filePath).toLowerCase() === '.jpeg' || 
-              path.extname(filePath).toLowerCase() === '.jpg') {
-            res.setHeader('Content-Type', 'image/jpeg');
-          }
-        }
-      }));
       // Let Vite handle all routing in development
       await setupVite(app, server);
     }
