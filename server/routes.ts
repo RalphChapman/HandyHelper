@@ -10,19 +10,47 @@ import { insertQuoteRequestSchema, insertBookingSchema } from "@shared/schema";
 import { ZodError } from "zod";
 
 // Initialize multer with our upload directory
-// Create explicit upload directory path
+// Create explicit upload directory path using cwd
 const UPLOADS_DIR = path.resolve(process.cwd(), "uploads");
+console.log('[Multer Setup] Configuring uploads directory at:', UPLOADS_DIR);
+console.log('[Multer Setup] Current working directory:', process.cwd());
+console.log('[Multer Setup] Environment:', process.env.NODE_ENV || 'development');
+
+// Record current directory permissions
+try {
+  const cwdInfo = fs.statSync(process.cwd());
+  console.log('[Multer Setup] CWD permissions:', {
+    mode: cwdInfo.mode.toString(8),
+    uid: cwdInfo.uid,
+    gid: cwdInfo.gid,
+    isDirectory: cwdInfo.isDirectory(),
+    isWritable: Boolean(cwdInfo.mode & fs.constants.W_OK)
+  });
+} catch (error) {
+  console.error('[Multer Setup] Error checking CWD:', error);
+}
 
 // Ensure uploads directory exists before configuring multer
 try {
   if (!fs.existsSync(UPLOADS_DIR)) {
     console.log('[Multer Setup] Creating uploads directory:', UPLOADS_DIR);
     fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+    // Set proper permissions on the directory
+    fs.chmodSync(UPLOADS_DIR, 0o755);
   }
   
   // Check if directory is writable
   fs.accessSync(UPLOADS_DIR, fs.constants.W_OK);
   console.log('[Multer Setup] Uploads directory is writable:', UPLOADS_DIR);
+  
+  // Get directory info
+  const dirInfo = fs.statSync(UPLOADS_DIR);
+  console.log('[Multer Setup] Directory info:', {
+    mode: dirInfo.mode.toString(8),
+    uid: dirInfo.uid,
+    gid: dirInfo.gid,
+    isDirectory: dirInfo.isDirectory()
+  });
   
   // List files in uploads directory
   const files = fs.readdirSync(UPLOADS_DIR);
@@ -31,16 +59,24 @@ try {
   console.error('[Multer Setup] Error with uploads directory:', error);
 }
 
+// Enhanced Multer configuration with better error handling and logging
 const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
       try {
-        console.log('[Multer] Saving file to:', UPLOADS_DIR);
+        console.log('[Multer] Saving file to:', UPLOADS_DIR, 'File:', file.originalname);
+        
         // Make sure directory exists again at upload time
         if (!fs.existsSync(UPLOADS_DIR)) {
           console.log('[Multer] Creating missing uploads directory');
           fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+          // Set proper permissions on the directory
+          fs.chmodSync(UPLOADS_DIR, 0o755);
         }
+        
+        // Verify directory is still writable
+        fs.accessSync(UPLOADS_DIR, fs.constants.W_OK);
+        
         cb(null, UPLOADS_DIR);
       } catch (error) {
         console.error('[Multer] Error setting destination:', error);
@@ -48,11 +84,19 @@ const upload = multer({
       }
     },
     filename: (req, file, cb) => {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      const ext = path.extname(file.originalname);
-      const filename = file.fieldname + '-' + uniqueSuffix + ext;
-      console.log('[Multer] Generated filename:', filename, 'for', file.originalname);
-      cb(null, filename);
+      try {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        // Clean original filename and ensure valid file extension
+        const ext = path.extname(file.originalname).toLowerCase() || '.jpg';  // Default to .jpg if no extension
+        const sanitizedExt = ['.jpg', '.jpeg', '.png', '.gif'].includes(ext) ? ext : '.jpg';
+        const filename = file.fieldname + '-' + uniqueSuffix + sanitizedExt;
+        
+        console.log('[Multer] Generated filename:', filename, 'for', file.originalname);
+        cb(null, filename);
+      } catch (error) {
+        console.error('[Multer] Error generating filename:', error);
+        cb(error as Error, '');
+      }
     }
   }),
   fileFilter: (req, file, cb) => {
@@ -156,12 +200,33 @@ export async function registerRoutes(app: Express) {
       const imageUrls = [];
       for (const file of files) {
         try {
-          const url = `/uploads/${file.filename}`;
+          // Store just the filename in the database, not the full path
+          // This ensures compatibility with both dev and production
+          const filename = file.filename;
+          const url = `/uploads/${filename}`;
+          
+          // Verify file exists in the uploads directory
+          const fullPath = path.resolve(process.cwd(), 'uploads', filename);
+          const fileExists = fs.existsSync(fullPath);
+          
           console.log('[API] Generated URL for file:', {
             originalname: file.originalname,
-            filename: file.filename,
-            url: url
+            filename: filename,
+            url: url,
+            fullPath: fullPath,
+            fileExists: fileExists,
+            fileSize: fileExists ? fs.statSync(fullPath).size : 'N/A'
           });
+          
+          // If file doesn't exist or is empty, we have a problem
+          if (!fileExists) {
+            console.error('[API] File not found in uploads directory:', fullPath);
+            return res.status(500).json({ 
+              message: "File was uploaded but not found in expected location",
+              details: { fullPath, filename }
+            });
+          }
+          
           imageUrls.push(url);
         } catch (error) {
           console.error('[API] Failed to process file:', file.originalname, error);
