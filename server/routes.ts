@@ -240,8 +240,19 @@ export async function registerRoutes(app: Express) {
     try {
       console.log("[API] Fetching services");
       const services = await storage.getServices();
-      console.log(`[API] Successfully fetched ${services.length} services`);
-      res.json(services);
+
+      // Transform image URLs to ensure they start with /uploads/
+      const servicesWithFixedUrls = services.map(service => ({
+        ...service,
+        imageUrl: service.imageUrl && !service.imageUrl.startsWith('/uploads/')
+          ? `/uploads/${service.imageUrl}`
+          : service.imageUrl
+      }));
+
+      console.log(`[API] Successfully fetched ${services.length} services with image URLs:`,
+        servicesWithFixedUrls.map(s => ({ id: s.id, imageUrl: s.imageUrl })));
+
+      res.json(servicesWithFixedUrls);
     } catch (error) {
       console.error("[API] Error fetching services:", error);
       res.status(500).json({ message: "Failed to fetch services", error: (error as Error).message });
