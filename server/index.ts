@@ -130,8 +130,9 @@ app.use('/uploads', express.static(uploadDir, {
       await setupVite(app, server);
     }
 
-    server.listen(5000, "0.0.0.0", () => {
-      log(`[Server] Server running on port 5000 (${process.env.NODE_ENV || 'development'} mode)`);
+    const port = process.env.PORT || 5000;
+    server.listen(port, "0.0.0.0", () => {
+      log(`[Server] Server running on port ${port} (${process.env.NODE_ENV || 'development'} mode)`);
     });
   } catch (error) {
     console.error("[Server] Failed to start server:", error);

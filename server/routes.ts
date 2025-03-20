@@ -924,4 +924,8 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ message: "Failed to delete image", error: (error as Error).message });
     }
   });
+  const port = process.env.PORT || 3000;
+  app.listen(port, () => {
+    console.log(`[API] Server listening on port ${port}`);
+  });
 }
