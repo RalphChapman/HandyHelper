@@ -13,23 +13,45 @@ import { randomBytes } from "crypto";
 import fs from "fs";
 import { createCalendarEvent } from "./utils/calendar";
 
-// Update multer configuration for better file handling
 const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
       const uploadDir = path.resolve(process.cwd(), 'uploads');
       console.log('[API] Upload directory path:', uploadDir);
+      console.log('[API] Current working directory:', process.cwd());
+      console.log('[API] Environment:', process.env.NODE_ENV);
 
-      // Ensure directory exists
       if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-        console.log('[API] Created uploads directory');
+        try {
+          fs.mkdirSync(uploadDir, { recursive: true, mode: 0o755 });
+          console.log('[API] Created uploads directory at:', uploadDir);
+
+          if (fs.existsSync(uploadDir)) {
+            console.log('[API] Uploads directory created successfully');
+            const stats = fs.statSync(uploadDir);
+            console.log('[API] Directory permissions:', stats.mode.toString(8));
+          }
+        } catch (error) {
+          console.error('[API] Error creating uploads directory:', error);
+          cb(error as Error, uploadDir);
+          return;
+        }
+      }
+
+      try {
+        const testFile = path.join(uploadDir, '.test-write');
+        fs.writeFileSync(testFile, 'test');
+        fs.unlinkSync(testFile);
+        console.log('[API] Successfully verified write permissions');
+      } catch (error) {
+        console.error('[API] Directory write permission error:', error);
+        cb(error as Error, uploadDir);
+        return;
       }
 
       cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
-      // Generate a unique filename while preserving extension
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
       const ext = path.extname(file.originalname);
       const filename = `${file.fieldname}-${uniqueSuffix}${ext}`;
@@ -38,7 +60,12 @@ const upload = multer({
     }
   }),
   fileFilter: (req, file, cb) => {
-    // Accept common image formats
+    console.log('[API] Processing file upload:', {
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size
+    });
+
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
@@ -428,15 +455,16 @@ export async function registerRoutes(app: Express) {
 
   app.post("/api/projects", upload.array("images", 10), async (req, res) => {
     try {
-      console.log("[API] Creating new project with data:", {
-        body: req.body,
-        files: req.files ? req.files.map(file => ({
-          filename: file.filename,
-          path: file.path,
-          mimetype: file.mimetype,
-          size: file.size
-        })) : 'No files uploaded'
-      });
+      console.log("[API] Creating new project");
+      console.log('[API] Request body:', req.body);
+      console.log('[API] Uploaded files:', req.files ?
+        req.files.map(f => ({
+          fieldname: f.fieldname,
+          originalname: f.originalname,
+          filename: f.filename,
+          path: f.path,
+          size: f.size
+        })) : 'No files uploaded');
 
       const files = req.files as Express.Multer.File[];
       if (!files || files.length === 0) {
@@ -448,15 +476,19 @@ export async function registerRoutes(app: Express) {
       const imageUrls = files.map(file => {
         const relativeUrl = `/uploads/${file.filename}`;
         console.log('[API] Generated image URL:', relativeUrl);
+        console.log('[API] Actual file path:', file.path);
+
+        // Verify file was actually saved
+        try {
+          fs.accessSync(file.path, fs.constants.F_OK);
+          console.log('[API] Verified file exists at:', file.path);
+        } catch (error) {
+          console.error('[API] Error accessing uploaded file:', error);
+          throw new Error(`Failed to verify uploaded file: ${file.filename}`);
+        }
+
         return relativeUrl;
       });
-
-      // Validate service exists
-      const service = await storage.getService(parseInt(req.body.serviceId));
-      if (!service) {
-        console.log(`[API] Service not found: ${req.body.serviceId}`);
-        return res.status(404).json({ message: "Service not found" });
-      }
 
       // Parse and validate the project date
       let projectDate: Date;
@@ -480,7 +512,7 @@ export async function registerRoutes(app: Express) {
         serviceId: parseInt(req.body.serviceId)
       };
 
-      console.log("[API] Creating project with data:", JSON.stringify(projectData, null, 2));
+      console.log('[API] Project data for creation:', JSON.stringify(projectData, null, 2));
 
       try {
         const newProject = await storage.createProject(projectData);
@@ -789,7 +821,7 @@ export async function registerRoutes(app: Express) {
         console.error("[API] Error stack:", error.stack);
       }
       res.status(500).json({ message: "Failed to process password reset request" });
-        }
+    }
   });
   app.patch("/api/projects/:id", upload.array("images", 10), async (req, res) => {
     try {
