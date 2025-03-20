@@ -401,4 +401,78 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ message: "Failed to fetch projects", error: (error as Error).message });
     }
   });
+  
+  // Add a diagnostic endpoint for checking uploads functionality
+  app.get("/api/uploads-check", (req, res) => {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const uploadsDir = path.resolve(process.cwd(), "uploads");
+    
+    try {
+      // Check if uploads directory exists
+      const dirExists = fs.existsSync(uploadsDir);
+      
+      // Check if it's writable
+      let isWritable = false;
+      if (dirExists) {
+        try {
+          fs.accessSync(uploadsDir, fs.constants.W_OK);
+          isWritable = true;
+        } catch (e) {
+          // Not writable
+        }
+      }
+      
+      // Get directory info if it exists
+      let dirInfo = null;
+      let files = [];
+      if (dirExists) {
+        const stats = fs.statSync(uploadsDir);
+        dirInfo = {
+          isDirectory: stats.isDirectory(),
+          mode: stats.mode.toString(8),
+          size: stats.size,
+          uid: stats.uid,
+          gid: stats.gid
+        };
+        
+        // List files in directory
+        files = fs.readdirSync(uploadsDir);
+      }
+      
+      // Try to write a test file
+      let canWrite = false;
+      const testFilename = `test-${Date.now()}.txt`;
+      const testPath = path.join(uploadsDir, testFilename);
+      try {
+        fs.writeFileSync(testPath, 'Upload test file');
+        canWrite = true;
+        // Clean up
+        fs.unlinkSync(testPath);
+      } catch (e) {
+        // Couldn't write
+      }
+      
+      res.json({
+        environment: isProduction ? 'production' : 'development',
+        uploadsDir,
+        dirExists,
+        isWritable,
+        canWrite,
+        dirInfo,
+        fileCount: files.length,
+        recentFiles: files.slice(-10), // Show last 10 files
+        server: {
+          cwd: process.cwd(),
+          platform: process.platform,
+          uptime: process.uptime()
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        message: "Error checking uploads",
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+    }
+  });
 }

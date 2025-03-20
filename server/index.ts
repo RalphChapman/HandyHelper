@@ -109,7 +109,42 @@ try {
 
 (async () => {
   try {
-    // Initialize storage first
+    // First, ensure uploads directory exists with proper permissions
+    console.log("[Server] Checking uploads directory on startup...");
+    const uploadsDir = path.resolve(process.cwd(), "uploads");
+    
+    try {
+      if (!fs.existsSync(uploadsDir)) {
+        console.log("[Server] Creating uploads directory at startup:", uploadsDir);
+        fs.mkdirSync(uploadsDir, { recursive: true });
+        // Set directory permissions to ensure it's writable
+        fs.chmodSync(uploadsDir, 0o755);
+      } else {
+        console.log("[Server] Uploads directory already exists:", uploadsDir);
+      }
+      
+      // Verify it's writable
+      fs.accessSync(uploadsDir, fs.constants.W_OK);
+      console.log("[Server] Uploads directory is writable");
+      
+      // Check what's in the directory
+      const files = fs.readdirSync(uploadsDir);
+      console.log("[Server] Uploads directory contents:", 
+        files.length === 0 ? "Empty directory" : `${files.length} files`);
+        
+      // Try writing a test file to verify
+      const testFile = path.join(uploadsDir, `server-startup-test-${Date.now()}.txt`);
+      fs.writeFileSync(testFile, 'Server startup test');
+      console.log("[Server] Successfully wrote test file:", testFile);
+      
+      // Clean up
+      fs.unlinkSync(testFile);
+      console.log("[Server] Removed test file");
+    } catch (error) {
+      console.error("[Server] Error with uploads directory during startup:", error);
+    }
+
+    // Initialize storage
     console.log("[Server] Initializing database storage...");
     await storage.initialize();
     console.log("[Server] Database storage initialized successfully");
