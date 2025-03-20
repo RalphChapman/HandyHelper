@@ -597,4 +597,29 @@ export async function registerRoutes(app: Express) {
       });
     }
   });
+  
+  // Project analysis endpoint
+  app.post("/api/analyze-project", async (req, res) => {
+    try {
+      console.log("[API] Analyzing project with data:", req.body);
+      
+      const { description } = req.body;
+      if (!description) {
+        return res.status(400).json({ message: "Project description is required" });
+      }
+      
+      // Import the analyzeProjectDescription function
+      const { analyzeProjectDescription } = await import("./utils/grok");
+      
+      // Call the analysis function
+      console.log("[API] Calling X.AI API to analyze project");
+      const analysis = await analyzeProjectDescription(description);
+      
+      console.log("[API] Successfully analyzed project");
+      res.json({ analysis });
+    } catch (error) {
+      console.error("[API] Error analyzing project:", error);
+      res.status(500).json({ message: "Failed to analyze project", error: error instanceof Error ? error.message : String(error) });
+    }
+  });
 }
