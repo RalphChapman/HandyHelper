@@ -120,13 +120,35 @@ try {
     const server = createServer(app);
 
     if (process.env.NODE_ENV === 'production') {
+      console.log("[Server] Running in PRODUCTION mode");
+      
+      // Create and verify uploads directory in production
+      const productionUploadsDir = path.resolve(process.cwd(), "uploads");
+      console.log("[Server] Production uploads directory:", productionUploadsDir);
+      
+      try {
+        if (!fs.existsSync(productionUploadsDir)) {
+          console.log("[Server] Creating uploads directory for production");
+          fs.mkdirSync(productionUploadsDir, { recursive: true });
+        }
+        
+        // Check if directory is writable
+        fs.accessSync(productionUploadsDir, fs.constants.W_OK);
+        console.log("[Server] Uploads directory is writable");
+        
+        // List files in uploads directory
+        const files = fs.readdirSync(productionUploadsDir);
+        console.log("[Server] Files in production uploads directory:", files);
+      } catch (error) {
+        console.error("[Server] Error with uploads directory:", error);
+      }
+      
       // Serve static files in production
       app.use(express.static(path.resolve(process.cwd(), "dist/public")));
       
       // IMPORTANT: Create a route for uploads before the catch-all route
-      const uploadsDir = path.resolve(process.cwd(), "uploads");
-      console.log("[Server] Serving uploads from:", uploadsDir);
-      app.use('/uploads', express.static(uploadsDir, {
+      console.log("[Server] Setting up uploads route for production");
+      app.use('/uploads', express.static(productionUploadsDir, {
         setHeaders: (res, filePath) => {
           console.log('[Server] Serving uploaded file in production:', filePath);
           const ext = path.extname(filePath).toLowerCase();

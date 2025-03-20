@@ -85,12 +85,32 @@ export async function registerRoutes(app: Express) {
     }
   }));
 
-  // Project upload endpoint
-  app.post("/api/projects", upload.array("images", 10), handleUploadError, async (req, res) => {
+  // Project upload endpoint with enhanced logging
+  app.post("/api/projects", (req, res, next) => {
+    console.log("[API Upload] Received upload request");
+    console.log("[API Upload] Request headers:", req.headers);
+    console.log("[API Upload] Content type:", req.headers['content-type']);
+    console.log("[API Upload] Environment:", process.env.NODE_ENV || 'development');
+    
+    // Check if uploads directory exists and is writable
+    const uploadsDir = path.resolve(process.cwd(), "uploads");
     try {
-      console.log("[API] Project upload request received");
+      if (!fs.existsSync(uploadsDir)) {
+        console.log("[API Upload] Creating uploads directory");
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      fs.accessSync(uploadsDir, fs.constants.W_OK);
+      console.log("[API Upload] Uploads directory exists and is writable:", uploadsDir);
+    } catch (error) {
+      console.error("[API Upload] Error with uploads directory:", error);
+    }
+    
+    next();
+  }, upload.array("images", 10), handleUploadError, async (req, res) => {
+    try {
+      console.log("[API] Project upload request processed by multer");
       console.log("[API] Request body:", req.body);
-      console.log("[API] Files:", req.files ? 
+      console.log("[API] Files received:", req.files ? 
         (req.files as Express.Multer.File[]).map(f => ({
           fieldname: f.fieldname,
           originalname: f.originalname,
