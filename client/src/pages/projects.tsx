@@ -426,14 +426,17 @@ export default function Projects() {
     },
   });
 
+  // Update the projects query
   const { data: projects, isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects", serviceId],
     queryFn: async () => {
+      console.log('[Projects] Fetching projects for service:', serviceId);
       const response = await fetch(`/api/projects?serviceId=${serviceId}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch projects: ${response.statusText}`);
       }
       const data = await response.json();
+      console.log('[Projects] Fetched projects:', data);
       return data.map((project: any) => ({
         ...project,
         projectDate: project.projectDate ? new Date(project.projectDate) : null,

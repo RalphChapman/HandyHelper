@@ -236,4 +236,18 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ message: "Failed to fetch service", error: (error as Error).message });
     }
   });
+
+  // Add projects fetch endpoint
+  app.get("/api/projects", async (req, res) => {
+    try {
+      const serviceId = parseInt(req.query.serviceId as string);
+      console.log(`[API] Fetching projects for service ${serviceId}`);
+      const projects = await storage.getProjects(serviceId);
+      console.log(`[API] Successfully fetched ${projects.length} projects`);
+      res.json(projects);
+    } catch (error) {
+      console.error("[API] Error fetching projects:", error);
+      res.status(500).json({ message: "Failed to fetch projects", error: (error as Error).message });
+    }
+  });
 }
