@@ -432,6 +432,7 @@ export async function registerRoutes(app: Express) {
         body: req.body,
         files: req.files ? req.files.map(file => ({
           filename: file.filename,
+          path: file.path,
           mimetype: file.mimetype,
           size: file.size
         })) : 'No files uploaded'
@@ -443,8 +444,12 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ message: "At least one image is required" });
       }
 
-      // Create array of image URLs
-      const imageUrls = files.map(file => `/uploads/${file.filename}`);
+      // Create array of image URLs with absolute paths
+      const imageUrls = files.map(file => {
+        const relativeUrl = `/uploads/${file.filename}`;
+        console.log('[API] Generated image URL:', relativeUrl);
+        return relativeUrl;
+      });
 
       // Validate service exists
       const service = await storage.getService(parseInt(req.body.serviceId));
@@ -480,6 +485,7 @@ export async function registerRoutes(app: Express) {
       try {
         const newProject = await storage.createProject(projectData);
         console.log(`[API] Successfully created project #${newProject.id}`);
+        console.log('[API] Project image URLs:', newProject.imageUrls);
         res.status(201).json(newProject);
       } catch (storageError) {
         console.error("[API] Storage error creating project:", storageError);

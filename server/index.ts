@@ -61,9 +61,11 @@ app.use(express.static(path.resolve(process.cwd(), "public"), {
   }
 }));
 
-// Update static file serving configuration
+// Add more detailed logging for static file serving
 app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads'), {
   setHeaders: (res, filePath) => {
+    console.log('[Server] Serving file:', filePath);
+
     // Set proper MIME types for images
     const ext = path.extname(filePath).toLowerCase();
     if (ext === '.jpg' || ext === '.jpeg') {
@@ -75,20 +77,31 @@ app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads'), {
     } else if (ext === '.webp') {
       res.setHeader('Content-Type', 'image/webp');
     }
+
     // Add cache control headers
     res.setHeader('Cache-Control', 'public, max-age=31536000');
-  }
+
+    // Log response headers for debugging
+    console.log('[Server] Response headers:', res.getHeaders());
+  },
+  fallthrough: false // Return 404 instead of falling through to next middleware
 }));
 
-// Ensure uploads directory exists
+// Ensure uploads directory exists with proper permissions
 const uploadDir = path.resolve(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+  fs.mkdirSync(uploadDir, { recursive: true, mode: 0o755 });
   console.log('[Server] Created uploads directory at:', uploadDir);
 }
 
-// Log the uploads directory path
+// Log the uploads directory path and contents
 console.log('[Server] Serving uploaded files from:', uploadDir);
+try {
+  const files = fs.readdirSync(uploadDir);
+  console.log('[Server] Files in uploads directory:', files);
+} catch (error) {
+  console.error('[Server] Error reading uploads directory:', error);
+}
 
 
 (async () => {
