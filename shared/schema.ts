@@ -62,8 +62,8 @@ export const quoteRequests = pgTable("quote_requests", {
   serviceId: integer("service_id").notNull(),
   description: text("description").notNull(),
   address: text("address").notNull(),
-  serviceName: text("service_name"),
-  analysis: text("analysis"),
+  // serviceName and analysis fields are not in the actual database
+  // but we'll keep them in the schema extension for handling in code
 });
 
 export const users = pgTable("users", {

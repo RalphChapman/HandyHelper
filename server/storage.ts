@@ -190,8 +190,17 @@ export class DatabaseStorage implements IStorage {
       console.log("[Storage] Creating quote request:", request);
       
       // Extract only the fields that exist in the database schema
-      // Remove serviceName field which caused the error
-      const { serviceName, ...validRequestData } = request as any;
+      // Keep only fields that match the database structure
+      const validRequestData = {
+        name: request.name,
+        email: request.email,
+        phone: request.phone,
+        serviceId: request.serviceId,
+        description: request.description,
+        address: request.address
+      };
+      
+      console.log("[Storage] Filtered quote request data:", validRequestData);
       
       const [newRequest] = await db
         .insert(quoteRequests)
@@ -209,7 +218,8 @@ export class DatabaseStorage implements IStorage {
   async getQuoteRequests(): Promise<QuoteRequest[]> {
     try {
       console.log("[Storage] Fetching quote requests");
-      const requests = await db.select().from(quoteRequests).orderBy(desc(quoteRequests.createdAt));
+      // Don't orderBy createdAt since it doesn't exist in the actual database
+      const requests = await db.select().from(quoteRequests);
       console.log("[Storage] Found quote requests:", requests.length);
       return requests;
     } catch (error) {
