@@ -77,6 +77,14 @@ export async function registerRoutes(app: Express) {
     try {
       console.log("[API] Project upload request received");
       console.log("[API] Request body:", req.body);
+      console.log("[API] Files:", req.files ? 
+        (req.files as Express.Multer.File[]).map(f => ({
+          fieldname: f.fieldname,
+          originalname: f.originalname,
+          filename: f.filename,
+          path: f.path,
+          size: f.size
+        })) : 'No files uploaded');
 
       const files = req.files as Express.Multer.File[];
       if (!files || files.length === 0) {
@@ -90,7 +98,12 @@ export async function registerRoutes(app: Express) {
       const imageUrls = [];
       for (const file of files) {
         try {
-          const url = await fileManager.saveFile(file);
+          const url = `/uploads/${file.filename}`;
+          console.log('[API] Generated URL for file:', {
+            originalname: file.originalname,
+            filename: file.filename,
+            url: url
+          });
           imageUrls.push(url);
         } catch (error) {
           console.error('[API] Failed to process file:', file.originalname, error);
@@ -111,16 +124,17 @@ export async function registerRoutes(app: Express) {
         serviceId: parseInt(req.body.serviceId)
       };
 
-      console.log("[API] Creating project with data:", projectData);
+      console.log("[API] Creating project with data:", JSON.stringify(projectData, null, 2));
+
       const newProject = await storage.createProject(projectData);
       console.log("[API] Project created successfully:", newProject.id);
-
       res.status(201).json(newProject);
     } catch (error) {
       console.error("[API] Project creation error:", error);
       res.status(500).json({ 
         message: "Failed to create project", 
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
+        details: error instanceof Error ? error.stack : undefined
       });
     }
   });
