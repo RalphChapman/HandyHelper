@@ -12,7 +12,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { ImageIcon, Loader2, Calendar, Edit, X } from "lucide-react";
+import { ImageIcon, Loader2, Calendar, Edit, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -549,7 +549,9 @@ export default function Projects() {
 
   async function onSubmit(data: ProjectFormValues) {
     setIsSubmitting(true);
+    
     try {
+      // Step 1: Prepare FormData
       const formData = new FormData();
       formData.append("title", data.title);
       formData.append("description", data.description);
@@ -558,19 +560,8 @@ export default function Projects() {
       formData.append("serviceId", serviceId.toString());
       formData.append("projectDate", data.projectDate.toISOString());
 
-      // Handle file uploads
-      if (data.imageFiles && data.imageFiles.length > 0) {
-        console.log('Number of files to upload:', data.imageFiles.length);
-        Array.from(data.imageFiles).forEach((file) => {
-          console.log('Appending file:', file.name, 'size:', file.size);
-          formData.append('images', file); // Changed to 'images' to match server configuration
-        });
-
-        // Log FormData contents for debugging
-        for (let [key, value] of formData.entries()) {
-          console.log(`FormData entry - ${key}:`, value instanceof File ? `File: ${value.name}` : value);
-        }
-      } else {
+      // Step 2: Handle file uploads
+      if (!data.imageFiles || data.imageFiles.length === 0) {
         console.error('No files selected for upload');
         toast({
           title: "Error",
@@ -580,41 +571,59 @@ export default function Projects() {
         setIsSubmitting(false);
         return;
       }
-
-      console.log('Submitting project...');
-      const response = await fetch("/api/projects", {
-        method: "POST",
-        // Important: Do not set Content-Type header for multipart/form-data
-        body: formData,
+      
+      console.log('Number of files to upload:', data.imageFiles.length);
+      Array.from(data.imageFiles).forEach((file) => {
+        console.log('Appending file:', file.name, 'size:', file.size);
+        formData.append('images', file); // 'images' matches server configuration
       });
 
-      let result;
-      if (!response.ok) {
-        const contentType = response.headers.get("content-type");
-        let errorMessage;
+      // Step 3: Debug log FormData contents
+      console.log('Submitting project with FormData:');
+      for (const pair of Array.from(formData.entries())) {
+        console.log(pair[0], pair[1] instanceof File ? 
+          `File: ${(pair[1] as File).name}, size: ${(pair[1] as File).size}, type: ${(pair[1] as File).type}` : 
+          pair[1]);
+      }
+      
+      // Step 4: Send the request
+      const response = await fetch("/api/projects", {
+        method: "POST",
+        // Note: Do not set Content-Type header for multipart/form-data
+        body: formData,
+      });
+      
+      console.log('Upload response status:', response.status);
 
+      // Step 5: Handle response
+      if (!response.ok) {
+        // Handle error response
+        const contentType = response.headers.get("content-type");
+        let errorMessage = 'Failed to submit project';
+        
         if (contentType?.includes("application/json")) {
           try {
             const errorData = await response.json();
-            errorMessage = errorData.message || 'Failed to submit project';
+            errorMessage = errorData.message || errorMessage;
+            console.error('Server error (JSON):', errorData);
           } catch (error) {
             console.error('Error parsing JSON error response:', error);
-            errorMessage = 'Failed to submit project';
           }
         } else {
           try {
             const textError = await response.text();
-            console.error('Error response:', textError);
-            errorMessage = textError || 'Failed to submit project';
+            console.error('Server error (text):', textError);
+            errorMessage = textError || errorMessage;
           } catch (error) {
             console.error('Error reading error response:', error);
-            errorMessage = 'Failed to submit project';
           }
         }
-
+        
         throw new Error(errorMessage);
       }
 
+      // Step 6: Process successful response
+      let result;
       try {
         result = await response.json();
         console.log('Project submission result:', result);
@@ -624,6 +633,7 @@ export default function Projects() {
         result = { success: true };
       }
 
+      // Step 7: Success notification and cleanup
       toast({
         title: "Success",
         description: "Your project has been submitted successfully!",
@@ -631,6 +641,7 @@ export default function Projects() {
 
       form.reset();
       queryClient.invalidateQueries({ queryKey: ["/api/projects", serviceId] });
+      
     } catch (error: any) {
       console.error("Project submission error:", error);
       toast({
@@ -780,5 +791,3 @@ export default function Projects() {
     </div>
   );
 }
-
-import { ChevronLeft, ChevronRight } from "lucide-react";

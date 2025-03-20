@@ -3,20 +3,45 @@ import type { Express } from "express";
 import multer from "multer";
 import path from "path";
 import express from "express";
+import fs from 'fs';
 import { storage } from "./storage";
 import { fileManager } from "./utils/fileManager";
 import { insertQuoteRequestSchema, insertBookingSchema } from "@shared/schema";
 import { ZodError } from "zod";
 
 // Initialize multer with our upload directory
+// Create explicit upload directory path
+const UPLOADS_DIR = path.resolve(process.cwd(), "uploads");
+
+// Ensure uploads directory exists before configuring multer
+try {
+  if (!fs.existsSync(UPLOADS_DIR)) {
+    console.log('[Multer Setup] Creating uploads directory:', UPLOADS_DIR);
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  }
+  
+  // Check if directory is writable
+  fs.accessSync(UPLOADS_DIR, fs.constants.W_OK);
+  console.log('[Multer Setup] Uploads directory is writable:', UPLOADS_DIR);
+  
+  // List files in uploads directory
+  const files = fs.readdirSync(UPLOADS_DIR);
+  console.log('[Multer Setup] Files in uploads directory:', files.length ? files : 'No files');
+} catch (error) {
+  console.error('[Multer Setup] Error with uploads directory:', error);
+}
+
 const upload = multer({
   storage: multer.diskStorage({
-    destination: async (req, file, cb) => {
+    destination: (req, file, cb) => {
       try {
-        await fileManager.initialize();
-        const uploadsDir = path.resolve(process.cwd(), "uploads");
-        console.log('[Multer] Using uploads directory:', uploadsDir);
-        cb(null, uploadsDir);
+        console.log('[Multer] Saving file to:', UPLOADS_DIR);
+        // Make sure directory exists again at upload time
+        if (!fs.existsSync(UPLOADS_DIR)) {
+          console.log('[Multer] Creating missing uploads directory');
+          fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+        }
+        cb(null, UPLOADS_DIR);
       } catch (error) {
         console.error('[Multer] Error setting destination:', error);
         cb(error as Error, '');
@@ -26,7 +51,7 @@ const upload = multer({
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
       const ext = path.extname(file.originalname);
       const filename = file.fieldname + '-' + uniqueSuffix + ext;
-      console.log('[Multer] Generated filename:', filename);
+      console.log('[Multer] Generated filename:', filename, 'for', file.originalname);
       cb(null, filename);
     }
   }),
