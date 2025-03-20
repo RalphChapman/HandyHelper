@@ -16,56 +16,54 @@ import { createCalendarEvent } from "./utils/calendar";
 const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
-      // Use absolute path for uploads in both dev and production
-      const uploadDir = process.env.NODE_ENV === 'production'
-        ? '/home/runner/workspace/uploads'
-        : path.resolve(process.cwd(), 'uploads');
-
-      console.log('[API] Upload configuration:', {
-        NODE_ENV: process.env.NODE_ENV,
-        uploadDir,
-        cwd: process.cwd()
+      // Use the existing uploads directory
+      const uploadDir = '/home/runner/workspace/uploads';
+      console.log('[API] Upload attempt:', {
+        directory: uploadDir,
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        env: process.env.NODE_ENV,
+        directoryExists: fs.existsSync(uploadDir),
+        directoryStats: fs.existsSync(uploadDir) ? fs.statSync(uploadDir) : null,
+        processInfo: {
+          uid: process.getuid?.(),
+          gid: process.getgid?.(),
+          cwd: process.cwd()
+        }
       });
 
-      // Ensure directory exists with proper permissions
-      if (!fs.existsSync(uploadDir)) {
-        try {
-          fs.mkdirSync(uploadDir, { recursive: true, mode: 0o775 });
-          console.log('[API] Created uploads directory at:', uploadDir);
-
-          const stats = fs.statSync(uploadDir);
-          console.log('[API] Directory permissions:', stats.mode.toString(8));
-        } catch (error) {
-          console.error('[API] Failed to create uploads directory:', error);
-          cb(error as Error, uploadDir);
-          return;
-        }
-      }
-
-      // Verify write permissions
+      // First verify directory exists and is writable
       try {
-        const testFile = path.join(uploadDir, '.test-write');
+        fs.accessSync(uploadDir, fs.constants.F_OK | fs.constants.W_OK);
+        console.log('[API] Verified upload directory access:', uploadDir);
+
+        // Try writing a test file to verify actual write permissions
+        const testFile = path.join(uploadDir, '.test-' + Date.now());
         fs.writeFileSync(testFile, 'test');
         fs.unlinkSync(testFile);
-        console.log('[API] Successfully verified write permissions for:', uploadDir);
-      } catch (error) {
-        console.error('[API] Directory write permission error:', error);
-        cb(error as Error, uploadDir);
-        return;
-      }
+        console.log('[API] Successfully verified write permissions');
 
-      cb(null, uploadDir);
+        cb(null, uploadDir);
+      } catch (error) {
+        console.error('[API] Upload directory access error:', error);
+        console.error('[API] Current process user:', process.getuid?.());
+        cb(new Error(`Upload directory ${uploadDir} is not accessible or writable: ${error.message}`));
+      }
     },
     filename: (req, file, cb) => {
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
       const ext = path.extname(file.originalname);
       const filename = `${file.fieldname}-${uniqueSuffix}${ext}`;
-      console.log('[API] Generated filename:', filename);
+      console.log('[API] Generated filename:', {
+        filename,
+        originalname: file.originalname,
+        extension: ext
+      });
       cb(null, filename);
     }
   }),
   fileFilter: (req, file, cb) => {
-    console.log('[API] Processing file upload:', {
+    console.log('[API] Processing upload:', {
       originalname: file.originalname,
       mimetype: file.mimetype,
       size: file.size
@@ -83,6 +81,25 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024 // 5MB limit
   }
 });
+
+// Add error handling middleware for multer errors
+const handleUploadError = (error: any, req: Request, res: Response, next: NextFunction) => {
+  console.error('[API] File upload error:', error);
+
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ message: 'File too large. Maximum size is 5MB.' });
+    }
+    return res.status(400).json({ message: `Upload error: ${error.message}` });
+  }
+
+  // Handle other types of errors
+  if (error.message.includes('Upload directory')) {
+    return res.status(500).json({ message: 'Server storage error. Please try again later.' });
+  }
+
+  next(error);
+};
 
 // Middleware to check if user is admin
 const isAdmin = (req: Request, res: Response, next: NextFunction) => {
@@ -105,26 +122,41 @@ export async function registerRoutes(app: Express) {
   setupAuth(app);
 
   // Set up static file serving for uploads
-  const uploadDir = process.env.NODE_ENV === 'production'
-    ? '/home/runner/workspace/uploads'
-    : path.resolve(process.cwd(), 'uploads');
+  const uploadDir = '/home/runner/workspace/uploads';
 
   console.log('[API] Setting up static file serving from:', uploadDir);
 
-  // Create uploads directory if it doesn't exist
-  if (!fs.existsSync(uploadDir)) {
-    try {
-      fs.mkdirSync(uploadDir, { recursive: true, mode: 0o775 });
-      console.log('[API] Created uploads directory');
-    } catch (error) {
-      console.error('[API] Failed to create uploads directory:', error);
+
+  // Serve uploaded files with detailed logging
+  app.use("/uploads", express.static(uploadDir, {
+    setHeaders: (res, filePath) => {
+      console.log('[API] Serving file:', {
+        path: filePath,
+        requestedFile: path.basename(filePath),
+        exists: fs.existsSync(filePath)
+      });
+
+      // Set proper MIME types for images
+      const ext = path.extname(filePath).toLowerCase();
+      if (ext === '.jpg' || ext === '.jpeg') {
+        res.setHeader('Content-Type', 'image/jpeg');
+      } else if (ext === '.png') {
+        res.setHeader('Content-Type', 'image/png');
+      } else if (ext === '.gif') {
+        res.setHeader('Content-Type', 'image/gif');
+      } else if (ext === '.webp') {
+        res.setHeader('Content-Type', 'image/webp');
+      }
+
+      // Add cache control headers
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
+
+      // Log response headers for debugging
+      console.log('[API] Response headers:', res.getHeaders());
     }
-  }
+  }));
 
-  // Serve uploaded files
-  app.use("/uploads", express.static(uploadDir));
-
-  // Add error handling middleware for file serving
+  // Add error handling for file serving
   app.use("/uploads", (err: any, req: Request, res: Response, next: NextFunction) => {
     console.error('[API] Error serving file:', err);
     res.status(500).json({ message: "Error serving file" });
@@ -460,79 +492,98 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  app.post("/api/projects", upload.array("images", 10), async (req, res) => {
+  app.post("/api/projects", upload.array("images", 10), handleUploadError, async (req, res) => {
     try {
       console.log("[API] Creating new project");
-      console.log("[API] Environment:", process.env.NODE_ENV);
-      console.log("[API] Upload directory:", process.env.NODE_ENV === 'production'
-        ? '/home/runner/workspace/uploads'
-        : path.resolve(process.cwd(), 'uploads'));
-      console.log('[API] Request body:', req.body);
-      console.log('[API] Uploaded files:', req.files ?
-        req.files.map(f => ({
-          fieldname: f.fieldname,
-          originalname: f.originalname,
-          filename: f.filename,
-          path: f.path,
-          size: f.size
-        })) : 'No files uploaded');
+      console.log('[API] Environment details:', {
+        NODE_ENV: process.env.NODE_ENV,
+        cwd: process.cwd(),
+        uploadDir: '/home/runner/workspace/uploads',
+        uid: process.getuid?.(),
+        gid: process.getgid?.()
+      });
 
-    const files = req.files as Express.Multer.File[];
-    if (!files || files.length === 0) {
-      console.log("[API] No images provided");
-      return res.status(400).json({ message: "At least one image is required" });
-    }
+      console.log('[API] Request details:', {
+        body: req.body,
+        files: req.files ?
+          (req.files as Express.Multer.File[]).map(f => ({
+            fieldname: f.fieldname,
+            originalname: f.originalname,
+            filename: f.filename,
+            path: f.path,
+            size: f.size,
+            exists: fs.existsSync(f.path),
+            stats: fs.existsSync(f.path) ? fs.statSync(f.path) : null,
+            directoryListing: fs.readdirSync(path.dirname(f.path))
+          }))
+          : 'No files uploaded'
+      });
 
-    // Create array of image URLs with absolute paths
-    const imageUrls = files.map(file => {
-      const relativeUrl = `/uploads/${file.filename}`;
-      console.log('[API] Generated image URL:', relativeUrl);
-      console.log('[API] Actual file path:', file.path);
-
-      // Verify file was actually saved
-      try {
-        fs.accessSync(file.path, fs.constants.F_OK);
-        console.log('[API] Verified file exists at:', file.path);
-      } catch (error) {
-        console.error('[API] Error accessing uploaded file:', error);
-        throw new Error(`Failed to verify uploaded file: ${file.filename}`);
+      const files = req.files as Express.Multer.File[];
+      if (!files || files.length === 0) {
+        console.log("[API] No images provided");
+        return res.status(400).json({ message: "At least one image is required" });
       }
 
-      return relativeUrl;
-    });
+      // Create array of image URLs with verification
+      const imageUrls = [];
+      for (const file of files) {
+        const relativeUrl = `/uploads/${file.filename}`;
 
-    const projectData = {
-      title: req.body.title,
-      description: req.body.description,
-      imageUrls,
-      comment: req.body.comment,
-      customerName: req.body.customerName,
-      projectDate: new Date(req.body.projectDate),
-      serviceId: parseInt(req.body.serviceId)
-    };
+        // Verify file was saved successfully and is readable
+        try {
+          fs.accessSync(file.path, fs.constants.F_OK | fs.constants.R_OK);
+          const stats = fs.statSync(file.path);
+          console.log('[API] Verified uploaded file:', {
+            path: file.path,
+            size: stats.size,
+            permissions: stats.mode.toString(8),
+            directory: path.dirname(file.path),
+            directoryContents: fs.readdirSync(path.dirname(file.path))
+          });
+          imageUrls.push(relativeUrl);
+        } catch (error) {
+          console.error('[API] Failed to verify uploaded file:', {
+            path: file.path,
+            error: error.message,
+            stackTrace: error.stack
+          });
+          return res.status(500).json({
+            message: "Failed to save uploaded file",
+            error: `File ${file.filename} was not saved properly: ${error.message}`
+          });
+        }
+      }
 
-    console.log('[API] Project data for creation:', JSON.stringify(projectData, null, 2));
+      const projectData = {
+        title: req.body.title,
+        description: req.body.description,
+        imageUrls,
+        comment: req.body.comment,
+        customerName: req.body.customerName,
+        projectDate: new Date(req.body.projectDate),
+        serviceId: parseInt(req.body.serviceId)
+      };
 
-    try {
+      console.log('[API] Creating project with data:', JSON.stringify(projectData, null, 2));
+
       const newProject = await storage.createProject(projectData);
-      console.log(`[API] Successfully created project #${newProject.id}`);
-      console.log('[API] Project image URLs:', newProject.imageUrls);
+      console.log('[API] Successfully created project:', {
+        id: newProject.id,
+        imageUrls: newProject.imageUrls,
+        uploadedFiles: imageUrls
+      });
+
       res.status(201).json(newProject);
-    } catch (storageError) {
-      console.error("[API] Storage error creating project:", storageError);
-      if (storageError instanceof Error) {
-        console.error("[API] Storage error stack:", storageError.stack);
-      }
-      throw storageError;
+    } catch (error) {
+      console.error("[API] Error creating project:", {
+        error: error.message,
+        stack: error.stack,
+        type: error.constructor.name
+      });
+      res.status(500).json({ message: "Failed to create project", error: error.message });
     }
-  } catch (error) {
-    console.error("[API] Error creating project:", error);
-    if (error instanceof Error) {
-      console.error("[API] Error stack:", error.stack);
-    }
-    res.status(500).json({ message: "Failed to create project", error: (error as Error).message });
-  }
-});
+  });
 
   // Individual service route
   app.get("/api/services/:id", async (req, res) => {
@@ -755,7 +806,7 @@ export async function registerRoutes(app: Express) {
       // Verify current password      const user = await storage.getUser(req.user.id);
       if (!user) {
         console.log("[API] User not found:", req.user.id);
-        return res.status(404).json({ message: "User not found" });
+        return res.status(404).json({ message: ""User not found" });
       }
 
       const isValid = await comparePasswords(currentPassword, user.password);
@@ -765,8 +816,7 @@ export async function registerRoutes(app: Express) {
       }
 
       // Update password
-      const hashedPassword = await hashPassword(newPassword);
-      await storage.updateUserPassword(req.user.id, hashedPassword);
+      const hashedPassword = await hashPassword(newPassword);      await storage.updateUserPassword(req.user.id,hashedPassword);
 
       console.log("[API] Password updated successfully for user:", req.user?.id);
       res.json({ message: "Password updated successfully" });
@@ -822,11 +872,11 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ message: "Failed to process password reset request" });
     }
   });
-  app.patch("/api/projects/:id", upload.array("images", 10), async (req, res) => {
+  app.patch("/api/projects/:id", upload.array("images", 10), handleUploadError, async (req, res) => {
     try {
       const projectId = parseInt(req.params.id);
       console.log(`[API] Updating project ${projectId}`);
-      console.log('[API] Request body:', req.body);
+      console.log`[API] Request body:', req.body);
       console.log('[API] Files:', req.files);
 
       // Verify project exists
@@ -925,4 +975,79 @@ export async function registerRoutes(app: Express) {
     }
   });
   // Routes should not start their own server - this is handled by index.ts
+  // Add diagnostic endpoint for uploads directory
+  app.get("/api/diagnostics/uploads", isAdmin, async (req, res) => {
+    try {
+      const uploadDir = '/home/runner/workspace/uploads';
+      console.log('[API] Running upload directory diagnostics');
+
+      const diagnostics = {
+        directory: {
+          path: uploadDir,
+          exists: fs.existsSync(uploadDir),
+          stats: fs.existsSync(uploadDir) ? fs.statSync(uploadDir) : null,
+          permissions: fs.existsSync(uploadDir) ? fs.statSync(uploadDir).mode.toString(8) : null
+        },
+        process: {
+          uid: process.getuid?.(),
+          gid: process.getgid?.(),
+          cwd: process.cwd(),
+          env: process.env.NODE_ENV
+        },
+        files: [] as any[]
+      };
+
+      // Test write permissions
+      try {
+        const testFile = path.join(uploadDir, '.test-write-' + Date.now());
+        fs.writeFileSync(testFile, 'test');
+        fs.unlinkSync(testFile);
+        diagnostics.directory.writeable = true;
+      } catch (error) {
+        console.error('[API] Write test failed:', error);
+        diagnostics.directory.writeable = false;
+        diagnostics.directory.writeError = error.message;
+      }
+
+      // List all files in directory
+      if (diagnostics.directory.exists) {
+        try {
+          const files = fs.readdirSync(uploadDir);
+          diagnostics.files = files.map(filename => {
+            const filePath = path.join(uploadDir, filename);
+            try {
+              const stats = fs.statSync(filePath);
+              return {
+                name: filename,
+                path: filePath,
+                size: stats.size,
+                permissions: stats.mode.toString(8),
+                created: stats.birthtime,
+                modified: stats.mtime,
+                readable: true,
+                error: null
+              };
+            } catch (error) {
+              return {
+                name: filename,
+                path: filePath,
+                error: error.message,
+                readable: false
+              };
+            }
+          });
+        } catch (error) {
+          console.error('[API] Error reading directory:', error);
+          diagnostics.readError = error.message;
+        }
+      }
+
+      console.log('[API] Upload directory diagnostics:', JSON.stringify(diagnostics, null, 2));
+      res.json(diagnostics);
+    } catch (error) {
+      console.error('[API] Error running diagnostics:', error);
+      res.status(500).json({ message: "Failed to run diagnostics", error: error.message });
+    }
+  });
+
 }

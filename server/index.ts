@@ -61,10 +61,8 @@ app.use(express.static(path.resolve(process.cwd(), "public"), {
   }
 }));
 
-// Ensure uploads directory exists with proper permissions
-const uploadDir = process.env.NODE_ENV === 'production'
-  ? '/home/runner/workspace/uploads'
-  : path.resolve(process.cwd(), 'uploads');
+// Serve uploaded files from the existing directory
+const uploadDir = '/home/runner/workspace/uploads';
 
 // Log environment details
 console.log('[Server] Environment configuration:', {
@@ -73,17 +71,7 @@ console.log('[Server] Environment configuration:', {
   uploadDir
 });
 
-if (!fs.existsSync(uploadDir)) {
-  try {
-    fs.mkdirSync(uploadDir, { recursive: true, mode: 0o775 });
-    console.log('[Server] Created uploads directory at:', uploadDir);
-  } catch (error) {
-    console.error('[Server] Failed to create uploads directory:', error);
-    process.exit(1);
-  }
-}
-
-// Log the uploads directory path and contents
+// Log the uploads directory contents
 console.log('[Server] Serving uploaded files from:', uploadDir);
 try {
   const files = fs.readdirSync(uploadDir);
@@ -117,7 +105,6 @@ app.use('/uploads', express.static(uploadDir, {
   },
   fallthrough: false // Return 404 instead of falling through to next middleware
 }));
-
 
 
 (async () => {
