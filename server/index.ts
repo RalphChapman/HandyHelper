@@ -217,40 +217,106 @@ try {
       // 1. First, setup API routes before any static routes
       //    API routes are already configured via registerRoutes(app) above
       
-      // 2. Set up a dedicated uploads route with comprehensive logging
-      console.log("[Server] Setting up dedicated /uploads route");
+      // 2. Set up a dedicated uploads route with comprehensive logging and error handling
+      console.log("[Server] Setting up enhanced /uploads route for production");
       app.use('/uploads', (req, res, next) => {
-        // Log all uploads requests in production
-        console.log('[Server] PRODUCTION UPLOADS REQUEST:', {
-          path: req.path,
-          method: req.method,
-          originalUrl: req.originalUrl,
-          ip: req.ip
-        });
-        next();
-      }, express.static(productionUploadsDir, {
-        setHeaders: (res, filePath) => {
-          // Set appropriate content type based on extension
-          const ext = path.extname(filePath).toLowerCase();
-          console.log('[Server] Serving uploaded file:', { path: filePath, ext });
+        // Enhanced uploads handling for production with direct file serving
+        try {
+          // Log all upload requests with details
+          console.log('[Server] PRODUCTION UPLOADS REQUEST:', {
+            path: req.path,
+            method: req.method,
+            originalUrl: req.originalUrl,
+            ip: req.ip
+          });
           
-          // Set correct content type
-          if (ext === '.jpg' || ext === '.jpeg') {
-            res.setHeader('Content-Type', 'image/jpeg');
-          } else if (ext === '.png') {
-            res.setHeader('Content-Type', 'image/png');
-          } else if (ext === '.gif') {
-            res.setHeader('Content-Type', 'image/gif');
-          } else if (ext === '.webp') {
-            res.setHeader('Content-Type', 'image/webp');
+          // Safety check - only allow GET requests
+          if (req.method !== 'GET') {
+            return res.status(405).send('Method not allowed');
           }
           
-          // Add cache control for better performance
+          // Normalize the path to prevent path traversal
+          const fileName = path.basename(req.path);
+          if (!fileName || fileName === '' || fileName.includes('..')) {
+            return res.status(400).send('Invalid file name');
+          }
+          
+          // Full path to the requested file
+          const filePath = path.resolve(productionUploadsDir, fileName);
+          console.log(`[Server] Looking for file: ${filePath}`);
+          
+          // Check if file exists
+          if (!fs.existsSync(filePath)) {
+            console.error(`[Server] PRODUCTION: File not found: ${filePath}`);
+            return res.status(404).send('File not found');
+          }
+          
+          // Check file stats
+          const stats = fs.statSync(filePath);
+          if (!stats.isFile()) {
+            console.error(`[Server] PRODUCTION: Not a file: ${filePath}`);
+            return res.status(404).send('Not a file');
+          }
+          
+          // Log detailed file information for debugging
+          console.log(`[Server] PRODUCTION: Serving file: ${filePath}`, {
+            size: stats.size,
+            permissions: stats.mode.toString(8),
+            uid: stats.uid, 
+            gid: stats.gid,
+            mtime: stats.mtime.toISOString()
+          });
+          
+          // Determine content type based on file extension
+          const ext = path.extname(filePath).toLowerCase();
+          let contentType = 'application/octet-stream'; // Default
+          
+          if (ext === '.jpg' || ext === '.jpeg') {
+            contentType = 'image/jpeg';
+          } else if (ext === '.png') {
+            contentType = 'image/png';
+          } else if (ext === '.gif') {
+            contentType = 'image/gif';
+          } else if (ext === '.webp') {
+            contentType = 'image/webp';
+          } else if (ext === '.pdf') {
+            contentType = 'application/pdf';
+          }
+          
+          // Set response headers
+          res.setHeader('Content-Type', contentType);
+          res.setHeader('Content-Length', stats.size);
           res.setHeader('Cache-Control', 'public, max-age=31536000');
-        },
-        index: false, // Disable directory listing
-        fallthrough: false // Return 404 for files not found (don't pass to next middleware)
-      }));
+          res.setHeader('Last-Modified', stats.mtime.toUTCString());
+          res.setHeader('Access-Control-Allow-Origin', '*'); // Allow cross-origin access to files
+          res.setHeader('X-Content-Type-Options', 'nosniff'); // Security: prevent MIME type sniffing
+          
+          // Log response headers
+          console.log(`[Server] PRODUCTION: Response headers:`, res.getHeaders());
+          
+          // Stream the file to the response for better memory usage
+          const fileStream = fs.createReadStream(filePath);
+          
+          // Handle streaming errors
+          fileStream.on('error', (error) => {
+            console.error(`[Server] PRODUCTION: Error streaming file: ${error.message}`);
+            if (!res.headersSent) {
+              return res.status(500).send('Error serving file');
+            }
+            res.end();
+          });
+          
+          // Stream the file directly to response
+          fileStream.pipe(res);
+        } catch (error) {
+          console.error(`[Server] PRODUCTION: Error serving upload:`, error);
+          if (!res.headersSent) {
+            next(error);
+          } else {
+            res.end();
+          }
+        }
+      });
       
       // 3. Then serve static client files from the dist directory
       console.log("[Server] Setting up static files route for production");
