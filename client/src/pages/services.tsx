@@ -7,17 +7,32 @@ export default function Services() {
   const { data: services, isLoading, error } = useQuery<Service[]>({
     queryKey: ["/api/services"],
     queryFn: async () => {
-      const response = await fetch("/api/services");
-      if (!response.ok) {
-        throw new Error(`Failed to fetch services: ${response.statusText}`);
+      console.log("[Services] Starting service fetch");
+      try {
+        const response = await fetch("/api/services");
+        console.log("[Services] Service fetch response:", {
+          status: response.status,
+          ok: response.ok,
+          statusText: response.statusText
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch services: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log("[Services] Fetched services:", data);
+        return data;
+      } catch (error) {
+        console.error("[Services] Error fetching services:", error);
+        throw error;
       }
-      return response.json();
     }
   });
 
   // Add error handling
   if (error) {
-    console.error("Error fetching services:", error);
+    console.error("Error loading services:", error);
     return (
       <div className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
