@@ -13,11 +13,11 @@ const app = express();
 // Trust proxies in the Replit environment
 app.set('trust proxy', 1);
 
-// Add permissive CSP headers that allow PDFs
+// Add permissive CSP headers that allow PDFs and Google Fonts
 app.use((req, res, next) => {
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; object-src 'self'; media-src 'self'"
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.gstatic.com https://www.googletagmanager.com https://www.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.gstatic.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleapis.com https://*.gstatic.com https://www.google.com https://images.unsplash.com; connect-src 'self' https://*.googleapis.com https://*.gstatic.com https://www.google.com; worker-src 'self' blob:;"
   );
   next();
 });
