@@ -20,14 +20,28 @@ export default function App() {
   const [location] = useLocation();
   const { trackPageView } = useAnalytics();
 
+  // Initialize GA on mount
+  useEffect(() => {
+    // Initialize GA
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('js', new Date());
+      window.gtag('config', 'G-8Z36SFYZBB', {
+        page_path: location,
+      });
+      console.log('[Analytics] Google Analytics initialized with config');
+    } else {
+      console.warn('[Analytics] Google Analytics not available');
+    }
+  }, []);
+
   // Track page views
   useEffect(() => {
-    // Ensure we have a valid location before tracking
     if (location) {
+      console.log('[Analytics] Page changed:', location);
       try {
         trackPageView(location);
       } catch (error) {
-        console.error('Failed to track page view:', error);
+        console.error('[Analytics] Failed to track page view:', error);
       }
     }
   }, [location, trackPageView]);
