@@ -16,33 +16,38 @@ import { createCalendarEvent } from "./utils/calendar";
 const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
-      const uploadDir = path.resolve(process.cwd(), 'uploads');
-      console.log('[API] Upload directory path:', uploadDir);
-      console.log('[API] Current working directory:', process.cwd());
-      console.log('[API] Environment:', process.env.NODE_ENV);
+      // Use absolute path for uploads in both dev and production
+      const uploadDir = process.env.NODE_ENV === 'production'
+        ? '/home/runner/workspace/uploads'
+        : path.resolve(process.cwd(), 'uploads');
 
+      console.log('[API] Upload configuration:', {
+        NODE_ENV: process.env.NODE_ENV,
+        uploadDir,
+        cwd: process.cwd()
+      });
+
+      // Ensure directory exists with proper permissions
       if (!fs.existsSync(uploadDir)) {
         try {
-          fs.mkdirSync(uploadDir, { recursive: true, mode: 0o755 });
-          console.log('[API] Created uploads directory at:', uploadDir);
+          fs.mkdirSync(uploadDir, { recursive: true, mode: 0o775 });
+          console.log('[API] Created uploads directory:', uploadDir);
 
-          if (fs.existsSync(uploadDir)) {
-            console.log('[API] Uploads directory created successfully');
-            const stats = fs.statSync(uploadDir);
-            console.log('[API] Directory permissions:', stats.mode.toString(8));
-          }
+          const stats = fs.statSync(uploadDir);
+          console.log('[API] Directory permissions:', stats.mode.toString(8));
         } catch (error) {
-          console.error('[API] Error creating uploads directory:', error);
+          console.error('[API] Failed to create uploads directory:', error);
           cb(error as Error, uploadDir);
           return;
         }
       }
 
+      // Verify write permissions
       try {
         const testFile = path.join(uploadDir, '.test-write');
         fs.writeFileSync(testFile, 'test');
         fs.unlinkSync(testFile);
-        console.log('[API] Successfully verified write permissions');
+        console.log('[API] Successfully verified write permissions for:', uploadDir);
       } catch (error) {
         console.error('[API] Directory write permission error:', error);
         cb(error as Error, uploadDir);
@@ -100,14 +105,16 @@ export async function registerRoutes(app: Express) {
   setupAuth(app);
 
   // Set up static file serving for uploads
-  const uploadDir = path.resolve(process.cwd(), 'uploads');
+  const uploadDir = process.env.NODE_ENV === 'production'
+    ? '/home/runner/workspace/uploads'
+    : path.resolve(process.cwd(), 'uploads');
 
   console.log('[API] Setting up static file serving from:', uploadDir);
 
   // Create uploads directory if it doesn't exist
   if (!fs.existsSync(uploadDir)) {
     try {
-      fs.mkdirSync(uploadDir, { recursive: true });
+      fs.mkdirSync(uploadDir, { recursive: true, mode: 0o775 });
       console.log('[API] Created uploads directory');
     } catch (error) {
       console.error('[API] Failed to create uploads directory:', error);
@@ -456,6 +463,10 @@ export async function registerRoutes(app: Express) {
   app.post("/api/projects", upload.array("images", 10), async (req, res) => {
     try {
       console.log("[API] Creating new project");
+      console.log("[API] Environment:", process.env.NODE_ENV);
+      console.log("[API] Upload directory:", process.env.NODE_ENV === 'production'
+        ? '/home/runner/workspace/uploads'
+        : path.resolve(process.cwd(), 'uploads'));
       console.log('[API] Request body:', req.body);
       console.log('[API] Uploaded files:', req.files ?
         req.files.map(f => ({
@@ -490,25 +501,13 @@ export async function registerRoutes(app: Express) {
         return relativeUrl;
       });
 
-      // Parse and validate the project date
-      let projectDate: Date;
-      try {
-        projectDate = new Date(req.body.projectDate);
-        if (isNaN(projectDate.getTime())) {
-          throw new Error("Invalid date");
-        }
-      } catch (error) {
-        console.error("[API] Invalid project date:", req.body.projectDate);
-        return res.status(400).json({ message: "Invalid project date format" });
-      }
-
       const projectData = {
         title: req.body.title,
         description: req.body.description,
         imageUrls,
         comment: req.body.comment,
         customerName: req.body.customerName,
-        projectDate,
+        projectDate: new Date(req.body.projectDate),
         serviceId: parseInt(req.body.serviceId)
       };
 
