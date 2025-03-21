@@ -94,12 +94,21 @@ export const serviceProviders = pgTable("service_providers", {
 
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true });
 export const insertQuoteRequestSchema = createInsertSchema(quoteRequests)
-  .omit({ id: true })
+  .omit({ id: true, email: true, phone: true })
   .extend({
     serviceId: z.coerce.number().int().positive(),
     serviceName: z.string().optional(),
     analysis: z.string().optional(),
-  });
+    email: z.string().optional(),
+    phone: z.string().optional(),
+  })
+  .refine(
+    (data) => !!data.email || !!data.phone,
+    {
+      message: "At least one contact method (email or phone) is required",
+      path: ["contactMethod"]
+    }
+  );
 export const insertBookingSchema = createInsertSchema(bookings)
   .omit({ id: true, status: true, confirmed: true })
   .extend({

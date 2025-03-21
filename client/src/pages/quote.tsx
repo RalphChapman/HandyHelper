@@ -209,33 +209,64 @@ export default function Quote() {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input type="email" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium mb-2 text-amber-600">Please provide at least one contact method below.</p>
+                <p className="text-xs text-muted-foreground mb-4">We'll use this to follow up on your quote request with pricing and availability.</p>
+              </div>
+              
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email Address</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="email" 
+                        placeholder="you@example.com" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    {!field.value && (
+                      <p className="text-xs text-muted-foreground">
+                        Email is the fastest way to receive your detailed quote.
+                      </p>
+                    )}
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone</FormLabel>
-                  <FormControl>
-                    <Input type="tel" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="tel" 
+                        placeholder="(555) 123-4567" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    {!field.value && (
+                      <p className="text-xs text-muted-foreground">
+                        Phone allows us to discuss your project details directly.
+                      </p>
+                    )}
+                  </FormItem>
+                )}
+              />
+              
+              {(form.formState.errors.contactMethod || (!form.getValues("email") && !form.getValues("phone"))) && (
+                <p className="text-sm text-destructive font-medium">
+                  At least one contact method (email or phone) is required
+                </p>
               )}
-            />
+            </div>
 
             <FormField
               control={form.control}
