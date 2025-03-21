@@ -309,14 +309,15 @@ END:VCARD`;
                 onClick={() => {
                   // Prepare enhanced share text for Facebook that includes complete contact information
                   const enhancedFacebookShareText = isClient && isMobile 
-                    ? `${contactInfo.name}
-${contactInfo.jobTitle} at ${contactInfo.company}
-📞 ${contactInfo.phone}
+                    ? `${contactInfo.name} | ${contactInfo.jobTitle} at ${contactInfo.company}
+
+Contact Information:
+📞 ${contactInfo.phone} 
 ✉️ ${contactInfo.email}
 🔗 ${websiteUrl}
 💼 ${contactInfo.linkedin}
 
-Professional handyman services in Charleston. Quality work, fair prices, and reliable service.`
+Professional handyman services in Charleston. Specializing in home repairs, improvements, and maintenance with 20+ years of experience. Quality craftsmanship and reliable service guaranteed.`
                     : shareText;
 
                   // Encode the enhanced text for sharing
