@@ -65,8 +65,22 @@ Address: ${quoteRequest.address}
 Project Description:
 ${quoteRequest.description}
 
-AI Analysis:
-${aiAnalysis}
+Professional Analysis:
+${aiAnalysis.split('\n').map(line => {
+  // For text emails, we'll keep the formatting simpler but still clear
+  if (line.match(/cost considerations|pricing|budget|payment/i)) {
+    return `\n${line.toUpperCase()}`;
+  } 
+  else if (line.match(/estimated cost range|price range|typical pricing|cost estimate|approximate cost|expected price/i)) {
+    return `\n>> ${line} <<`;
+  }
+  else if (line.trim().startsWith('-') || line.trim().startsWith('*')) {
+    return `  • ${line.substring(1).trim()}`;
+  }
+  else {
+    return line;
+  }
+}).join('\n')}
 
 Visit our website: https://handyhelper.replit.app/
 
@@ -99,13 +113,39 @@ HandyPro Service Team
 
         <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin-bottom: 24px;">
           <h3 style="color: #1e293b; margin-bottom: 16px;">Professional Analysis</h3>
-          <div style="line-height: 1.6; white-space: pre-wrap;">${aiAnalysis.split('\n').map(line => 
-            line.trim().startsWith('-') ? 
-              `<p style="margin: 4px 0 4px 20px;">• ${line.substring(1)}</p>` : 
-              line.trim().startsWith('*') ? 
-                `<p style="margin: 4px 0 4px 20px;">• ${line.substring(1)}</p>` :
-                `<p style="margin: 8px 0;">${line}</p>`
-          ).join('')}</div>
+          <div style="line-height: 1.6; white-space: pre-wrap;">
+            ${aiAnalysis.split('\n').map(line => {
+              // Check for cost sections
+              if (line.match(/cost considerations|pricing|budget|payment/i)) {
+                return `<p style="margin: 16px 0 8px 0; font-size: 18px; font-weight: 600; color: #92400e;">${line}</p>`;
+              } 
+              // Check for cost range mentions
+              else if (line.match(/estimated cost range|price range|typical pricing|cost estimate|approximate cost|expected price/i)) {
+                // Highlight any dollar amounts in the line
+                const highlightedLine = line.replace(/(\$[\d,]+(?:\s*-\s*\$[\d,]+)?|\$[\d,]+(?:\.\d+)?)/g, 
+                  '<strong style="color: #15803d;">$1</strong>');
+                
+                return `<p style="margin: 8px 0; font-weight: 600; background-color: #fef3c7; padding: 8px 12px; border-radius: 6px; border-left: 4px solid #f59e0b;">${highlightedLine}</p>`;
+              } 
+              // Regular lines with dollar amounts get subtle highlighting
+              else if (line.match(/\$[\d,]+/)) {
+                const highlightedLine = line.replace(/(\$[\d,]+(?:\s*-\s*\$[\d,]+)?|\$[\d,]+(?:\.\d+)?)/g, 
+                  '<strong style="color: #15803d;">$1</strong>');
+                
+                return `<p style="margin: 8px 0;">${highlightedLine}</p>`;
+              } 
+              // Bullet points
+              else if (line.trim().startsWith('-')) {
+                return `<p style="margin: 4px 0 4px 20px;">• ${line.substring(1)}</p>`;
+              }
+              else if (line.trim().startsWith('*')) {
+                return `<p style="margin: 4px 0 4px 20px;">• ${line.substring(1)}</p>`;
+              }
+              else {
+                return `<p style="margin: 8px 0;">${line}</p>`;
+              }
+            }).join('')}
+          </div>
         </div>
 
         <!-- Digital Business Card Section -->
