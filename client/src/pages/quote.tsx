@@ -297,7 +297,42 @@ export default function Quote() {
             {analysis && (
               <div className="rounded-lg border bg-card p-4 text-card-foreground">
                 <h3 className="font-semibold mb-2">Project Analysis</h3>
-                <p className="text-sm whitespace-pre-wrap">{analysis}</p>
+                <div className="text-sm whitespace-pre-wrap">
+                  {analysis.split('\n').map((line, index) => {
+                    // Check for cost sections
+                    if (line.match(/cost considerations|pricing|budget|payment/i)) {
+                      return (
+                        <p key={index} className="font-semibold text-lg text-amber-800 mt-3 mb-1">
+                          {line}
+                        </p>
+                      );
+                    } 
+                    // Check for cost range mentions
+                    else if (line.match(/estimated cost range|price range|typical pricing|cost estimate|approximate cost|expected price/i)) {
+                      // Highlight any dollar amounts in the line
+                      const highlightedLine = line.replace(/(\$[\d,]+(?:\s*-\s*\$[\d,]+)?|\$[\d,]+(?:\.\d+)?)/g, 
+                        '<strong class="text-green-700">$1</strong>');
+                      
+                      return (
+                        <p key={index} className="font-semibold bg-amber-100 px-3 py-2 my-2 rounded-md border-l-4 border-amber-500"
+                           dangerouslySetInnerHTML={{ __html: highlightedLine }}>
+                        </p>
+                      );
+                    } 
+                    // Regular lines with dollar amounts get subtle highlighting
+                    else if (line.match(/\$[\d,]+/)) {
+                      const highlightedLine = line.replace(/(\$[\d,]+(?:\s*-\s*\$[\d,]+)?|\$[\d,]+(?:\.\d+)?)/g, 
+                        '<strong class="text-green-700">$1</strong>');
+                      
+                      return (
+                        <p key={index} dangerouslySetInnerHTML={{ __html: highlightedLine }}></p>
+                      );
+                    } 
+                    else {
+                      return <p key={index}>{line}</p>;
+                    }
+                  })}
+                </div>
               </div>
             )}
 
