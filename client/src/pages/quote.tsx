@@ -261,9 +261,18 @@ export default function Quote() {
                 <FormItem>
                   <FormLabel>Project Description</FormLabel>
                   <FormControl>
-                    <Textarea {...field} className="min-h-[100px]" />
+                    <Textarea 
+                      {...field} 
+                      className="min-h-[100px]" 
+                      placeholder="Tell me a little about what project you would like to get more details about..."
+                    />
                   </FormControl>
                   <FormMessage />
+                  {!field.value && 
+                    <p className="text-sm text-amber-600 mt-1">
+                      Please describe your project to receive an AI-powered analysis. The more details you provide, the more accurate our estimate will be.
+                    </p>
+                  }
                   <div className="flex items-center gap-2 mt-2">
                     <Button
                       type="button"
