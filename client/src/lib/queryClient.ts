@@ -17,12 +17,28 @@ export async function apiRequest(
   return res;
 }
 
+// Default fetch function for query keys that are just URLs
+export async function defaultQueryFn({ queryKey }: { queryKey: unknown[] }): Promise<unknown> {
+  const url = queryKey[0] as string;
+  if (typeof url !== 'string') {
+    throw new Error(`Invalid query key: ${String(queryKey[0])}`);
+  }
+  
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Request failed with status ${response.status}`);
+  }
+  
+  return response.json();
+}
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
       retry: false,
       staleTime: 5000,
+      queryFn: defaultQueryFn,
     },
     mutations: {
       retry: false,
