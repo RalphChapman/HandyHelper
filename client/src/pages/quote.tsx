@@ -264,13 +264,13 @@ export default function Quote() {
                     <Textarea 
                       {...field} 
                       className="min-h-[100px]" 
-                      placeholder="Tell me a little about what project you would like to get more details about..."
+                      placeholder="Tell me about your project to get a cost estimate... (Example: 'I need to repair my deck that's approximately 12x16 feet with several broken boards and a loose railing.')"
                     />
                   </FormControl>
                   <FormMessage />
                   {!field.value && 
                     <p className="text-sm text-amber-600 mt-1">
-                      Please describe your project to receive an AI-powered analysis. The more details you provide, the more accurate our estimate will be.
+                      Please describe your project to receive an AI-powered analysis and <strong>cost estimate</strong>. The more details you provide, the more accurate our <strong>pricing</strong> will be.
                     </p>
                   }
                   <div className="flex items-center gap-2 mt-2">
