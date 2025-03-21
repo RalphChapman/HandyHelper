@@ -197,84 +197,6 @@ export default function Quote() {
 
             <FormField
               control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm font-medium mb-2 text-amber-600">Please provide at least one contact method below.</p>
-                <p className="text-xs text-muted-foreground mb-4">We'll use this to follow up on your quote request with pricing and availability.</p>
-              </div>
-              
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email Address</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="email" 
-                        placeholder="you@example.com" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                    {!field.value && (
-                      <p className="text-xs text-muted-foreground">
-                        Email is the fastest way to receive your detailed quote.
-                      </p>
-                    )}
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="tel" 
-                        placeholder="(555) 123-4567" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                    {!field.value && (
-                      <p className="text-xs text-muted-foreground">
-                        Phone allows us to discuss your project details directly.
-                      </p>
-                    )}
-                  </FormItem>
-                )}
-              />
-              
-              {(form.formState.errors.email && form.formState.errors.phone) && (
-                <p className="text-sm text-destructive font-medium">
-                  At least one contact method (email or phone) is required
-                </p>
-              )}
-              {(!form.getValues("email") && !form.getValues("phone")) && (
-                <p className="text-xs text-amber-600">
-                  We'll need at least one way to contact you about your quote
-                </p>
-              )}
-            </div>
-
-            <FormField
-              control={form.control}
               name="address"
               render={({ field }) => (
                 <FormItem>
@@ -331,59 +253,157 @@ export default function Quote() {
             />
 
             {analysis && (
-              <div className="rounded-lg border bg-card p-4 text-card-foreground">
-                <h3 className="font-semibold mb-2">Project Analysis</h3>
-                <div className="text-sm whitespace-pre-wrap">
-                  {analysis.split('\n').map((line, index) => {
-                    // Check for cost sections
-                    if (line.match(/cost considerations|pricing|budget|payment/i)) {
-                      return (
-                        <p key={index} className="font-semibold text-lg text-amber-800 mt-3 mb-1">
-                          {line}
-                        </p>
-                      );
-                    } 
-                    // Check for cost range mentions
-                    else if (line.match(/estimated cost range|price range|typical pricing|cost estimate|approximate cost|expected price/i)) {
-                      // Highlight any dollar amounts in the line
-                      const highlightedLine = line.replace(/(\$[\d,]+(?:\s*-\s*\$[\d,]+)?|\$[\d,]+(?:\.\d+)?)/g, 
-                        '<strong class="text-green-700">$1</strong>');
-                      
-                      return (
-                        <p key={index} className="font-semibold bg-amber-100 px-3 py-2 my-2 rounded-md border-l-4 border-amber-500"
-                           dangerouslySetInnerHTML={{ __html: highlightedLine }}>
-                        </p>
-                      );
-                    } 
-                    // Regular lines with dollar amounts get subtle highlighting
-                    else if (line.match(/\$[\d,]+/)) {
-                      const highlightedLine = line.replace(/(\$[\d,]+(?:\s*-\s*\$[\d,]+)?|\$[\d,]+(?:\.\d+)?)/g, 
-                        '<strong class="text-green-700">$1</strong>');
-                      
-                      return (
-                        <p key={index} dangerouslySetInnerHTML={{ __html: highlightedLine }}></p>
-                      );
-                    } 
-                    else {
-                      return <p key={index}>{line}</p>;
-                    }
-                  })}
+              <>
+                <div className="rounded-lg border bg-card p-4 text-card-foreground">
+                  <h3 className="font-semibold mb-2">Project Analysis</h3>
+                  <div className="text-sm whitespace-pre-wrap">
+                    {analysis.split('\n').map((line, index) => {
+                      // Check for cost sections
+                      if (line.match(/cost considerations|pricing|budget|payment/i)) {
+                        return (
+                          <p key={index} className="font-semibold text-lg text-amber-800 mt-3 mb-1">
+                            {line}
+                          </p>
+                        );
+                      } 
+                      // Check for cost range mentions
+                      else if (line.match(/estimated cost range|price range|typical pricing|cost estimate|approximate cost|expected price/i)) {
+                        // Highlight any dollar amounts in the line
+                        const highlightedLine = line.replace(/(\$[\d,]+(?:\s*-\s*\$[\d,]+)?|\$[\d,]+(?:\.\d+)?)/g, 
+                          '<strong class="text-green-700">$1</strong>');
+                        
+                        return (
+                          <p key={index} className="font-semibold bg-amber-100 px-3 py-2 my-2 rounded-md border-l-4 border-amber-500"
+                             dangerouslySetInnerHTML={{ __html: highlightedLine }}>
+                          </p>
+                        );
+                      } 
+                      // Regular lines with dollar amounts get subtle highlighting
+                      else if (line.match(/\$[\d,]+/)) {
+                        const highlightedLine = line.replace(/(\$[\d,]+(?:\s*-\s*\$[\d,]+)?|\$[\d,]+(?:\.\d+)?)/g, 
+                          '<strong class="text-green-700">$1</strong>');
+                        
+                        return (
+                          <p key={index} dangerouslySetInnerHTML={{ __html: highlightedLine }}></p>
+                        );
+                      } 
+                      else {
+                        return <p key={index}>{line}</p>;
+                      }
+                    })}
+                  </div>
                 </div>
-              </div>
+                
+                {/* Personal info moved here between analysis and submit */}
+                <div className="mt-6 mb-4 border-t border-gray-200 pt-6">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <h3 className="font-semibold text-lg">Your Contact Information</h3>
+                    <div className="bg-amber-200 text-amber-800 px-3 py-1 rounded-full text-xs font-medium animate-pulse">
+                      Please complete to receive your quote
+                    </div>
+                  </div>
+                  
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem className="mb-4">
+                        <FormLabel>Your Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Full Name" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm font-medium mb-2 text-amber-600">Please provide at least one contact method below.</p>
+                      <p className="text-xs text-muted-foreground mb-4">We'll use this to follow up on your quote with pricing and availability.</p>
+                    </div>
+                    
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email Address</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="email" 
+                              placeholder="you@example.com" 
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                          {!field.value && (
+                            <p className="text-xs text-muted-foreground">
+                              Email is the fastest way to receive your detailed quote.
+                            </p>
+                          )}
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone Number</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="tel" 
+                              placeholder="(555) 123-4567" 
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                          {!field.value && (
+                            <p className="text-xs text-muted-foreground">
+                              Phone allows us to discuss your project details directly.
+                            </p>
+                          )}
+                        </FormItem>
+                      )}
+                    />
+                    
+                    {(form.formState.errors.email && form.formState.errors.phone) && (
+                      <p className="text-sm text-destructive font-medium">
+                        At least one contact method (email or phone) is required
+                      </p>
+                    )}
+                    {(!form.getValues("email") && !form.getValues("phone")) && (
+                      <p className="text-xs text-amber-600">
+                        We'll need at least one way to contact you about your quote
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </>
             )}
 
-            <div className="flex items-center gap-2">
-              <Button type="submit" className="w-auto" disabled={isSubmitting}>
+            <div className="flex flex-col items-start gap-3 mt-6">
+              {analysis && (
+                <p className="text-sm text-green-700 font-medium">✓ AI analysis complete - Ready for final quote</p>
+              )}
+              <Button 
+                type="submit" 
+                className="w-auto px-8 py-6 text-base bg-amber-600 hover:bg-amber-700"
+                size="lg"
+                disabled={isSubmitting}
+              >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Submitting...
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Sending Your Request...
                   </>
                 ) : (
-                  'Submit Quote Request'
+                  'Get Your Free Quote Now'
                 )}
               </Button>
-              <span className="text-sm text-gray-500">Get a detailed cost estimate and find local service providers</span>
+              <span className="text-sm text-gray-500">Receive your detailed cost estimate via your preferred contact method</span>
             </div>
           </form>
         </Form>
