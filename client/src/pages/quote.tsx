@@ -261,9 +261,14 @@ export default function Quote() {
                 )}
               />
               
-              {(form.formState.errors.contactMethod || (!form.getValues("email") && !form.getValues("phone"))) && (
+              {(form.formState.errors.email && form.formState.errors.phone) && (
                 <p className="text-sm text-destructive font-medium">
                   At least one contact method (email or phone) is required
+                </p>
+              )}
+              {(!form.getValues("email") && !form.getValues("phone")) && (
+                <p className="text-xs text-amber-600">
+                  We'll need at least one way to contact you about your quote
                 </p>
               )}
             </div>

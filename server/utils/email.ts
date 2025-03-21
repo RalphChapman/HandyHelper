@@ -42,16 +42,23 @@ const sendQuoteNotification = async (quoteRequest: any) => {
   }
 
   const serviceInfo = `Service Requested: ${quoteRequest.serviceName}`;
+  // Determine recipient list - don't include customer email if it's not provided
+  const recipientList = quoteRequest.email 
+    ? [quoteRequest.email, "chapman.ralph@gmail.com"] 
+    : ["chapman.ralph@gmail.com"];
+    
+  console.log("[EMAIL] Recipients:", recipientList);
+    
   const message = {
     from: '"HandyPro Service" <chapman.ralph@gmail.com>',
-    to: [quoteRequest.email, "chapman.ralph@gmail.com"].join(", "),
+    to: recipientList.join(", "),
     subject: "New Quote Request",
     text: `
 New quote request received:
 
 Name: ${quoteRequest.name}
-Email: ${quoteRequest.email}
-Phone: ${quoteRequest.phone}
+${quoteRequest.email ? `Email: ${quoteRequest.email}` : ''}
+${quoteRequest.phone ? `Phone: ${quoteRequest.phone}` : ''}
 ${serviceInfo}
 Address: ${quoteRequest.address}
 
@@ -79,8 +86,8 @@ HandyPro Service Team
         <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 24px;">
           <h3 style="color: #1e293b; margin-bottom: 16px;">Customer Information</h3>
           <p style="margin: 8px 0;"><strong>Name:</strong> ${quoteRequest.name}</p>
-          <p style="margin: 8px 0;"><strong>Email:</strong> ${quoteRequest.email}</p>
-          <p style="margin: 8px 0;"><strong>Phone:</strong> ${quoteRequest.phone}</p>
+          ${quoteRequest.email ? `<p style="margin: 8px 0;"><strong>Email:</strong> ${quoteRequest.email}</p>` : ''}
+          ${quoteRequest.phone ? `<p style="margin: 8px 0;"><strong>Phone:</strong> ${quoteRequest.phone}</p>` : ''}
           <p style="margin: 8px 0;"><strong>${serviceInfo}</strong></p>
           <p style="margin: 8px 0;"><strong>Address:</strong> ${quoteRequest.address}</p>
         </div>
