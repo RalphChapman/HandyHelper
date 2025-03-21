@@ -324,18 +324,42 @@ Professional handyman services in Charleston. Specializing in home repairs, impr
                   const encodedEnhancedText = encodeURIComponent(enhancedFacebookShareText);
                   
                   if (isClient && isMobile) {
-                    // Use FB app URL scheme with enhanced text for mobile
-                    const fbAppUrl = `fb://share?text=${encodedEnhancedText}&href=${encodeURIComponent(websiteUrl)}`;
-                    window.location.href = fbAppUrl;
-                    
-                    // Fallback to web if app URL fails (will happen after a timeout)
-                    setTimeout(() => {
-                      const fbWebUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(websiteUrl)}&quote=${encodedEnhancedText}`;
-                      window.open(fbWebUrl, '_blank');
-                    }, 500);
+                    // For mobile, we'll use the Web Share API if available since it provides the best
+                    // experience across different platforms
+                    if (navigator.share) {
+                      navigator.share({
+                        title: 'Professional Handyman Services',
+                        text: enhancedFacebookShareText,
+                        url: websiteUrl
+                      }).catch(() => {
+                        // If sharing fails, open the Facebook app or website
+                        tryFacebookShare();
+                      });
+                    } else {
+                      // If Web Share API is not available, try Facebook-specific methods
+                      tryFacebookShare();
+                    }
                   } else {
                     // Use standard web sharing for desktop
-                    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(websiteUrl)}&quote=${encodedShareText}`, '_blank');
+                    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(websiteUrl)}&quote=${encodedEnhancedText}`, '_blank');
+                  }
+                  
+                  // Helper function to attempt Facebook sharing in various ways
+                  function tryFacebookShare() {
+                    // First try Facebook's mobile app intent
+                    const fbAppIntent = `intent://facebook.com/#Intent;scheme=https;package=com.facebook.katana;end`;
+                    const fbAppUrl = `fb://composer?text=${encodedEnhancedText}`;
+                    
+                    // The FB app URL scheme is not reliable for sharing full text content
+                    // Try deep link to Facebook's composer
+                    window.location.href = fbAppUrl;
+                    
+                    // Fallback to web if app URL fails (will happen after a short timeout)
+                    setTimeout(() => {
+                      // Use Facebook's web sharing which has better text support
+                      const fbWebUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(websiteUrl)}&quote=${encodedEnhancedText}`;
+                      window.open(fbWebUrl, '_blank');
+                    }, 300);
                   }
                 }}
                 className="flex items-center gap-2"
@@ -363,18 +387,42 @@ Professional handyman services in Charleston.`
                   const encodedEnhancedText = encodeURIComponent(enhancedTwitterShareText);
                   
                   if (isClient && isMobile) {
-                    // Use Twitter app URL scheme with enhanced text for mobile
-                    const twitterAppUrl = `twitter://post?message=${encodedEnhancedText}`;
-                    window.location.href = twitterAppUrl;
+                    // For mobile, try Web Share API first for consistent experience
+                    if (navigator.share) {
+                      navigator.share({
+                        title: 'Professional Handyman Services',
+                        text: enhancedTwitterShareText,
+                        url: websiteUrl
+                      }).catch(() => {
+                        // If sharing fails, try Twitter-specific methods
+                        tryTwitterShare();
+                      });
+                    } else {
+                      // If Web Share API is not available, use Twitter-specific methods
+                      tryTwitterShare();
+                    }
+                  } else {
+                    // Use standard web sharing for desktop
+                    window.open(`https://twitter.com/intent/tweet?text=${encodedShareText}`, '_blank');
+                  }
+                  
+                  // Helper function to attempt Twitter sharing in various ways
+                  function tryTwitterShare() {
+                    // Different Twitter app URL schemes
+                    const twitterAppUrls = [
+                      `twitter://post?message=${encodedEnhancedText}`,
+                      `twitterrific:///post?text=${encodedEnhancedText}`,
+                      `tweetbot:///post?text=${encodedEnhancedText}`
+                    ];
+                    
+                    // Try the first Twitter app URL
+                    window.location.href = twitterAppUrls[0];
                     
                     // Fallback to web if app URL fails (will happen after a timeout)
                     setTimeout(() => {
                       const twitterWebUrl = `https://twitter.com/intent/tweet?text=${encodedEnhancedText}`;
                       window.open(twitterWebUrl, '_blank');
-                    }, 500);
-                  } else {
-                    // Use standard web sharing for desktop
-                    window.open(`https://twitter.com/intent/tweet?text=${encodedShareText}`, '_blank');
+                    }, 300);
                   }
                 }}
                 className="flex items-center gap-2"
@@ -404,18 +452,40 @@ Professional handyman services in Charleston. Specializing in home repairs, impr
                   const encodedEnhancedText = encodeURIComponent(enhancedLinkedInShareText);
                   
                   if (isClient && isMobile) {
-                    // Use LinkedIn app URL scheme with enhanced text for mobile
-                    const linkedinAppUrl = `linkedin://shareArticle?mini=true&url=${encodeURIComponent(websiteUrl)}&title=Professional%20Handyman%20Services&summary=${encodedEnhancedText}`;
+                    // For mobile, try Web Share API first for consistent experience
+                    if (navigator.share) {
+                      navigator.share({
+                        title: 'Professional Handyman Services',
+                        text: enhancedLinkedInShareText,
+                        url: websiteUrl
+                      }).catch(() => {
+                        // If sharing fails, try LinkedIn-specific methods
+                        tryLinkedInShare();
+                      });
+                    } else {
+                      // If Web Share API is not available, use LinkedIn-specific methods
+                      tryLinkedInShare();
+                    }
+                  } else {
+                    // Use standard web sharing for desktop
+                    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(websiteUrl)}&summary=${encodedShareText}`, '_blank');
+                  }
+                  
+                  // Helper function to attempt LinkedIn sharing in various ways
+                  function tryLinkedInShare() {
+                    // Create a short title and formatted message for LinkedIn
+                    const title = "Professional Handyman Services";
+                    
+                    // LinkedIn app URL scheme
+                    const linkedinAppUrl = `linkedin://shareArticle?mini=true&url=${encodeURIComponent(websiteUrl)}&title=${encodeURIComponent(title)}&summary=${encodedEnhancedText}`;
                     window.location.href = linkedinAppUrl;
                     
                     // Fallback to web if app URL fails (will happen after a timeout)
                     setTimeout(() => {
-                      const linkedinWebUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(websiteUrl)}&summary=${encodedEnhancedText}`;
+                      // LinkedIn web sharing has better text support
+                      const linkedinWebUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(websiteUrl)}&summary=${encodedEnhancedText}&title=${encodeURIComponent(title)}`;
                       window.open(linkedinWebUrl, '_blank');
-                    }, 500);
-                  } else {
-                    // Use standard web sharing for desktop
-                    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(websiteUrl)}&summary=${encodedShareText}`, '_blank');
+                    }, 300);
                   }
                 }}
                 className="flex items-center gap-2"
