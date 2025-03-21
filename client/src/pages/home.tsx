@@ -61,45 +61,46 @@ export default function Home() {
             Quality repairs and maintenance for your home or business, done
             right the first time.
           </p>
-          <Link href="/services">
-            <Button size="lg" className="text-lg px-8">
-              View Our Services
-            </Button>
-          </Link>
-        </div>
-      </section>
-
-      {/* Schedule a Service section */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-8">
-            Schedule a Service
-          </h2>
-          <div className="max-w-lg mx-auto text-center">
-            <p className="text-gray-600 mb-6">
-              Ready to get started? Book now for immediate scheduling or find out how much your project will cost by requesting a quote.
+          
+          {/* Quote Request CTA - Prominent First Option */}
+          <div className="max-w-xl mx-auto mb-12 bg-amber-50 p-6 rounded-xl border-2 border-amber-200 shadow-md">
+            <h2 className="text-2xl font-bold text-amber-800 mb-4">
+              Get a Free Project Quote
+            </h2>
+            <p className="text-gray-700 mb-6">
+              Find out how much your project will cost with our AI-powered estimator. 
+              Detailed breakdown of materials, labor, and timeline - no obligation!
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/book">
-                <Button size="lg" className="w-full sm:w-auto">
-                  Book Now
-                </Button>
-              </Link>
-              <div className="flex flex-col items-center">
-                <Link href="/quote">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="w-full sm:w-auto mb-2"
-                  >
-                    Request Quote
-                  </Button>
-                </Link>
-                <p className="text-sm text-gray-500">
-                  Find out how much it costs by requesting a quote
-                </p>
-              </div>
-            </div>
+            <Link href="/quote">
+              <Button 
+                size="lg" 
+                className="text-lg px-10 py-6 bg-amber-600 hover:bg-amber-700 text-white w-full sm:w-auto"
+              >
+                Request Your Free Quote
+              </Button>
+            </Link>
+          </div>
+
+          {/* Secondary Options */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/services">
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="text-lg border-gray-300"
+              >
+                View Services
+              </Button>
+            </Link>
+            <Link href="/book">
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="text-lg border-gray-300"
+              >
+                Schedule Appointment
+              </Button>
+            </Link>
           </div>
         </div>
       </section>

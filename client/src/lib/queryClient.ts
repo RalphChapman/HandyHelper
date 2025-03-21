@@ -1,4 +1,4 @@
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 export async function apiRequest(
   method: string,
@@ -18,7 +18,7 @@ export async function apiRequest(
 }
 
 // Default fetch function for query keys that are just URLs
-export async function defaultQueryFn({ queryKey }: { queryKey: unknown[] }): Promise<unknown> {
+export const defaultQueryFn: QueryFunction = async ({ queryKey }) => {
   const url = queryKey[0] as string;
   if (typeof url !== 'string') {
     throw new Error(`Invalid query key: ${String(queryKey[0])}`);
@@ -30,7 +30,7 @@ export async function defaultQueryFn({ queryKey }: { queryKey: unknown[] }): Pro
   }
   
   return response.json();
-}
+};
 
 export const queryClient = new QueryClient({
   defaultOptions: {
