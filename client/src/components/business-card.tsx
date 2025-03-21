@@ -307,13 +307,34 @@ END:VCARD`;
                 variant="outline"
                 size="sm"
                 onClick={() => {
+                  // Prepare enhanced share text for Facebook that includes complete contact information
+                  const enhancedFacebookShareText = isClient && isMobile 
+                    ? `${contactInfo.name}
+${contactInfo.jobTitle} at ${contactInfo.company}
+📞 ${contactInfo.phone}
+✉️ ${contactInfo.email}
+🔗 ${websiteUrl}
+💼 ${contactInfo.linkedin}
+
+Professional handyman services in Charleston. Quality work, fair prices, and reliable service.`
+                    : shareText;
+
+                  // Encode the enhanced text for sharing
+                  const encodedEnhancedText = encodeURIComponent(enhancedFacebookShareText);
+                  
                   if (isClient && isMobile) {
-                    // Try to open native app first, fallback to web
-                    window.location.href = shareUrls.facebook;
+                    // Use FB app URL scheme with enhanced text for mobile
+                    const fbAppUrl = `fb://share?text=${encodedEnhancedText}&href=${encodeURIComponent(websiteUrl)}`;
+                    window.location.href = fbAppUrl;
+                    
                     // Fallback to web if app URL fails (will happen after a timeout)
-                    setTimeout(() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(websiteUrl)}&quote=${encodedShareText}`, '_blank'), 500);
+                    setTimeout(() => {
+                      const fbWebUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(websiteUrl)}&quote=${encodedEnhancedText}`;
+                      window.open(fbWebUrl, '_blank');
+                    }, 500);
                   } else {
-                    window.open(shareUrls.facebook, '_blank');
+                    // Use standard web sharing for desktop
+                    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(websiteUrl)}&quote=${encodedShareText}`, '_blank');
                   }
                 }}
                 className="flex items-center gap-2"
@@ -327,13 +348,32 @@ END:VCARD`;
                 variant="outline"
                 size="sm"
                 onClick={() => {
+                  // Prepare enhanced share text for Twitter that includes formatted contact information
+                  // Note: Twitter has a 280 character limit, so we need to keep it concise
+                  const enhancedTwitterShareText = isClient && isMobile 
+                    ? `${contactInfo.name}, ${contactInfo.jobTitle}
+📞 ${contactInfo.phone} 
+✉️ ${contactInfo.email}
+🔗 ${websiteUrl}
+Professional handyman services in Charleston.`
+                    : shareText;
+
+                  // Encode the enhanced text for sharing
+                  const encodedEnhancedText = encodeURIComponent(enhancedTwitterShareText);
+                  
                   if (isClient && isMobile) {
-                    // Try to open native app first, fallback to web
-                    window.location.href = shareUrls.twitter;
-                    // Fallback to web if app URL fails
-                    setTimeout(() => window.open(`https://twitter.com/intent/tweet?text=${encodedShareText}`, '_blank'), 500);
+                    // Use Twitter app URL scheme with enhanced text for mobile
+                    const twitterAppUrl = `twitter://post?message=${encodedEnhancedText}`;
+                    window.location.href = twitterAppUrl;
+                    
+                    // Fallback to web if app URL fails (will happen after a timeout)
+                    setTimeout(() => {
+                      const twitterWebUrl = `https://twitter.com/intent/tweet?text=${encodedEnhancedText}`;
+                      window.open(twitterWebUrl, '_blank');
+                    }, 500);
                   } else {
-                    window.open(shareUrls.twitter, '_blank');
+                    // Use standard web sharing for desktop
+                    window.open(`https://twitter.com/intent/tweet?text=${encodedShareText}`, '_blank');
                   }
                 }}
                 className="flex items-center gap-2"
@@ -347,13 +387,34 @@ END:VCARD`;
                 variant="outline"
                 size="sm"
                 onClick={() => {
+                  // Prepare enhanced share text for LinkedIn that includes professional contact details
+                  const enhancedLinkedInShareText = isClient && isMobile 
+                    ? `${contactInfo.name} | ${contactInfo.jobTitle} at ${contactInfo.company}
+
+Contact Information:
+📞 ${contactInfo.phone} 
+✉️ ${contactInfo.email}
+🔗 ${websiteUrl}
+
+Professional handyman services in Charleston. Specializing in home repairs, improvements, and maintenance with 20+ years of experience. Quality craftsmanship and reliable service guaranteed.`
+                    : shareText;
+
+                  // Encode the enhanced text for sharing
+                  const encodedEnhancedText = encodeURIComponent(enhancedLinkedInShareText);
+                  
                   if (isClient && isMobile) {
-                    // Try to open native app first, fallback to web
-                    window.location.href = shareUrls.linkedin;
-                    // Fallback to web if app URL fails
-                    setTimeout(() => window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(websiteUrl)}&summary=${encodedShareText}`, '_blank'), 500);
+                    // Use LinkedIn app URL scheme with enhanced text for mobile
+                    const linkedinAppUrl = `linkedin://shareArticle?mini=true&url=${encodeURIComponent(websiteUrl)}&title=Professional%20Handyman%20Services&summary=${encodedEnhancedText}`;
+                    window.location.href = linkedinAppUrl;
+                    
+                    // Fallback to web if app URL fails (will happen after a timeout)
+                    setTimeout(() => {
+                      const linkedinWebUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(websiteUrl)}&summary=${encodedEnhancedText}`;
+                      window.open(linkedinWebUrl, '_blank');
+                    }, 500);
                   } else {
-                    window.open(shareUrls.linkedin, '_blank');
+                    // Use standard web sharing for desktop
+                    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(websiteUrl)}&summary=${encodedShareText}`, '_blank');
                   }
                 }}
                 className="flex items-center gap-2"
