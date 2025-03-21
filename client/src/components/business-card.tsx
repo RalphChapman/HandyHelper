@@ -1,5 +1,5 @@
 import { QRCodeSVG } from "qrcode.react";
-import { LinkedinIcon, Mail, Phone, Globe, Share2, Twitter, MessageSquare } from "lucide-react";
+import { LinkedinIcon, Mail, Phone, Globe, Share2, Twitter, MessageSquare, UserPlus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -23,7 +23,9 @@ export function BusinessCard() {
     phone: "(864) 361-3730",
     phoneClean: "8643613730", // Clean version without special characters
     email: "chapman.ralph@gmail.com",
-    linkedin: "linkedin.com/in/ralph-chapman"
+    linkedin: "linkedin.com/in/ralph-chapman",
+    company: "HandyPro Services",
+    jobTitle: "Professional Handyman"
   };
 
   // Generate sharing text
@@ -85,6 +87,98 @@ export function BusinessCard() {
   const getEmailLink = () => {
     // Use mailto: protocol which opens the native email app on mobile
     return `mailto:${contactInfo.email}`;
+  };
+
+  // Share contact information as a contact card (vCard)
+  const shareContact = async () => {
+    // Create vCard format string
+    const vCard = `BEGIN:VCARD
+VERSION:3.0
+FN:${contactInfo.name}
+ORG:${contactInfo.company}
+TITLE:${contactInfo.jobTitle}
+TEL;TYPE=WORK,VOICE:${contactInfo.phone}
+EMAIL;TYPE=WORK:${contactInfo.email}
+URL:${websiteUrl}
+NOTE:Professional handyman services in Charleston.
+END:VCARD`;
+
+    // Check if Web Share API is available
+    if (isClient && navigator.share) {
+      try {
+        // First try to share just the contact info as text (widely supported)
+        await navigator.share({
+          title: 'Ralph Chapman Contact',
+          text: `${contactInfo.name}\n${contactInfo.jobTitle}, ${contactInfo.company}\nPhone: ${contactInfo.phone}\nEmail: ${contactInfo.email}\nWebsite: ${websiteUrl}`,
+        });
+        
+        toast({
+          title: "Sharing contact",
+          description: "Contact information is being shared.",
+        });
+        return;
+      } catch (err) {
+        // If basic sharing fails, try file sharing if browser might support it
+        try {
+          // Check if we can share files (not all browsers support this)
+          // @ts-ignore - Some browsers don't have canShare
+          if (navigator.canShare && navigator.canShare({ files: [new File(['test'], 'test.txt')] })) {
+            const contactFile = new File([vCard], 'ralph-chapman.vcf', { type: 'text/vcard' });
+            
+            await navigator.share({
+              title: 'Ralph Chapman Contact',
+              text: 'Contact information for Ralph Chapman',
+              files: [contactFile],
+            });
+            
+            toast({
+              title: "Sharing contact",
+              description: "The contact card is being shared.",
+            });
+            return;
+          }
+        } catch (fileErr) {
+          // Fallback to vCard download if file sharing failed
+          downloadVCard(vCard);
+        }
+      }
+    } else {
+      // Fallback for browsers without Web Share API
+      downloadVCard(vCard);
+    }
+  };
+
+  // Download vCard helper function
+  const downloadVCard = (vCardData: string) => {
+    try {
+      // Create a Blob with the vCard data
+      const blob = new Blob([vCardData], { type: 'text/vcard' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create a temporary link and trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'ralph-chapman.vcf';
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+      
+      toast({
+        title: "Contact download started",
+        description: "The contact card file is being downloaded.",
+      });
+    } catch (err) {
+      toast({
+        title: "Failed to download contact",
+        description: "Please try another sharing option.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -194,6 +288,17 @@ export function BusinessCard() {
                   Email
                 </Button>
               </div>
+            )}
+
+            {/* Add to contacts button (mobile only) */}
+            {isClient && isMobile && (
+              <Button
+                onClick={shareContact}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 mt-2"
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                Add to Contacts
+              </Button>
             )}
 
             {/* Share buttons */}
