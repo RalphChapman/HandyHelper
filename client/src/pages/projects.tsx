@@ -17,6 +17,7 @@ import { format } from "date-fns";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/hooks/use-auth";
+// Imports kept for future restoration of functionality
 import { ReviewForm } from "@/components/review-form";
 import { ReviewsSection } from "@/components/reviews-section";
 
@@ -830,6 +831,7 @@ export default function Projects() {
             </div>
           </div>
 
+          {/* Customer Reviews section hidden as requested, but code kept intact
           <div>
             <h2 className="text-2xl font-semibold mb-6">Customer Reviews</h2>
             {user ? (
@@ -846,6 +848,7 @@ export default function Projects() {
             )}
             <ReviewsSection serviceId={serviceId} />
           </div>
+          */}
         </div>
       </div>
     </div>
