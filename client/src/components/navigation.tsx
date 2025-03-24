@@ -51,7 +51,7 @@ export function Navigation() {
                 {link.label}
               </Link>
             ))}
-            {user ? (
+            {user && (
               <Button
                 variant="ghost"
                 onClick={() => logoutMutation.mutate()}
@@ -59,13 +59,6 @@ export function Navigation() {
               >
                 Logout
               </Button>
-            ) : (
-              <Link
-                href="/auth"
-                className="px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-primary"
-              >
-                Login
-              </Link>
             )}
           </div>
 
@@ -107,7 +100,7 @@ export function Navigation() {
                   {link.label}
                 </Link>
               ))}
-              {user ? (
+              {user && (
                 <Button
                   variant="ghost"
                   onClick={() => {
@@ -118,14 +111,6 @@ export function Navigation() {
                 >
                   Logout
                 </Button>
-              ) : (
-                <Link
-                  href="/auth"
-                  onClick={() => setIsOpen(false)}
-                  className="px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-primary"
-                >
-                  Login
-                </Link>
               )}
             </div>
           </div>
