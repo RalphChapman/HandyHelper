@@ -73,8 +73,9 @@ export default function Dashboard() {
         <Tabs defaultValue="invoices" className="space-y-6">
           <TabsList>
             <TabsTrigger value="invoices">Invoices</TabsTrigger>
-            <TabsTrigger value="bookings">My Bookings</TabsTrigger>
-            <TabsTrigger value="quotes">Quote Requests</TabsTrigger>
+            {/* Bookings and Quotes tabs hidden as requested */}
+            {/* <TabsTrigger value="bookings">My Bookings</TabsTrigger> */}
+            {/* <TabsTrigger value="quotes">Quote Requests</TabsTrigger> */}
             {isAdmin && (
               <TabsTrigger value="testimonials">Testimonials</TabsTrigger>
             )}
@@ -117,6 +118,8 @@ export default function Dashboard() {
             </div>
           </TabsContent>
 
+          {/* Bookings TabContent hidden as requested but kept intact for future restoration */}
+          {/* 
           <TabsContent value="bookings">
             <div className="grid gap-6">
               {!bookings?.length ? (
@@ -150,7 +153,10 @@ export default function Dashboard() {
               )}
             </div>
           </TabsContent>
+          */}
 
+          {/* Quotes TabContent hidden as requested but kept intact for future restoration */}
+          {/*
           <TabsContent value="quotes">
             <div className="grid gap-6">
               {!quotes?.length ? (
@@ -199,6 +205,7 @@ export default function Dashboard() {
               )}
             </div>
           </TabsContent>
+          */}
 
           {isAdmin && (
             <TabsContent value="testimonials">
