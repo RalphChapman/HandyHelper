@@ -232,7 +232,8 @@ try {
           
           // Safety check - only allow GET requests
           if (req.method !== 'GET') {
-            return res.status(405).send('Method not allowed');
+            console.log('[Server] Non-GET request to uploads, forwarding to next middleware');
+            return next();
           }
           
           // Normalize the path to prevent path traversal
@@ -241,13 +242,32 @@ try {
             return res.status(400).send('Invalid file name');
           }
           
-          // Full path to the requested file
-          const filePath = path.resolve(productionUploadsDir, fileName);
-          console.log(`[Server] Looking for file: ${filePath}`);
+          // Try multiple possible locations for the file
+          const possiblePaths = [
+            path.resolve(productionUploadsDir, fileName),
+            path.resolve(process.cwd(), 'uploads', fileName),
+            // Check for file in current uploads directory
+            path.resolve('./uploads', fileName)
+          ];
           
-          // Check if file exists
-          if (!fs.existsSync(filePath)) {
-            console.error(`[Server] PRODUCTION: File not found: ${filePath}`);
+          // Log our search paths
+          console.log(`[Server] Searching for file in multiple locations:`, possiblePaths);
+          
+          // Find the first path that exists
+          let filePath = null;
+          for (const candidatePath of possiblePaths) {
+            if (fs.existsSync(candidatePath)) {
+              filePath = candidatePath;
+              console.log(`[Server] Found file at: ${filePath}`);
+              break;
+            } else {
+              console.log(`[Server] File not found at: ${candidatePath}`);
+            }
+          }
+          
+          // Exit if file not found in any location
+          if (!filePath) {
+            console.error(`[Server] PRODUCTION: File not found in any possible location: ${fileName}`);
             return res.status(404).send('File not found');
           }
           

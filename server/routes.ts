@@ -542,49 +542,109 @@ export async function registerRoutes(app: Express) {
         path: file.path
       });
       
-      // Verify the file exists on disk
-      const fullPath = path.resolve(process.cwd(), 'uploads', file.filename);
-      const fileExists = fs.existsSync(fullPath);
-      let fileSize = 0;
-      
-      if (fileExists) {
-        try {
-          const fileStats = fs.statSync(fullPath);
-          fileSize = fileStats.size;
-          console.log("[API] File verification successful:", {
-            path: fullPath,
-            stats: {
-              size: fileStats.size,
-              mode: fileStats.mode.toString(8),
-              created: fileStats.birthtime.toISOString()
-            }
+      // Check Multer's file path directly
+      const fileExistsAtMulterPath = fs.existsSync(file.path);
+      let fileStatsMulter = null;
+      try {
+        if (fileExistsAtMulterPath) {
+          fileStatsMulter = fs.statSync(file.path);
+          console.log("[API] File exists at Multer path:", {
+            path: file.path,
+            size: fileStatsMulter.size,
+            mode: fileStatsMulter.mode.toString(8)
           });
-        } catch (statError) {
-          console.error("[API] Error checking file stats:", statError);
+        } else {
+          console.error("[API] File NOT found at Multer path:", file.path);
         }
-      } else {
-        console.error("[API] CRITICAL: File missing from disk after upload:", fullPath);
+      } catch (err) {
+        console.error("[API] Error checking Multer path:", err);
       }
+      
+      // Try multiple possible paths to verify where the file might be
+      const possiblePaths = [
+        file.path, // Multer's recorded path
+        path.resolve(process.cwd(), 'uploads', file.filename),
+        path.resolve('./uploads', file.filename),
+        // Add any other potential paths here
+      ];
+      
+      console.log("[API] Checking for file in multiple locations:", possiblePaths);
+      
+      // Check each path and record results
+      const pathResults = [];
+      let foundPath = null;
+      let foundSize = 0;
+      
+      for (const pathToCheck of possiblePaths) {
+        try {
+          const exists = fs.existsSync(pathToCheck);
+          const result = {
+            path: pathToCheck,
+            exists: exists,
+            stats: null
+          };
+          
+          if (exists) {
+            const stats = fs.statSync(pathToCheck);
+            result.stats = {
+              size: stats.size,
+              mode: stats.mode.toString(8),
+              created: stats.birthtime.toISOString()
+            };
+            
+            // If we don't have a found path yet, record this one
+            if (!foundPath) {
+              foundPath = pathToCheck;
+              foundSize = stats.size;
+            }
+          }
+          
+          pathResults.push(result);
+        } catch (statError) {
+          pathResults.push({
+            path: pathToCheck,
+            exists: false,
+            error: statError.message
+          });
+        }
+      }
+      
+      console.log("[API] Path verification results:", pathResults);
       
       // Create a URL for the file
       const fileUrl = `/uploads/${file.filename}`;
       
+      // List all files in uploads directory for diagnostics
+      let currentFiles = [];
+      try {
+        const uploadsDir = path.resolve(process.cwd(), 'uploads');
+        if (fs.existsSync(uploadsDir)) {
+          currentFiles = fs.readdirSync(uploadsDir);
+          console.log("[API] Current files in uploads directory:", currentFiles);
+        } else {
+          console.error("[API] Uploads directory does not exist!");
+        }
+      } catch (dirError) {
+        console.error("[API] Error listing uploads directory:", dirError);
+      }
+      
       // Return detailed response to help debug
       res.json({
-        success: fileExists && fileSize > 0,
+        success: foundPath !== null && foundSize > 0,
         environment: process.env.NODE_ENV || 'development',
         file: {
           originalName: file.originalname,
           savedAs: file.filename,
           mimetype: file.mimetype,
           size: file.size,
-          url: fileUrl
+          url: fileUrl,
+          multerPath: file.path
         },
         verification: {
-          exists: fileExists,
-          path: fullPath,
-          size: fileSize,
-          directory: path.dirname(fullPath)
+          foundAt: foundPath,
+          pathChecks: pathResults,
+          fileList: currentFiles,
+          directory: path.resolve(process.cwd(), 'uploads')
         },
         server: {
           cwd: process.cwd(),
