@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -38,19 +38,52 @@ export default function Book() {
       notes: "",
     },
   });
+  
+  // Get the currently selected date from the form
+  const selectedDate = new Date(form.watch("appointmentDate"));
 
-  // Generate available time slots for the selected date
-  const getTimeSlots = (selectedDate: Date) => {
+  // Fetch available time slots from the server
+  const { data: availableTimeSlots = [], isLoading: timeSlotsLoading, refetch: refetchTimeSlots } = useQuery<Date[]>({
+    queryKey: ["/api/calendar/available-slots", selectedDate.toISOString().split('T')[0]],
+    queryFn: async () => {
+      const dateString = selectedDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+      const response = await fetch(`/api/calendar/available-slots?date=${dateString}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch available time slots');
+      }
+      return response.json();
+    },
+    enabled: true,
+  });
+
+  // Generate formatted time slots from the available slots
+  const getTimeSlots = (slots: Date[], date: Date) => {
     const today = new Date();
-    const isToday = selectedDate.toDateString() === today.toDateString();
-
-    return BUSINESS_HOURS.map(hour => {
-      const timeSlot = new Date(selectedDate);
-      timeSlot.setHours(hour, 0, 0, 0);
-
+    const isToday = date.toDateString() === today.toDateString();
+    
+    // If no slots are available from the API, fall back to business hours
+    if (!slots || slots.length === 0) {
+      return BUSINESS_HOURS.map(hour => {
+        const timeSlot = new Date(date);
+        timeSlot.setHours(hour, 0, 0, 0);
+        
+        // If it's today, disable past time slots
+        const isPast = isToday && timeSlot < today;
+        
+        return {
+          time: timeSlot,
+          label: format(timeSlot, "h:mm a"),
+          disabled: isPast
+        };
+      });
+    }
+    
+    // Format the available slots from the API
+    return slots.map(slot => {
+      const timeSlot = new Date(slot);
       // If it's today, disable past time slots
       const isPast = isToday && timeSlot < today;
-
+      
       return {
         time: timeSlot,
         label: format(timeSlot, "h:mm a"),
@@ -59,8 +92,14 @@ export default function Book() {
     });
   };
 
-  const selectedDate = new Date(form.watch("appointmentDate"));
-  const timeSlots = getTimeSlots(selectedDate);
+  const timeSlots = getTimeSlots(availableTimeSlots, selectedDate);
+  
+  // When the selected date changes, refetch the available slots
+  useEffect(() => {
+    if (selectedDate) {
+      refetchTimeSlots();
+    }
+  }, [selectedDate, refetchTimeSlots]);
 
   async function onSubmit(formData: any) {
     setIsSubmitting(true);
@@ -165,23 +204,36 @@ export default function Book() {
                     </FormControl>
 
                     {/* Time Slots */}
-                    <div className="grid grid-cols-3 gap-2">
-                      {timeSlots.map(({ time, label, disabled }) => (
-                        <Button
-                          key={label}
-                          type="button"
-                          variant={time.getTime() === new Date(field.value).getTime() ? "default" : "outline"}
-                          className="w-full"
-                          disabled={disabled}
-                          onClick={() => {
-                            const newDate = new Date(selectedDate);
-                            newDate.setHours(time.getHours(), 0, 0, 0);
-                            field.onChange(newDate.toISOString());
-                          }}
-                        >
-                          {label}
-                        </Button>
-                      ))}
+                    <div className="space-y-4">
+                      {timeSlotsLoading ? (
+                        <div className="text-center p-6">
+                          <Loader2 className="animate-spin h-8 w-8 mx-auto mb-2 text-primary" />
+                          <p className="text-muted-foreground">Checking calendar availability...</p>
+                        </div>
+                      ) : timeSlots.length === 0 ? (
+                        <div className="text-center p-6 border rounded-md bg-muted/20">
+                          <p className="text-muted-foreground">No available time slots for this date. Please select another date.</p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2">
+                          {timeSlots.map(({ time, label, disabled }) => (
+                            <Button
+                              key={label}
+                              type="button"
+                              variant={time.getTime() === new Date(field.value).getTime() ? "default" : "outline"}
+                              className="w-full"
+                              disabled={disabled}
+                              onClick={() => {
+                                const newDate = new Date(selectedDate);
+                                newDate.setHours(time.getHours(), 0, 0, 0);
+                                field.onChange(newDate.toISOString());
+                              }}
+                            >
+                              {label}
+                            </Button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <FormMessage />

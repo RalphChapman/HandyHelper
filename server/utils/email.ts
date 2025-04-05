@@ -202,10 +202,22 @@ HandyPro Service Team
 };
 
 const sendBookingConfirmation = async (booking: any) => {
+  // Check if we have a calendar event
+  const hasCalendarEvent = booking.calendarEvent && booking.calendarEvent.htmlLink;
+  const appointmentDate = new Date(booking.appointmentDate);
+  const formattedDate = appointmentDate.toLocaleString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+
   const message = {
     from: '"HandyPro Service" <chapman.ralph@gmail.com>',
     to: [booking.clientEmail, "chapman.ralph@gmail.com"].join(", "),
-    subject: "Booking Confirmation",
+    subject: "Booking Confirmation - HandyPro Service",
     text: `
 Thank you for your booking!
 
@@ -213,8 +225,9 @@ Booking Details:
 Name: ${booking.clientName}
 Email: ${booking.clientEmail}
 Phone: ${booking.clientPhone}
-Appointment Date: ${new Date(booking.appointmentDate).toLocaleString()}
+Appointment Date: ${formattedDate}
 ${booking.notes ? `\nAdditional Notes: ${booking.notes}` : ''}
+${hasCalendarEvent ? `\nThis appointment has been added to our calendar. You should receive a calendar invitation shortly.` : ''}
 
 We will review your booking and confirm the appointment shortly.
 
@@ -230,13 +243,21 @@ HandyPro Service Team
           <p style="margin: 8px 0;"><strong>Name:</strong> ${booking.clientName}</p>
           <p style="margin: 8px 0;"><strong>Email:</strong> ${booking.clientEmail}</p>
           <p style="margin: 8px 0;"><strong>Phone:</strong> ${booking.clientPhone}</p>
-          <p style="margin: 8px 0;"><strong>Appointment Date:</strong> ${new Date(booking.appointmentDate).toLocaleString()}</p>
+          <p style="margin: 8px 0;"><strong>Appointment Date:</strong> ${formattedDate}</p>
           ${booking.notes ? `<p style="margin: 8px 0;"><strong>Additional Notes:</strong> ${booking.notes}</p>` : ''}
         </div>
 
-        <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px;">
+        ${hasCalendarEvent ? `
+        <div style="background-color: #ecfdf5; padding: 20px; border-radius: 8px; margin-bottom: 24px; border-left: 4px solid #10b981;">
+          <h3 style="color: #047857; margin-top: 0; margin-bottom: 16px;">📅 Calendar Appointment Created</h3>
+          <p style="margin: 0 0 16px 0;">This appointment has been added to our calendar. You should receive a calendar invitation in your email shortly.</p>
+          <a href="${booking.calendarEvent.htmlLink}" style="display: inline-block; background-color: #10b981; color: white; padding: 10px 16px; border-radius: 4px; text-decoration: none; font-weight: bold;">View in Google Calendar</a>
+        </div>
+        ` : `
+        <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin-bottom: 24px;">
           <p style="margin: 0;">We will review your booking and confirm the appointment shortly. If you need to make any changes or have questions, please contact us.</p>
         </div>
+        `}
 
         <!-- Digital Business Card Section -->
         <div style="margin-top: 24px; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: white;">

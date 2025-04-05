@@ -10,6 +10,7 @@ import { insertQuoteRequestSchema, insertBookingSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { sendQuoteNotification, sendBookingConfirmation } from "./utils/email";
 import { analyzeProjectDescription, estimateProjectCost } from "./utils/grok";
+import { createCalendarEvent, getAvailableTimeSlots } from "./utils/calendar";
 
 // Initialize multer with our upload directory
 // Create explicit upload directory path using cwd
@@ -352,6 +353,40 @@ export async function registerRoutes(app: Express) {
   });
 
   // Booking routes
+  // Get available time slots
+  app.get("/api/available-slots", async (req, res) => {
+    try {
+      const dateParam = req.query.date as string;
+      if (!dateParam) {
+        return res.status(400).json({ message: "Date parameter is required" });
+      }
+      
+      console.log(`[API] Fetching available slots for date: ${dateParam}`);
+      const date = new Date(dateParam);
+      
+      // Get available time slots from Google Calendar
+      const availableSlots = await getAvailableTimeSlots(date);
+      
+      // Format slots for client
+      const formattedSlots = availableSlots.map(slot => ({
+        time: slot.toISOString(),
+        hour: slot.getHours(),
+        minute: slot.getMinutes(),
+        formatted: slot.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+      }));
+      
+      console.log(`[API] Found ${formattedSlots.length} available slots`);
+      res.json(formattedSlots);
+    } catch (error) {
+      console.error("[API] Error fetching available slots:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch available time slots", 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
+  // Create booking
   app.post("/api/bookings", async (req, res) => {
     try {
       console.log("[API] Creating new booking with raw data:", req.body);
@@ -359,17 +394,36 @@ export async function registerRoutes(app: Express) {
       const newBooking = await storage.createBooking(booking);
       console.log(`[API] Successfully created booking #${newBooking.id}`);
       
+      // Create Google Calendar event
+      let calendarEvent = null;
+      try {
+        console.log("[API] Creating Google Calendar event for booking");
+        calendarEvent = await createCalendarEvent(newBooking);
+        console.log("[API] Calendar event created:", calendarEvent ? "Success" : "Skipped");
+      } catch (calendarError) {
+        console.error("[API] Failed to create calendar event:", calendarError);
+        // Don't fail the booking if calendar creation fails
+      }
+      
       // Send booking confirmation email
       try {
         console.log("[API] Sending booking confirmation email");
-        await sendBookingConfirmation(newBooking);
+        const emailData = {
+          ...newBooking,
+          calendarEvent: calendarEvent || undefined
+        };
+        await sendBookingConfirmation(emailData);
         console.log("[API] Booking confirmation email sent successfully");
       } catch (emailError) {
         // Don't fail the API call if email sending fails
         console.error("[API] Failed to send booking confirmation email:", emailError);
       }
       
-      res.status(201).json(newBooking);
+      // Return the booking with calendar info
+      res.status(201).json({
+        ...newBooking,
+        calendarEventCreated: !!calendarEvent
+      });
     } catch (error) {
       if (error instanceof ZodError) {
           console.error("[API] Invalid booking data:", error.errors);
@@ -721,6 +775,44 @@ export async function registerRoutes(app: Express) {
     } catch (error) {
       console.error("[API] Error analyzing project:", error);
       res.status(500).json({ message: "Failed to analyze project", error: error instanceof Error ? error.message : String(error) });
+    }
+  });
+  
+  // Calendar available slots endpoint
+  app.get("/api/calendar/available-slots", async (req, res) => {
+    try {
+      console.log("[API] Fetching available calendar slots");
+      
+      // Get date from query parameter
+      const dateString = req.query.date as string;
+      if (!dateString) {
+        return res.status(400).json({ message: "Date parameter is required" });
+      }
+      
+      // Parse the date
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return res.status(400).json({ message: "Invalid date format" });
+      }
+      
+      // Get available time slots from calendar
+      console.log("[API] Checking calendar availability for date:", dateString);
+      const timeSlots = await getAvailableTimeSlots(date);
+      
+      console.log("[API] Successfully fetched available slots:", timeSlots.length);
+      res.json(timeSlots);
+    } catch (error) {
+      console.error("[API] Error fetching available calendar slots:", error);
+      // Even if calendar fails, return a default set of business hours
+      const fallbackDate = new Date(req.query.date as string);
+      const fallbackSlots = Array.from({ length: 9 }, (_, i) => {
+        const date = new Date(fallbackDate);
+        date.setHours(i + 9, 0, 0, 0); // 9 AM to 5 PM
+        return date;
+      });
+      
+      console.log("[API] Returning fallback time slots due to error");
+      res.json(fallbackSlots);
     }
   });
 }
