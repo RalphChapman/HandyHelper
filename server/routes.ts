@@ -797,12 +797,34 @@ export async function registerRoutes(app: Express) {
       
       // Get available time slots from calendar
       console.log("[API] Checking calendar availability for date:", dateString);
-      const timeSlots = await getAvailableTimeSlots(date);
       
-      console.log("[API] Successfully fetched available slots:", timeSlots.length);
-      res.json(timeSlots);
+      try {
+        const timeSlots = await getAvailableTimeSlots(date);
+        console.log("[API] Successfully fetched available slots:", timeSlots.length);
+        
+        // Include extra metadata in development mode
+        if (process.env.NODE_ENV !== 'production') {
+          return res.json({
+            slots: timeSlots,
+            metadata: {
+              calendarConfigured: true,
+              requestedDate: dateString,
+              timestamp: new Date().toISOString()
+            }
+          });
+        }
+        
+        // In production, just return the slots
+        return res.json(timeSlots);
+      } catch (calendarError) {
+        console.error("[API] Calendar API specific error:", calendarError);
+        
+        // For calendar-specific errors, still fall through to the fallback
+        throw calendarError;
+      }
     } catch (error) {
       console.error("[API] Error fetching available calendar slots:", error);
+      
       // Even if calendar fails, return a default set of business hours
       const fallbackDate = new Date(req.query.date as string);
       const fallbackSlots = Array.from({ length: 9 }, (_, i) => {
@@ -812,6 +834,22 @@ export async function registerRoutes(app: Express) {
       });
       
       console.log("[API] Returning fallback time slots due to error");
+      
+      // In development mode, include error info
+      if (process.env.NODE_ENV !== 'production') {
+        return res.json({
+          slots: fallbackSlots,
+          metadata: {
+            calendarConfigured: false,
+            usingFallback: true,
+            errorMessage: error instanceof Error ? error.message : 'Unknown error',
+            requestedDate: req.query.date as string,
+            timestamp: new Date().toISOString()
+          }
+        });
+      }
+      
+      // In production, just return the slots
       res.json(fallbackSlots);
     }
   });

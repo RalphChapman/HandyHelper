@@ -43,7 +43,7 @@ export default function Book() {
   const selectedDate = new Date(form.watch("appointmentDate"));
 
   // Fetch available time slots from the server
-  const { data: availableTimeSlots = [], isLoading: timeSlotsLoading, refetch: refetchTimeSlots } = useQuery<Date[]>({
+  const { data: availableTimeSlotsResponse = [], isLoading: timeSlotsLoading, refetch: refetchTimeSlots } = useQuery<any>({
     queryKey: ["/api/calendar/available-slots", selectedDate.toISOString().split('T')[0]],
     queryFn: async () => {
       const dateString = selectedDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
@@ -51,10 +51,16 @@ export default function Book() {
       if (!response.ok) {
         throw new Error('Failed to fetch available time slots');
       }
-      return response.json();
+      const data = await response.json();
+      return data;
     },
     enabled: true,
   });
+  
+  // Extract time slots from the response (handling both array and object formats)
+  const availableTimeSlots = Array.isArray(availableTimeSlotsResponse) 
+    ? availableTimeSlotsResponse 
+    : (availableTimeSlotsResponse?.slots || []);
 
   // Generate formatted time slots from the available slots
   const getTimeSlots = (slots: Date[], date: Date) => {

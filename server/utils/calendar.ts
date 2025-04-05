@@ -7,11 +7,20 @@ let calendar: any = null;
 
 // Lazy initialization when credentials are available
 function initCalendarClient() {
-  if (oauth2Client) return;
+  // Always reinitialize to pick up new credentials
+  oauth2Client = null;
+  calendar = null;
   
   const clientId = process.env.GOOGLE_CALENDAR_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CALENDAR_CLIENT_SECRET;
   const refreshToken = process.env.GOOGLE_CALENDAR_REFRESH_TOKEN;
+  
+  // Log masked values to debug without exposing full credentials
+  console.log('[CALENDAR] Checking credentials:', {
+    clientId: clientId ? `${clientId.substring(0, 5)}...${clientId.substring(clientId.length - 5)}` : 'Missing',
+    clientSecret: clientSecret ? 'Present' : 'Missing',
+    refreshToken: refreshToken ? `${refreshToken.substring(0, 5)}...${refreshToken.substring(refreshToken.length - 5)}` : 'Missing'
+  });
   
   if (!clientId || !clientSecret || !refreshToken) {
     console.log('[CALENDAR] Missing credentials, calendar integration disabled');
