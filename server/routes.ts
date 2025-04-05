@@ -6,7 +6,7 @@ import express from "express";
 import fs from 'fs';
 import { storage } from "./storage";
 import { fileManager } from "./utils/fileManager";
-import { insertQuoteRequestSchema, insertBookingSchema } from "@shared/schema";
+import { insertQuoteRequestSchema, insertBookingSchema, insertSupplySchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { sendQuoteNotification, sendBookingConfirmation } from "./utils/email";
 import { analyzeProjectDescription, estimateProjectCost } from "./utils/grok";
@@ -851,6 +851,195 @@ export async function registerRoutes(app: Express) {
       
       // In production, just return the slots
       res.json(fallbackSlots);
+    }
+  });
+
+  // ==== CUSTOMER SUPPLIES MANAGEMENT ROUTES ====
+
+  // Get all supplies
+  app.get("/api/supplies", async (req, res) => {
+    try {
+      console.log("[API] Fetching all supplies");
+      const supplies = await storage.getSupplies();
+      console.log(`[API] Successfully fetched ${supplies.length} supplies`);
+      res.json(supplies);
+    } catch (error) {
+      console.error("[API] Error fetching supplies:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch supplies", 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
+  // Get supplies by client name
+  app.get("/api/supplies/client/:clientName", async (req, res) => {
+    try {
+      const { clientName } = req.params;
+      console.log(`[API] Fetching supplies for client: ${clientName}`);
+      
+      if (!clientName) {
+        return res.status(400).json({ message: "Client name is required" });
+      }
+      
+      const supplies = await storage.getSuppliesByClient(clientName);
+      console.log(`[API] Found ${supplies.length} supplies for client: ${clientName}`);
+      res.json(supplies);
+    } catch (error) {
+      console.error("[API] Error fetching client supplies:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch client supplies", 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
+  // Get a single supply by ID
+  app.get("/api/supplies/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      console.log(`[API] Fetching supply #${id}`);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid supply ID" });
+      }
+      
+      const supply = await storage.getSupply(id);
+      
+      if (!supply) {
+        return res.status(404).json({ message: "Supply not found" });
+      }
+      
+      console.log(`[API] Found supply #${id}`);
+      res.json(supply);
+    } catch (error) {
+      console.error("[API] Error fetching supply:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch supply", 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
+  // Create a new supply
+  app.post("/api/supplies", async (req, res) => {
+    try {
+      console.log("[API] Creating new supply with data:", req.body);
+      const supply = insertSupplySchema.parse(req.body);
+      const newSupply = await storage.createSupply(supply);
+      console.log(`[API] Successfully created supply #${newSupply.id}`);
+      res.status(201).json(newSupply);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        console.error("[API] Invalid supply data:", error.errors);
+        res.status(400).json({ message: "Invalid request data", errors: error.errors });
+        return;
+      }
+      console.error("[API] Error creating supply:", error);
+      res.status(500).json({ 
+        message: "Failed to create supply", 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
+  // Update a supply
+  app.patch("/api/supplies/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      console.log(`[API] Updating supply #${id} with data:`, req.body);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid supply ID" });
+      }
+      
+      // Verify supply exists
+      const existingSupply = await storage.getSupply(id);
+      if (!existingSupply) {
+        return res.status(404).json({ message: "Supply not found" });
+      }
+      
+      // Update the supply
+      const updatedSupply = await storage.updateSupply(id, req.body);
+      console.log(`[API] Successfully updated supply #${id}`);
+      res.json(updatedSupply);
+    } catch (error) {
+      console.error("[API] Error updating supply:", error);
+      res.status(500).json({ 
+        message: "Failed to update supply", 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
+  // Delete a supply
+  app.delete("/api/supplies/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      console.log(`[API] Deleting supply #${id}`);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid supply ID" });
+      }
+      
+      // Verify supply exists
+      const existingSupply = await storage.getSupply(id);
+      if (!existingSupply) {
+        return res.status(404).json({ message: "Supply not found" });
+      }
+      
+      // Delete the supply
+      const deleted = await storage.deleteSupply(id);
+      
+      if (deleted) {
+        console.log(`[API] Successfully deleted supply #${id}`);
+        res.status(204).send();
+      } else {
+        console.error(`[API] Failed to delete supply #${id}`);
+        res.status(500).json({ message: "Failed to delete supply" });
+      }
+    } catch (error) {
+      console.error("[API] Error deleting supply:", error);
+      res.status(500).json({ 
+        message: "Failed to delete supply", 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
+  // Update payment status
+  app.patch("/api/supplies/:id/payment", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { paid, paymentMethod } = req.body;
+      
+      console.log(`[API] Updating payment status for supply #${id}`, { paid, paymentMethod });
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid supply ID" });
+      }
+      
+      if (typeof paid !== 'boolean') {
+        return res.status(400).json({ message: "Payment status must be a boolean" });
+      }
+      
+      // Verify supply exists
+      const existingSupply = await storage.getSupply(id);
+      if (!existingSupply) {
+        return res.status(404).json({ message: "Supply not found" });
+      }
+      
+      // Update payment status
+      const updatedSupply = await storage.updateSupplyPaymentStatus(id, paid, paymentMethod);
+      
+      console.log(`[API] Successfully updated payment status for supply #${id}`);
+      res.json(updatedSupply);
+    } catch (error) {
+      console.error("[API] Error updating payment status:", error);
+      res.status(500).json({ 
+        message: "Failed to update payment status", 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
     }
   });
 }

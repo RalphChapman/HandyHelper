@@ -1,36 +1,45 @@
-import { 
-  users, type User, type InsertUser,
-  services, testimonials, reviews, projects, quoteRequests, bookings,
-  type Service, type InsertService, 
-  type QuoteRequest, type InsertQuoteRequest,
-  type Booking, type InsertBooking,
-  type Testimonial, type InsertTestimonial,
-  type ServiceProvider, type InsertServiceProvider,
-  type Review, type InsertReview,
-  type Project, type InsertProject,
-} from "@shared/schema";
+import path from "path";
+import * as fs from "fs";
+import * as crypto from "crypto";
+import bcrypt from "bcrypt";
 import session from "express-session";
-import createMemoryStore from "memorystore";
-import { scrypt, randomBytes } from "crypto";
-import { promisify } from "util";
+import MemoryStore from "memorystore";
+import { and, asc, desc, eq } from "drizzle-orm";
+import {
+  schema,
+  Service,
+  QuoteRequest,
+  Booking,
+  User,
+  Testimonial,
+  ServiceProvider,
+  Review,
+  Project,
+  Supply,
+  InsertService,
+  InsertQuoteRequest,
+  InsertBooking,
+  InsertUser,
+  InsertTestimonial,
+  InsertServiceProvider,
+  InsertReview,
+  InsertProject,
+  InsertSupply,
+  bookings,
+  quoteRequests,
+  services,
+  testimonials,
+  serviceProviders,
+  reviews,
+  users,
+  projects,
+  supplies
+} from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, sql } from "drizzle-orm";
-
-const MemoryStore = createMemoryStore(session);
-const scryptAsync = promisify(scrypt);
 
 async function hashPassword(password: string) {
-  try {
-    console.log("[Storage] Generating password hash");
-    const salt = randomBytes(16).toString("hex");
-    const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-    const hashedPassword = `${buf.toString("hex")}.${salt}`;
-    console.log("[Storage] Password hash generated successfully");
-    return hashedPassword;
-  } catch (error) {
-    console.error("[Storage] Error generating password hash:", error);
-    throw new Error("Failed to hash password");
-  }
+  const saltRounds = 10;
+  return bcrypt.hash(password, saltRounds);
 }
 
 export interface IStorage {
@@ -76,6 +85,15 @@ export interface IStorage {
   updatePasswordAndClearResetToken(id: number, hashedPassword: string): Promise<User | undefined>;
   getProject(id: number): Promise<Project | undefined>;
   updateProject(id: number, projectData: Omit<Project, 'id' | 'createdAt'>): Promise<Project>;
+  
+  // Customer Supplies related methods
+  getSupplies(): Promise<Supply[]>;
+  getSuppliesByClient(clientName: string): Promise<Supply[]>;
+  getSupply(id: number): Promise<Supply | undefined>;
+  createSupply(supply: InsertSupply): Promise<Supply>;
+  updateSupply(id: number, supplyData: Partial<Supply>): Promise<Supply | undefined>;
+  deleteSupply(id: number): Promise<boolean>;
+  updateSupplyPaymentStatus(id: number, paid: boolean, paymentMethod?: string): Promise<Supply | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -88,201 +106,232 @@ export class DatabaseStorage implements IStorage {
       name: "General Home Maintenance",
       description: "Comprehensive home maintenance and repairs including door repairs, window maintenance, gutter cleaning, small fixes, and other miscellaneous tasks to keep your home in top condition.",
       category: "General Repairs",
-      imageUrl: "https://images.unsplash.com/photo-1581783898377-1c85bf937427",
-      rating: 5
+      imageUrl: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+      priceRange: "$75 - $200",
+      duration: "1-4 hours",
+      rating: 4.9
     },
     {
-      name: "Plumbing Repairs",
-      description: "Expert plumbing services including leak repairs, pipe maintenance, and fixture installations.",
+      name: "Landscaping",
+      description: "Professional landscaping services including tree trimming, lawn maintenance, garden design, planting, irrigation, and general outdoor maintenance for beautiful, sustainable outdoor spaces.",
+      category: "Outdoor",
+      imageUrl: "https://images.unsplash.com/photo-1558904541-efa843a96f01?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+      priceRange: "$200 - $2000",
+      duration: "2 hours - 3 days",
+      rating: 4.8
+    },
+    {
+      name: "Plumbing Services",
+      description: "Comprehensive plumbing services including repairs, installation, maintenance, drain cleaning, water heater services, and emergency plumbing for residential properties.",
       category: "Plumbing",
-      imageUrl: "https://images.unsplash.com/photo-1607472586893-edb57bdc0e39",
-      rating: 5
+      imageUrl: "https://images.unsplash.com/photo-1606818614583-a5664bfe144a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+      priceRange: "$100 - $500",
+      duration: "1-8 hours",
+      rating: 4.7
     },
     {
-      name: "Electrical Work",
-      description: "Professional electrical services including wiring, lighting installation, and electrical repairs.",
-      category: "Electrical",
-      imageUrl: "https://images.unsplash.com/photo-1621905252507-b35492cc74b4",
-      rating: 5
-    },
-    {
-      name: "Interior Projects",
-      description: "Expert interior renovation services including professional painting, drywall/sheetrock repair, and finish trim work. Our attention to detail ensures seamless repairs and beautiful finishes for your home.",
-      category: "Interior",
-      imageUrl: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f",
-      rating: 5
-    },
-    {
-      name: "Outdoor Solutions",
-      description: "Professional deck construction, fence painting/repair and patio installations. Expert craftsmanship for all your outdoor structure needs.",
-      category: "Landscaping",
-      imageUrl: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6",
-      rating: 5
+      name: "Fence Installation",
+      description: "Expert fence installation services for both residential and commercial properties. Wood, vinyl, aluminum, or chain-link fences - all professionally installed with high-quality materials.",
+      category: "Outdoor",
+      imageUrl: "https://images.unsplash.com/photo-1626250775550-ba4be7fcc120?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1935&q=80",
+      priceRange: "$1500 - $6000",
+      duration: "1-3 days",
+      rating: 4.9
     }
   ];
 
   constructor() {
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000, // 24 hours
+    const MemoryStoreSession = MemoryStore(session);
+    this.sessionStore = new MemoryStoreSession({
+      checkPeriod: 86400000 // prune expired entries every 24h
     });
   }
 
   async initialize(): Promise<void> {
     if (this.initialized) {
-      console.log("[Storage] Already initialized, skipping");
       return;
     }
 
-    console.log("[Storage] Initializing storage");
-
     try {
-      // Check if services already exist
+      // Check if services table is empty
       const existingServices = await db.select().from(services);
-
       if (existingServices.length === 0) {
-        // Only insert services if none exist
-        console.log("[Storage] No services found, seeding initial services");
+        console.log("Initializing database with default services...");
+        
+        // Insert default services
         for (const service of this.initialServices) {
-          try {
-            console.log("[Storage] Creating service:", service.name);
-            const [newService] = await db.insert(services).values(service).returning();
-            console.log(`[Storage] Successfully created service: ${newService.name} with ID: ${newService.id}`);
-          } catch (error) {
-            console.error(`[Storage] Failed to create service ${service.name}:`, error);
-            throw error;
-          }
+          await db.insert(services).values(service);
         }
+        
+        console.log("Default services created successfully");
       } else {
-        console.log(`[Storage] Found ${existingServices.length} existing services, skipping seeding`);
+        console.log("Database already contains services, skipping initialization");
       }
 
       this.initialized = true;
-      console.log("[Storage] Initialization complete");
+      console.log("Database storage initialization completed");
     } catch (error) {
-      console.error("[Storage] Initialization failed:", error);
+      console.error("Failed to initialize database storage:", error);
       throw error;
     }
   }
 
   async getServices(): Promise<Service[]> {
-    if (!this.initialized) {
-      await this.initialize();
+    try {
+      const allServices = await db.select().from(services);
+      return allServices;
+    } catch (error) {
+      console.error("Error fetching services:", error);
+      throw error;
     }
-
-    console.log("[Storage] Getting all services");
-    const allServices = await db.select().from(services);
-    console.log(`[Storage] Found ${allServices.length} services`);
-    return allServices;
   }
 
   async getService(id: number): Promise<Service | undefined> {
-    const [foundService] = await db.select().from(services).where(eq(services.id, id));
-    return foundService;
+    try {
+      const [service] = await db.select().from(services).where(eq(services.id, id));
+      return service;
+    } catch (error) {
+      console.error(`Error fetching service ${id}:`, error);
+      throw error;
+    }
   }
 
   async createService(service: InsertService): Promise<Service> {
-    const [newService] = await db.insert(services).values(service).returning();
-    return newService;
+    try {
+      const [createdService] = await db.insert(services).values(service).returning();
+      return createdService;
+    } catch (error) {
+      console.error("Error creating service:", error);
+      throw error;
+    }
   }
 
   async createQuoteRequest(request: InsertQuoteRequest): Promise<QuoteRequest> {
     try {
-      console.log("[Storage] Creating quote request:", request);
-      
-      // Extract only the fields that exist in the database schema
-      // Keep only fields that match the database structure
-      const validRequestData = {
-        name: request.name,
-        email: request.email,
-        phone: request.phone,
-        serviceId: request.serviceId,
-        description: request.description,
-        address: request.address
-      };
-      
-      console.log("[Storage] Filtered quote request data:", validRequestData);
-      
-      const [newRequest] = await db
+      const [createdRequest] = await db
         .insert(quoteRequests)
-        .values(validRequestData)
+        .values({ ...request, createdAt: new Date() })
         .returning();
-        
-      console.log("[Storage] Created quote request:", newRequest);
-      return newRequest;
+      return createdRequest;
     } catch (error) {
-      console.error("[Storage] Error creating quote request:", error);
+      console.error("Error creating quote request:", error);
       throw error;
     }
   }
 
   async getQuoteRequests(): Promise<QuoteRequest[]> {
     try {
-      console.log("[Storage] Fetching quote requests");
-      // Don't orderBy createdAt since it doesn't exist in the actual database
-      const requests = await db.select().from(quoteRequests);
-      console.log("[Storage] Found quote requests:", requests.length);
-      return requests;
+      const allRequests = await db
+        .select()
+        .from(quoteRequests)
+        .orderBy(quoteRequests.createdAt, 'desc');
+      return allRequests;
     } catch (error) {
-      console.error("[Storage] Error fetching quote requests:", error);
+      console.error("Error fetching quote requests:", error);
       throw error;
     }
   }
 
   async createBooking(booking: InsertBooking): Promise<Booking> {
     try {
-      console.log("[Storage] Creating booking:", booking);
-      const [newBooking] = await db
+      console.log('Creating booking:', booking);
+      const [createdBooking] = await db
         .insert(bookings)
-        .values({
-          serviceId: booking.serviceId,
-          clientName: booking.clientName,
-          clientEmail: booking.clientEmail,
-          clientPhone: booking.clientPhone,
-          appointmentDate: new Date(booking.appointmentDate),
-          notes: booking.notes,
-          status: "pending",
-          confirmed: false
+        .values({ 
+          ...booking, 
+          createdAt: new Date(),
+          status: booking.status || 'scheduled' 
         })
         .returning();
-      console.log("[Storage] Created booking:", newBooking);
-      return newBooking;
+      
+      console.log('Booking created successfully:', createdBooking);
+      return createdBooking;
     } catch (error) {
-      console.error("[Storage] Error creating booking:", error);
+      console.error('Error creating booking:', error);
       throw error;
     }
   }
 
   async getBooking(id: number): Promise<Booking | undefined> {
-    const [booking] = await db.select().from(bookings).where(eq(bookings.id, id));
-    return booking;
+    try {
+      console.log('Fetching booking:', id);
+      const [booking] = await db
+        .select()
+        .from(bookings)
+        .where(eq(bookings.id, id));
+      
+      console.log('Booking fetch result:', booking);
+      return booking;
+    } catch (error) {
+      console.error(`Error fetching booking ${id}:`, error);
+      throw error;
+    }
   }
 
   async getBookings(): Promise<Booking[]> {
-    return await db.select().from(bookings);
+    try {
+      console.log('Fetching all bookings');
+      const allBookings = await db
+        .select()
+        .from(bookings)
+        .orderBy(bookings.dateTime, 'desc');
+      
+      console.log(`Found ${allBookings.length} bookings`);
+      return allBookings;
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+      throw error;
+    }
   }
 
   async getBookingsByEmail(email: string): Promise<Booking[]> {
-    return await db.select().from(bookings).where(eq(bookings.clientEmail, email));
+    try {
+      console.log('Fetching bookings for email:', email);
+      const userBookings = await db
+        .select()
+        .from(bookings)
+        .where(eq(bookings.email, email))
+        .orderBy(bookings.dateTime, 'desc');
+      
+      console.log(`Found ${userBookings.length} bookings for ${email}`);
+      return userBookings;
+    } catch (error) {
+      console.error(`Error fetching bookings for ${email}:`, error);
+      throw error;
+    }
   }
 
   async updateBookingStatus(id: number, status: string): Promise<Booking | undefined> {
-    const [updatedBooking] = await db.update(bookings).set({ status }).where(eq(bookings.id, id)).returning();
-    return updatedBooking;
+    try {
+      console.log('Updating booking status:', id, status);
+      const [updatedBooking] = await db
+        .update(bookings)
+        .set({ status })
+        .where(eq(bookings.id, id))
+        .returning();
+      
+      console.log('Booking status updated:', updatedBooking);
+      return updatedBooking;
+    } catch (error) {
+      console.error(`Error updating booking ${id} status:`, error);
+      throw error;
+    }
   }
 
   async getProjects(serviceId: number): Promise<Project[]> {
     try {
-      console.log(`Fetching projects for service ${serviceId}`);
+      console.log('Fetching projects for service:', serviceId);
+      
       const serviceProjects = await db
         .select()
         .from(projects)
-        .where(eq(projects.serviceId, serviceId))
+        .where(serviceId > 0 ? eq(projects.serviceId, serviceId) : undefined)
         .orderBy(projects.createdAt, 'desc');
-
+      
       console.log(`Found ${serviceProjects.length} projects for service ${serviceId}`);
       return serviceProjects;
     } catch (error) {
-      console.error('Error fetching projects:', error);
+      console.error(`Error fetching projects for service ${serviceId}:`, error);
       throw error;
     }
   }
@@ -290,16 +339,41 @@ export class DatabaseStorage implements IStorage {
   async createProject(project: Omit<Project, 'id' | 'createdAt'>): Promise<Project> {
     try {
       console.log('Creating project:', project);
-      const [newProject] = await db
+      
+      // Map project data to database columns using snake_case
+      const projectData = {
+        title: project.title,
+        description: project.description,
+        image_urls: project.imageUrls,
+        customer_name: project.customerName,
+        project_date: new Date(project.projectDate),
+        service_id: project.serviceId,
+        comment: project.comment
+      };
+      
+      const [createdProject] = await db
         .insert(projects)
         .values({
-          ...project,
-          createdAt: new Date()
+          ...projectData,
+          created_at: new Date()
         })
         .returning();
-
-      console.log('Project created successfully:', newProject);
-      return newProject;
+      
+      // Map back to camelCase for the API
+      const mappedProject: Project = {
+        id: createdProject.id,
+        title: createdProject.title,
+        description: createdProject.description,
+        imageUrls: createdProject.image_urls,
+        customerName: createdProject.customer_name,
+        projectDate: createdProject.project_date,
+        serviceId: createdProject.service_id,
+        comment: createdProject.comment,
+        createdAt: createdProject.created_at
+      };
+      
+      console.log('Project created successfully:', mappedProject);
+      return mappedProject;
     } catch (error) {
       console.error('Error creating project:', error);
       throw error;
@@ -308,66 +382,76 @@ export class DatabaseStorage implements IStorage {
 
   async createUser(user: InsertUser): Promise<User> {
     try {
-      console.log("[Storage] Creating new user:", user.username);
-
-      // First check if username already exists
+      console.log('[Storage] Creating user:', { ...user, password: '[REDACTED]' });
+      
+      // Check if username already exists
       const existingUser = await this.getUserByUsername(user.username);
       if (existingUser) {
-        console.log("[Storage] Username already exists:", user.username);
-        throw new Error("Username already exists");
+        throw new Error(`Username ${user.username} already exists`);
       }
-
-      // Hash password before storing
-      console.log("[Storage] Hashing password for new user");
+      
+      // Hash the password
       const hashedPassword = await hashPassword(user.password);
-
-      const [newUser] = await db
+      
+      const [createdUser] = await db
         .insert(users)
         .values({
-          username: user.username,
+          ...user,
           password: hashedPassword,
-          email: user.email,
-          role: user.role || "user",
           createdAt: new Date()
         })
         .returning();
-
-      console.log(`[Storage] Created new user: ${newUser.username} with ID: ${newUser.id}`);
-      return newUser;
+      
+      console.log('[Storage] User created successfully:', { id: createdUser.id, username: createdUser.username });
+      
+      // Remove password from the returned user
+      const { password, ...userWithoutPassword } = createdUser;
+      return userWithoutPassword as User;
     } catch (error) {
-      console.error("[Storage] Error creating user:", error);
+      console.error('[Storage] Error creating user:', error);
       throw error;
     }
   }
 
   async getUser(id: number): Promise<User | undefined> {
     try {
-      console.log("[Storage] Fetching user by ID:", id);
+      console.log('[Storage] Fetching user:', id);
       const [user] = await db.select().from(users).where(eq(users.id, id));
-      console.log("[Storage] User fetch result:", user ? "Found" : "Not found");
-      return user;
+      
+      if (user) {
+        // Remove password from the returned user
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword as User;
+      }
+      
+      return undefined;
     } catch (error) {
-      console.error("[Storage] Error fetching user:", error);
+      console.error(`[Storage] Error fetching user ${id}:`, error);
       throw error;
     }
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     try {
-      console.log("[Storage] Fetching user by username:", username);
+      console.log('[Storage] Fetching user by username:', username);
       const [user] = await db.select().from(users).where(eq(users.username, username));
-      console.log("[Storage] User fetch result:", user ? "Found" : "Not found");
-      return user;
+      
+      if (user) {
+        // Do NOT remove password here as it's needed for authentication
+        return user;
+      }
+      
+      return undefined;
     } catch (error) {
-      console.error("[Storage] Error fetching user by username:", error);
+      console.error(`[Storage] Error fetching user by username ${username}:`, error);
       throw error;
     }
   }
 
   async createTestimonial(testimonial: InsertTestimonial): Promise<Testimonial> {
     try {
-      console.log('Creating testimonial:', testimonial);
-      const [newTestimonial] = await db
+      console.log('[Storage] Creating testimonial');
+      const [createdTestimonial] = await db
         .insert(testimonials)
         .values({
           ...testimonial,
@@ -375,91 +459,142 @@ export class DatabaseStorage implements IStorage {
           createdAt: new Date()
         })
         .returning();
-
-      console.log('Testimonial created successfully:', newTestimonial);
-      return newTestimonial;
+      
+      console.log('[Storage] Testimonial created successfully');
+      return createdTestimonial;
     } catch (error) {
-      console.error('Error creating testimonial:', error);
+      console.error('[Storage] Error creating testimonial:', error);
       throw error;
     }
   }
 
   async getTestimonials(approved?: boolean): Promise<Testimonial[]> {
     try {
-      console.log(`Fetching testimonials${approved !== undefined ? ` (approved: ${approved})` : ''}`);
+      console.log('[Storage] Fetching testimonials, approved filter:', approved);
+      
       let query = db.select().from(testimonials);
-
+      
       if (approved !== undefined) {
         query = query.where(eq(testimonials.approved, approved));
       }
-
-      const results = await query;
-      console.log(`Found ${results.length} testimonials`);
-      return results;
+      
+      const allTestimonials = await query.orderBy(testimonials.createdAt, 'desc');
+      console.log(`[Storage] Found ${allTestimonials.length} testimonials`);
+      
+      return allTestimonials;
     } catch (error) {
-      console.error('Error fetching testimonials:', error);
+      console.error('[Storage] Error fetching testimonials:', error);
       throw error;
     }
   }
 
   async updateTestimonialApproval(id: number, approved: boolean): Promise<Testimonial | undefined> {
     try {
-      console.log(`Updating testimonial #${id} approval status to: ${approved}`);
+      console.log(`[Storage] Updating testimonial ${id} approval status to: ${approved}`);
       const [updatedTestimonial] = await db
         .update(testimonials)
         .set({ approved })
         .where(eq(testimonials.id, id))
         .returning();
-
-      console.log('Testimonial approval updated:', updatedTestimonial);
+      
+      console.log('[Storage] Testimonial approval updated successfully');
       return updatedTestimonial;
     } catch (error) {
-      console.error('Error updating testimonial approval:', error);
+      console.error(`[Storage] Error updating testimonial ${id} approval:`, error);
       throw error;
     }
   }
 
   async createServiceProvider(provider: InsertServiceProvider): Promise<ServiceProvider> {
-    const [newProvider] = await db.insert(ServiceProvider).values({...provider, rating: 5, createdAt: new Date()}).returning();
-    console.log(`[Storage] Created new service provider: ${newProvider.name} with ID: ${newProvider.id}`);
-    return newProvider;
+    try {
+      console.log('[Storage] Creating service provider');
+      const [createdProvider] = await db
+        .insert(serviceProviders)
+        .values({
+          ...provider,
+          rating: 0,
+          createdAt: new Date()
+        })
+        .returning();
+      
+      console.log('[Storage] Service provider created successfully');
+      return createdProvider;
+    } catch (error) {
+      console.error('[Storage] Error creating service provider:', error);
+      throw error;
+    }
   }
 
   async getServiceProvider(id: number): Promise<ServiceProvider | undefined> {
-    const [provider] = await db.select().from(ServiceProvider).where(eq(ServiceProvider.id, id));
-    return provider;
+    try {
+      console.log(`[Storage] Fetching service provider: ${id}`);
+      const [provider] = await db
+        .select()
+        .from(serviceProviders)
+        .where(eq(serviceProviders.id, id));
+      
+      console.log('[Storage] Service provider fetch result:', provider ? 'Found' : 'Not found');
+      return provider;
+    } catch (error) {
+      console.error(`[Storage] Error fetching service provider ${id}:`, error);
+      throw error;
+    }
   }
 
   async getServiceProviders(): Promise<ServiceProvider[]> {
-    return await db.select().from(ServiceProvider);
+    try {
+      console.log('[Storage] Fetching all service providers');
+      const allProviders = await db
+        .select()
+        .from(serviceProviders)
+        .orderBy(serviceProviders.name, 'asc');
+      
+      console.log(`[Storage] Found ${allProviders.length} service providers`);
+      return allProviders;
+    } catch (error) {
+      console.error('[Storage] Error fetching service providers:', error);
+      throw error;
+    }
   }
 
   async getServiceProvidersForService(serviceId: number): Promise<ServiceProvider[]> {
-    return await db.select().from(ServiceProvider).where(
-      eq(ServiceProvider.servicesOffered, serviceId)
-    );
+    try {
+      console.log(`[Storage] Fetching service providers for service: ${serviceId}`);
+      const providers = await db
+        .select()
+        .from(serviceProviders)
+        .where(eq(serviceProviders.serviceId, serviceId))
+        .orderBy(serviceProviders.rating, 'desc');
+      
+      console.log(`[Storage] Found ${providers.length} service providers for service ${serviceId}`);
+      return providers;
+    } catch (error) {
+      console.error(`[Storage] Error fetching service providers for service ${serviceId}:`, error);
+      throw error;
+    }
   }
 
   async updateServiceProviderAvailability(id: number, availability: any): Promise<ServiceProvider | undefined> {
-    const [updatedProvider] = await db.update(ServiceProvider).set({availabilitySchedule: availability}).where(eq(ServiceProvider.id, id)).returning();
-    return updatedProvider;
+    try {
+      console.log(`[Storage] Updating service provider ${id} availability`);
+      const [updatedProvider] = await db
+        .update(serviceProviders)
+        .set({ availability })
+        .where(eq(serviceProviders.id, id))
+        .returning();
+      
+      console.log('[Storage] Service provider availability updated successfully');
+      return updatedProvider;
+    } catch (error) {
+      console.error(`[Storage] Error updating service provider ${id} availability:`, error);
+      throw error;
+    }
   }
 
   async createReview(review: InsertReview): Promise<Review> {
     try {
-      console.log('Creating review:', review);
-      // First verify that the service exists
-      const [service] = await db
-        .select()
-        .from(services)
-        .where(eq(services.id, review.serviceId));
-
-      if (!service) {
-        throw new Error(`Service with ID ${review.serviceId} not found`);
-      }
-
-      // Create the review
-      const [newReview] = await db
+      console.log('[Storage] Creating review');
+      const [createdReview] = await db
         .insert(reviews)
         .values({
           ...review,
@@ -467,137 +602,118 @@ export class DatabaseStorage implements IStorage {
           createdAt: new Date()
         })
         .returning();
-
-      console.log('Review created successfully:', newReview);
-
-      // Update service rating
-      try {
-        const serviceReviews = await this.getReviewsByService(review.serviceId);
-        const averageRating = Math.round(
-          serviceReviews.reduce((sum, r) => sum + r.rating, 0) / serviceReviews.length
-        );
-
-        await db
-          .update(services)
-          .set({ rating: averageRating })
-          .where(eq(services.id, review.serviceId));
-
-        console.log('Service rating updated successfully');
-      } catch (error) {
-        console.error('Error updating service rating:', error);
-        // Don't throw here, as the review was still created successfully
-      }
-
-      return newReview;
+      
+      console.log('[Storage] Review created successfully');
+      return createdReview;
     } catch (error) {
-      console.error('Error creating review:', error);
+      console.error('[Storage] Error creating review:', error);
       throw error;
     }
   }
 
   async getReview(id: number): Promise<Review | undefined> {
     try {
-      console.log('Fetching review:', id);
-      const [review] = await db
-        .select()
-        .from(reviews)
-        .where(eq(reviews.id, id));
-
-      console.log('Review fetch result:', review);
+      console.log(`[Storage] Fetching review: ${id}`);
+      const [review] = await db.select().from(reviews).where(eq(reviews.id, id));
+      console.log('[Storage] Review fetch result:', review ? 'Found' : 'Not found');
       return review;
     } catch (error) {
-      console.error('Error fetching review:', error);
+      console.error(`[Storage] Error fetching review ${id}:`, error);
       throw error;
     }
   }
 
   async getReviews(): Promise<Review[]> {
     try {
-      console.log('Fetching all reviews');
-      const allReviews = await db.select().from(reviews);
-      console.log('Found reviews:', allReviews.length);
+      console.log('[Storage] Fetching all reviews');
+      const allReviews = await db
+        .select()
+        .from(reviews)
+        .orderBy(reviews.createdAt, 'desc');
+      
+      console.log(`[Storage] Found ${allReviews.length} reviews`);
       return allReviews;
     } catch (error) {
-      console.error('Error fetching all reviews:', error);
+      console.error('[Storage] Error fetching reviews:', error);
       throw error;
     }
   }
 
   async getReviewsByService(serviceId: number): Promise<Review[]> {
     try {
-      console.log('Fetching reviews for service:', serviceId);
-      // First verify that the service exists
-      const [service] = await db
-        .select()
-        .from(services)
-        .where(eq(services.id, serviceId));
-
-      if (!service) {
-        throw new Error(`Service with ID ${serviceId} not found`);
-      }
-
+      console.log(`[Storage] Fetching reviews for service: ${serviceId}`);
       const serviceReviews = await db
         .select()
         .from(reviews)
         .where(eq(reviews.serviceId, serviceId))
         .orderBy(reviews.createdAt, 'desc');
-
-      console.log('Found service reviews:', serviceReviews.length);
+      
+      console.log(`[Storage] Found ${serviceReviews.length} reviews for service ${serviceId}`);
       return serviceReviews;
     } catch (error) {
-      console.error('Error fetching service reviews:', error);
+      console.error(`[Storage] Error fetching reviews for service ${serviceId}:`, error);
       throw error;
     }
   }
 
   async getReviewsByUser(userId: number): Promise<Review[]> {
-    return await db
-      .select()
-      .from(reviews)
-      .where(eq(reviews.userId, userId));
+    try {
+      console.log(`[Storage] Fetching reviews by user: ${userId}`);
+      const userReviews = await db
+        .select()
+        .from(reviews)
+        .where(eq(reviews.userId, userId))
+        .orderBy(reviews.createdAt, 'desc');
+      
+      console.log(`[Storage] Found ${userReviews.length} reviews by user ${userId}`);
+      return userReviews;
+    } catch (error) {
+      console.error(`[Storage] Error fetching reviews by user ${userId}:`, error);
+      throw error;
+    }
   }
 
   async updateReviewVerification(id: number, verified: boolean): Promise<Review | undefined> {
     try {
-      console.log(`Updating review verification for ID ${id} to ${verified}`);
+      console.log(`[Storage] Updating review ${id} verification status to: ${verified}`);
       const [updatedReview] = await db
         .update(reviews)
         .set({ verified })
         .where(eq(reviews.id, id))
         .returning();
-
-      console.log('Review verification updated:', updatedReview);
+      
+      console.log('[Storage] Review verification updated successfully');
       return updatedReview;
     } catch (error) {
-      console.error('Error updating review verification:', error);
+      console.error(`[Storage] Error updating review ${id} verification:`, error);
       throw error;
     }
   }
 
   async updateUser(id: number, data: Partial<User>): Promise<User | undefined> {
     try {
-      console.log(`[Storage] Updating user ${id}`);
-
-      // If updating username, check if new username is available
-      if (data.username) {
-        const existingUser = await this.getUserByUsername(data.username);
-        if (existingUser && existingUser.id !== id) {
-          throw new Error("Username already taken");
-        }
-      }
-
-      // If updating password, hash it
+      console.log('[Storage] Updating user:', id);
+      
+      // If password is being updated, hash it
       if (data.password) {
         data.password = await hashPassword(data.password);
       }
-
+      
       const [updatedUser] = await db
         .update(users)
         .set(data)
         .where(eq(users.id, id))
         .returning();
-
-      return updatedUser;
+      
+      console.log('[Storage] User updated successfully');
+      
+      if (updatedUser) {
+        // Remove password from the returned user
+        const { password, ...userWithoutPassword } = updatedUser;
+        return userWithoutPassword as User;
+      }
+      
+      return undefined;
     } catch (error) {
       console.error(`[Storage] Error updating user ${id}:`, error);
       throw error;
@@ -606,13 +722,11 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(id: number): Promise<boolean> {
     try {
-      console.log(`[Storage] Deleting user ${id}`);
-      const [deletedUser] = await db
-        .delete(users)
-        .where(eq(users.id, id))
-        .returning();
-
-      return !!deletedUser;
+      console.log('[Storage] Deleting user:', id);
+      const result = await db.delete(users).where(eq(users.id, id)).returning();
+      const success = result.length > 0;
+      console.log(`[Storage] User deletion ${success ? 'successful' : 'failed'}`);
+      return success;
     } catch (error) {
       console.error(`[Storage] Error deleting user ${id}:`, error);
       throw error;
@@ -621,121 +735,152 @@ export class DatabaseStorage implements IStorage {
 
   async listUsers(): Promise<User[]> {
     try {
-      console.log("[Storage] Fetching all users");
-      const allUsers = await db
-        .select()
-        .from(users)
-        .orderBy(users.createdAt);
-
-      return allUsers;
+      console.log('[Storage] Fetching all users');
+      const allUsers = await db.select().from(users);
+      
+      // Remove passwords from all users
+      const usersWithoutPasswords = allUsers.map(user => {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword as User;
+      });
+      
+      console.log(`[Storage] Found ${usersWithoutPasswords.length} users`);
+      return usersWithoutPasswords;
     } catch (error) {
-      console.error("[Storage] Error fetching users:", error);
+      console.error('[Storage] Error fetching users:', error);
       throw error;
     }
   }
 
   async validateUserCredentials(username: string, password: string): Promise<User | undefined> {
     try {
-      console.log("[Storage] Validating credentials for user:", username);
+      console.log('[Storage] Validating credentials for user:', username);
+      
+      // Get user with password (getUserByUsername doesn't filter it out)
       const user = await this.getUserByUsername(username);
+      
       if (!user) {
-        console.log("[Storage] User not found during validation:", username);
+        console.log(`[Storage] User ${username} not found`);
         return undefined;
       }
-
-      const [hashedPassword, salt] = user.password.split(".");
-      const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-      const suppliedHash = buf.toString("hex");
-
-      const isValid = hashedPassword === suppliedHash;
-      console.log("[Storage] Credential validation result:", isValid ? "Valid" : "Invalid");
-
-      if (isValid) {
-        return user;
+      
+      // Compare passwords
+      const passwordValid = await bcrypt.compare(password, user.password);
+      
+      if (!passwordValid) {
+        console.log(`[Storage] Password invalid for user ${username}`);
+        return undefined;
       }
-
-      return undefined;
+      
+      console.log(`[Storage] Credentials valid for user ${username}`);
+      
+      // Remove password from the returned user
+      const { password: _, ...userWithoutPassword } = user;
+      return userWithoutPassword as User;
     } catch (error) {
-      console.error("[Storage] Error validating credentials:", error);
+      console.error(`[Storage] Error validating credentials for ${username}:`, error);
       throw error;
     }
   }
+
   async updateUserPassword(id: number, hashedPassword: string): Promise<User | undefined> {
     try {
-      console.log("[Storage] Updating user password for:", id);
+      console.log(`[Storage] Updating password for user ${id}`);
+      
       const [updatedUser] = await db
         .update(users)
         .set({ password: hashedPassword })
         .where(eq(users.id, id))
         .returning();
-      console.log("[Storage] Password updated for user:", id);
-      return updatedUser;
+      
+      console.log('[Storage] Password updated successfully');
+      
+      if (updatedUser) {
+        // Remove password from the returned user
+        const { password, ...userWithoutPassword } = updatedUser;
+        return userWithoutPassword as User;
+      }
+      
+      return undefined;
     } catch (error) {
-      console.error("[Storage] Error updating user password for:", id, error);
+      console.error(`[Storage] Error updating password for user ${id}:`, error);
       throw error;
     }
   }
+
   async setPasswordResetToken(email: string, resetToken: string, resetTokenExpiry: Date): Promise<User | undefined> {
     try {
-      console.log("[Storage] Setting password reset token for email:", email);
+      console.log(`[Storage] Setting password reset token for email: ${email}`);
+      
+      // Find user by email
+      const [user] = await db.select().from(users).where(eq(users.email, email));
+      
+      if (!user) {
+        console.log(`[Storage] User with email ${email} not found`);
+        return undefined;
+      }
+      
+      // Update user with reset token
       const [updatedUser] = await db
         .update(users)
         .set({
           resetToken,
           resetTokenExpiry
         })
-        .where(eq(users.email, email))
+        .where(eq(users.id, user.id))
         .returning();
-
-      if (!updatedUser) {
-        console.log("[Storage] No user found with email:", email);
-        return undefined;
+      
+      console.log(`[Storage] Reset token set for user ${user.id}`);
+      
+      if (updatedUser) {
+        // Remove password from the returned user
+        const { password, ...userWithoutPassword } = updatedUser;
+        return userWithoutPassword as User;
       }
-
-      console.log("[Storage] Reset token set for user:", updatedUser.id);
-      return updatedUser;
+      
+      return undefined;
     } catch (error) {
-      console.error("[Storage] Error setting reset token:", error);
+      console.error(`[Storage] Error setting reset token for ${email}:`, error);
       throw error;
     }
   }
 
   async getUserByResetToken(token: string): Promise<User | undefined> {
     try {
-      console.log("[Storage] Finding user by reset token:", token);
+      console.log('[Storage] Finding user by reset token');
+      
+      // Find user with valid token (not expired)
       const [user] = await db
         .select()
         .from(users)
-        .where(eq(users.resetToken, token));
-
-      console.log("[Storage] User lookup result:", user ? "Found" : "Not found");
-
-      if (!user) {
-        console.log("[Storage] No user found with reset token");
-        return undefined;
+        .where(
+          and(
+            eq(users.resetToken, token),
+            // Token is not expired
+            // @ts-ignore
+            users.resetTokenExpiry > new Date()
+          )
+        );
+      
+      console.log(`[Storage] User by reset token: ${user ? 'Found' : 'Not found'}`);
+      
+      if (user) {
+        // Remove password from the returned user
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword as User;
       }
-
-      if (!user.resetTokenExpiry) {
-        console.log("[Storage] Reset token exists but no expiry date found");
-        return undefined;
-      }
-
-      const isExpired = new Date(user.resetTokenExpiry) < new Date();
-      if (isExpired) {
-        console.log("[Storage] Reset token has expired");
-        return undefined;
-      }
-
-      return user;
+      
+      return undefined;
     } catch (error) {
-      console.error("[Storage] Error finding user by reset token:", error);
+      console.error('[Storage] Error finding user by reset token:', error);
       throw error;
     }
   }
 
   async updatePasswordAndClearResetToken(id: number, hashedPassword: string): Promise<User | undefined> {
     try {
-      console.log("[Storage] Updating password and clearing reset token for user:", id);
+      console.log(`[Storage] Updating password and clearing reset token for user ${id}`);
+      
       const [updatedUser] = await db
         .update(users)
         .set({
@@ -745,24 +890,47 @@ export class DatabaseStorage implements IStorage {
         })
         .where(eq(users.id, id))
         .returning();
-
-      console.log("[Storage] Password updated and reset token cleared for user:", id);
-      return updatedUser;
+      
+      console.log('[Storage] Password updated and reset token cleared successfully');
+      
+      if (updatedUser) {
+        // Remove password from the returned user
+        const { password, ...userWithoutPassword } = updatedUser;
+        return userWithoutPassword as User;
+      }
+      
+      return undefined;
     } catch (error) {
-      console.error("[Storage] Error updating password and clearing reset token:", error);
+      console.error(`[Storage] Error updating password and clearing reset token for user ${id}:`, error);
       throw error;
     }
   }
+
   async getProject(id: number): Promise<Project | undefined> {
     try {
       console.log('[Storage] Fetching project:', id);
-      const [project] = await db
-        .select()
-        .from(projects)
-        .where(eq(projects.id, id));
-
-      console.log('[Storage] Project fetch result:', project ? 'Found' : 'Not found');
-      return project;
+      const [project] = await db.select().from(projects).where(eq(projects.id, id));
+      
+      if (project) {
+        // Map from snake_case to camelCase
+        const mappedProject: Project = {
+          id: project.id,
+          title: project.title,
+          description: project.description,
+          imageUrls: project.image_urls,
+          customerName: project.customer_name,
+          projectDate: project.project_date,
+          serviceId: project.service_id,
+          comment: project.comment,
+          createdAt: project.created_at
+        };
+        
+        console.log('[Storage] Project found:', mappedProject);
+        return mappedProject;
+      }
+      
+      console.log('[Storage] Project not found');
+      return undefined;
     } catch (error) {
       console.error('[Storage] Error fetching project:', error);
       throw error;
@@ -808,6 +976,151 @@ export class DatabaseStorage implements IStorage {
       return updatedProject;
     } catch (error) {
       console.error('[Storage] Error updating project:', error);
+      throw error;
+    }
+  }
+
+  // Customer Supplies methods implementation
+  async getSupplies(): Promise<Supply[]> {
+    try {
+      console.log("[Storage] Fetching all supplies");
+      const allSupplies = await db.select().from(supplies).orderBy(supplies.createdAt, 'desc');
+      console.log(`[Storage] Found ${allSupplies.length} supplies`);
+      return allSupplies;
+    } catch (error) {
+      console.error("[Storage] Error fetching supplies:", error);
+      throw error;
+    }
+  }
+
+  async getSuppliesByClient(clientName: string): Promise<Supply[]> {
+    try {
+      console.log(`[Storage] Fetching supplies for client: ${clientName}`);
+      const clientSupplies = await db
+        .select()
+        .from(supplies)
+        .where(eq(supplies.clientName, clientName))
+        .orderBy(supplies.createdAt, 'desc');
+      console.log(`[Storage] Found ${clientSupplies.length} supplies for client ${clientName}`);
+      return clientSupplies;
+    } catch (error) {
+      console.error(`[Storage] Error fetching supplies for client ${clientName}:`, error);
+      throw error;
+    }
+  }
+
+  async getSupply(id: number): Promise<Supply | undefined> {
+    try {
+      console.log(`[Storage] Fetching supply with ID: ${id}`);
+      const [supply] = await db.select().from(supplies).where(eq(supplies.id, id));
+      console.log(`[Storage] Supply fetch result: ${supply ? "Found" : "Not found"}`);
+      return supply;
+    } catch (error) {
+      console.error(`[Storage] Error fetching supply with ID ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async createSupply(supply: InsertSupply): Promise<Supply> {
+    try {
+      console.log("[Storage] Creating new supply:", supply);
+      
+      // Calculate total price if not provided
+      if (!supply.totalPrice && supply.unitPrice && supply.quantity) {
+        supply.totalPrice = Number(supply.unitPrice) * Number(supply.quantity);
+      }
+      
+      const [newSupply] = await db
+        .insert(supplies)
+        .values({
+          ...supply,
+          purchaseDate: new Date(supply.purchaseDate),
+          paymentDate: supply.paymentDate ? new Date(supply.paymentDate) : null,
+          createdAt: new Date()
+        })
+        .returning();
+      
+      console.log(`[Storage] Created new supply with ID: ${newSupply.id}`);
+      return newSupply;
+    } catch (error) {
+      console.error("[Storage] Error creating supply:", error);
+      throw error;
+    }
+  }
+
+  async updateSupply(id: number, supplyData: Partial<Supply>): Promise<Supply | undefined> {
+    try {
+      console.log(`[Storage] Updating supply with ID: ${id}`, supplyData);
+      
+      // If changing unit price or quantity, recalculate total price
+      if ((supplyData.unitPrice || supplyData.quantity) && !supplyData.totalPrice) {
+        const [currentSupply] = await db.select().from(supplies).where(eq(supplies.id, id));
+        if (currentSupply) {
+          const unitPrice = supplyData.unitPrice !== undefined ? Number(supplyData.unitPrice) : Number(currentSupply.unitPrice);
+          const quantity = supplyData.quantity !== undefined ? Number(supplyData.quantity) : Number(currentSupply.quantity);
+          supplyData.totalPrice = unitPrice * quantity;
+        }
+      }
+      
+      // Convert dates if provided
+      if (supplyData.purchaseDate) {
+        supplyData.purchaseDate = new Date(supplyData.purchaseDate);
+      }
+      
+      if (supplyData.paymentDate) {
+        supplyData.paymentDate = new Date(supplyData.paymentDate);
+      }
+      
+      const [updatedSupply] = await db
+        .update(supplies)
+        .set(supplyData)
+        .where(eq(supplies.id, id))
+        .returning();
+      
+      console.log(`[Storage] Supply update result: ${updatedSupply ? "Success" : "Failed"}`);
+      return updatedSupply;
+    } catch (error) {
+      console.error(`[Storage] Error updating supply with ID ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async deleteSupply(id: number): Promise<boolean> {
+    try {
+      console.log(`[Storage] Deleting supply with ID: ${id}`);
+      const result = await db.delete(supplies).where(eq(supplies.id, id)).returning();
+      const success = result.length > 0;
+      console.log(`[Storage] Supply deletion result: ${success ? "Success" : "Failed"}`);
+      return success;
+    } catch (error) {
+      console.error(`[Storage] Error deleting supply with ID ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async updateSupplyPaymentStatus(id: number, paid: boolean, paymentMethod?: string): Promise<Supply | undefined> {
+    try {
+      console.log(`[Storage] Updating supply ID ${id} payment status to: ${paid ? "Paid" : "Unpaid"}`);
+      
+      const updateData: Partial<Supply> = { 
+        paid,
+        paymentDate: paid ? new Date() : null
+      };
+      
+      if (paid && paymentMethod) {
+        updateData.paymentMethod = paymentMethod;
+      }
+      
+      const [updatedSupply] = await db
+        .update(supplies)
+        .set(updateData)
+        .where(eq(supplies.id, id))
+        .returning();
+      
+      console.log(`[Storage] Supply payment status update result: ${updatedSupply ? "Success" : "Failed"}`);
+      return updatedSupply;
+    } catch (error) {
+      console.error(`[Storage] Error updating supply payment status for ID ${id}:`, error);
       throw error;
     }
   }

@@ -23,6 +23,7 @@ export function Navigation() {
     { href: "/book", label: "Book Now" },
     { href: "/quote", label: "Get Quote" },
     { href: "/dashboard", label: "Dashboard" },
+    { href: "/supplies", label: "Supplies" },
   ];
 
   return (

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, varchar, timestamp, boolean, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, varchar, timestamp, boolean, json, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -15,7 +15,7 @@ export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
   title: varchar("title", { length: 200 }).notNull(),
   description: text("description").notNull(),
-  imageUrls: text("image_urls").array().notNull(),
+  imageUrls: text("image_urls").array(), // Allow NULL values
   comment: text("comment").notNull(),
   customerName: varchar("customer_name", { length: 100 }).notNull(),
   projectDate: timestamp("project_date", { mode: 'date', withTimezone: true }).notNull(),
@@ -92,6 +92,25 @@ export const serviceProviders = pgTable("service_providers", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Customer Supplies table to track materials purchased for customers
+export const supplies = pgTable("supplies", {
+  id: serial("id").primaryKey(),
+  bookingId: integer("booking_id").references(() => bookings.id),
+  clientName: varchar("client_name", { length: 100 }).notNull(),
+  description: text("description").notNull(),
+  quantity: integer("quantity").notNull().default(1),
+  unitPrice: numeric("unit_price").notNull(),
+  totalPrice: numeric("total_price").notNull(),
+  purchaseDate: timestamp("purchase_date").notNull().defaultNow(),
+  invoiceNumber: varchar("invoice_number", { length: 50 }),
+  receiptImageUrl: text("receipt_image_url"),
+  paid: boolean("paid").notNull().default(false),
+  paymentDate: timestamp("payment_date"),
+  paymentMethod: varchar("payment_method", { length: 50 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true });
 export const insertQuoteRequestSchema = createInsertSchema(quoteRequests)
   .omit({ id: true, email: true, phone: true })
@@ -132,7 +151,22 @@ export const insertProjectSchema = createInsertSchema(projects)
   .omit({ id: true, createdAt: true })
   .extend({
     projectDate: z.string().transform((str) => new Date(str)),
-    imageUrls: z.array(z.string()),
+    imageUrls: z.array(z.string()).optional(),
+  });
+
+export const insertSupplySchema = createInsertSchema(supplies)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    bookingId: z.number().int().positive().optional(),
+    unitPrice: z.string().or(z.number()).transform(val => 
+      typeof val === 'string' ? parseFloat(val) : val
+    ),
+    totalPrice: z.string().or(z.number()).transform(val => 
+      typeof val === 'string' ? parseFloat(val) : val
+    ),
+    purchaseDate: z.string().transform(str => new Date(str)),
+    paymentDate: z.string().transform(str => new Date(str)).optional().nullable(),
+    paid: z.boolean().default(false),
   });
 
 export type Service = typeof services.$inferSelect;
@@ -151,3 +185,5 @@ export type Review = typeof reviews.$inferSelect;
 export type InsertReview = z.infer<typeof insertReviewSchema>;
 export type Project = typeof projects.$inferSelect;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
+export type Supply = typeof supplies.$inferSelect;
+export type InsertSupply = z.infer<typeof insertSupplySchema>;
