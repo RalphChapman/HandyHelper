@@ -15,7 +15,6 @@ import Dashboard from "@/pages/dashboard";
 import Auth from "@/pages/auth";
 import ResetPassword from "@/pages/reset-password";
 import UploadTest from "@/pages/upload-test";
-import Supplies from "@/pages/supplies";
 import NotFound from "@/pages/not-found";
 
 export default function App() {
@@ -63,7 +62,6 @@ export default function App() {
             <Route path="/auth" component={Auth} />
             <Route path="/reset-password" component={ResetPassword} />
             <Route path="/upload-test" component={UploadTest} />
-            <Route path="/supplies" component={Supplies} />
             <Route component={NotFound} />
           </Switch>
         </main>
