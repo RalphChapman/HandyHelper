@@ -168,6 +168,27 @@ export class DatabaseStorage implements IStorage {
         console.log("Database already contains services, skipping initialization");
       }
 
+      // Check if admin user exists
+      const adminUser = await this.getUserByUsername('admin');
+      if (!adminUser) {
+        console.log("Creating default admin user...");
+        
+        // Use our local hashPassword function with bcrypt
+        const hashedPassword = await hashPassword('admin123');
+        
+        // Create admin user
+        await this.createUser({
+          username: 'admin',
+          password: hashedPassword,
+          email: 'admin@handypro.com',
+          role: 'admin'
+        });
+        
+        console.log("Default admin user created successfully");
+      } else {
+        console.log("Admin user already exists, skipping creation");
+      }
+
       this.initialized = true;
       console.log("Database storage initialization completed");
     } catch (error) {
