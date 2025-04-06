@@ -111,6 +111,9 @@ export function setupAuth(app: Express) {
   app.post("/api/login", (req, res, next) => {
     console.log("[Auth] Login request received:", req.body.username);
 
+    // Set proper content type for response
+    res.setHeader('Content-Type', 'application/json');
+
     passport.authenticate("local", (err: Error | null, user: Express.User | false, info: any) => {
       if (err) {
         console.error("[Auth] Authentication error:", err);
@@ -135,6 +138,9 @@ export function setupAuth(app: Express) {
   app.post("/api/register", async (req, res) => {
     try {
       console.log("[Auth] Registration attempt:", req.body);
+      // Set proper content type for response
+      res.setHeader('Content-Type', 'application/json');
+      
       const { username, password, email } = req.body;
 
       if (!username || !password || !email) {
@@ -179,9 +185,12 @@ export function setupAuth(app: Express) {
   app.post("/api/logout", (req, res) => {
     const userId = req.user?.id;
     console.log("[Auth] Logout request for user:", userId);
+    // Set proper content type for response
+    res.setHeader('Content-Type', 'application/json');
+    
     req.logout(() => {
       console.log("[Auth] Logout successful for user:", userId);
-      res.sendStatus(200);
+      res.status(200).json({ success: true });
     });
   });
 
