@@ -21,12 +21,22 @@ function useLoginMutation() {
     mutationFn: async (credentials: { username: string; password: string }) => {
       try {
         console.log('Attempting login with username:', credentials.username);
-        const res = await apiRequest("POST", "/api/login", credentials);
+        // Don't use apiRequest as it throws on !res.ok
+        const res = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(credentials)
+        });
+        
+        // Handle the response and parse JSON
+        const data = await res.json();
+        
+        // Check if the response is ok
         if (!res.ok) {
-          const error = await res.json();
-          throw new Error(error.message || 'Login failed');
+          throw new Error(data.message || 'Login failed');
         }
-        return await res.json();
+        
+        return data;
       } catch (error: any) {
         console.error('Login error:', error);
         throw error;
@@ -55,9 +65,18 @@ function useLogoutMutation() {
   const { toast } = useToast();
   return useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/logout");
-      if (!res.ok) {
-        throw new Error('Logout failed');
+      try {
+        // Use direct fetch instead of apiRequest
+        const res = await fetch("/api/logout", {
+          method: "POST"
+        });
+        
+        if (!res.ok) {
+          throw new Error('Logout failed');
+        }
+      } catch (error: any) {
+        console.error('Logout error:', error);
+        throw error;
       }
     },
     onSuccess: () => {
@@ -84,12 +103,22 @@ function useRegisterMutation() {
     mutationFn: async (userData: InsertUser) => {
       try {
         console.log('Attempting registration for:', userData.username);
-        const res = await apiRequest("POST", "/api/register", userData);
+        // Use direct fetch instead of apiRequest
+        const res = await fetch("/api/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(userData)
+        });
+        
+        // Handle the response and parse JSON
+        const data = await res.json();
+        
+        // Check if the response is ok
         if (!res.ok) {
-          const error = await res.json();
-          throw new Error(error.message || 'Registration failed');
+          throw new Error(data.message || 'Registration failed');
         }
-        return await res.json();
+        
+        return data;
       } catch (error: any) {
         console.error('Registration error:', error);
         throw error;
