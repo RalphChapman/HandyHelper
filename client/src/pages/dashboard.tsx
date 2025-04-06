@@ -22,7 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CalendarAdminPanel } from "@/components/calendar-admin-panel";
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, loginMutation, logoutMutation } = useAuth();
   const { toast } = useToast();
   const isAdmin = user?.role === "admin";
   const [isAddSupplyOpen, setIsAddSupplyOpen] = useState(false);
@@ -266,15 +266,44 @@ export default function Dashboard() {
   return (
     <div className="py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Dashboard</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          {!user ? (
+            <Button 
+              onClick={() => {
+                loginMutation.mutate({ 
+                  username: "admin",
+                  password: "admin123" 
+                });
+              }}
+              disabled={loginMutation.isPending}
+            >
+              {loginMutation.isPending ? "Logging in..." : "Login as Admin"}
+            </Button>
+          ) : (
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-500">
+                Logged in as: <span className="font-semibold">{user.username}</span> 
+                ({user.role})
+              </span>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => logoutMutation.mutate()}
+                disabled={logoutMutation.isPending}
+              >
+                {logoutMutation.isPending ? "Logging out..." : "Logout"}
+              </Button>
+            </div>
+          )}
+        </div>
 
         <Tabs defaultValue="invoices" className="space-y-6">
           <TabsList>
             <TabsTrigger value="invoices">Invoices</TabsTrigger>
             <TabsTrigger value="supplies">Supplies</TabsTrigger>
-            {/* Bookings and Quotes tabs hidden as requested */}
-            {/* <TabsTrigger value="bookings">My Bookings</TabsTrigger> */}
-            {/* <TabsTrigger value="quotes">Quote Requests</TabsTrigger> */}
+            <TabsTrigger value="bookings">My Bookings</TabsTrigger>
+            <TabsTrigger value="quotes">Quote Requests</TabsTrigger>
             {isAdmin && (
               <TabsTrigger value="testimonials">Testimonials</TabsTrigger>
             )}
@@ -629,8 +658,6 @@ export default function Dashboard() {
             </Dialog>
           </TabsContent>
 
-          {/* Bookings TabContent hidden as requested but kept intact for future restoration */}
-          {/* 
           <TabsContent value="bookings">
             <div className="grid gap-6">
               {!bookings?.length ? (
@@ -664,10 +691,7 @@ export default function Dashboard() {
               )}
             </div>
           </TabsContent>
-          */}
 
-          {/* Quotes TabContent hidden as requested but kept intact for future restoration */}
-          {/*
           <TabsContent value="quotes">
             <div className="grid gap-6">
               {!quotes?.length ? (
@@ -716,7 +740,6 @@ export default function Dashboard() {
               )}
             </div>
           </TabsContent>
-          */}
 
           {isAdmin && (
             <TabsContent value="testimonials">
