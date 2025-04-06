@@ -169,7 +169,7 @@ export class DatabaseStorage implements IStorage {
         console.log("Creating default admin user...");
         
         // Use bcrypt directly for the default admin user to ensure it works
-        const bcrypt = require('bcrypt');
+        // Use the imported bcrypt module instead of require
         const hashedPassword = await bcrypt.hash('admin123', 10);
         console.log("Admin password hashed with bcrypt format:", hashedPassword.substring(0, 7) + "...");
         
