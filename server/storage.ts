@@ -168,8 +168,10 @@ export class DatabaseStorage implements IStorage {
       if (!adminUser) {
         console.log("Creating default admin user...");
         
-        // Use our local hashPassword function with bcrypt
-        const hashedPassword = await hashPassword('admin123');
+        // Use bcrypt directly for the default admin user to ensure it works
+        const bcrypt = require('bcrypt');
+        const hashedPassword = await bcrypt.hash('admin123', 10);
+        console.log("Admin password hashed with bcrypt format:", hashedPassword.substring(0, 7) + "...");
         
         // Create admin user
         await this.createUser({
@@ -179,7 +181,7 @@ export class DatabaseStorage implements IStorage {
           role: 'admin'
         });
         
-        console.log("Default admin user created successfully");
+        console.log("Default admin user created successfully with bcrypt password");
       } else {
         console.log("Admin user already exists, skipping creation");
       }
@@ -407,8 +409,17 @@ export class DatabaseStorage implements IStorage {
         throw new Error(`Username ${user.username} already exists`);
       }
       
-      // Hash the password
-      const hashedPassword = await hashPassword(user.password);
+      // Use bcrypt directly for consistent password hashing
+      // (skip hashPassword to avoid scrypt format issues)
+      let hashedPassword;
+      try {
+        const bcrypt = require('bcrypt');
+        hashedPassword = await bcrypt.hash(user.password, 10);
+        console.log('[Storage] Password hashed with bcrypt format:', hashedPassword.substring(0, 7) + "...");
+      } catch (error) {
+        console.error('[Storage] Error hashing password with bcrypt, falling back to scrypt:', error);
+        hashedPassword = await hashPassword(user.password);
+      }
       
       const [createdUser] = await db
         .insert(users)
@@ -711,9 +722,16 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log('[Storage] Updating user:', id);
       
-      // If password is being updated, hash it
+      // If password is being updated, hash it with bcrypt
       if (data.password) {
-        data.password = await hashPassword(data.password);
+        try {
+          const bcrypt = require('bcrypt');
+          data.password = await bcrypt.hash(data.password, 10);
+          console.log('[Storage] Password hashed with bcrypt for user update');
+        } catch (error) {
+          console.error('[Storage] Error using bcrypt for password update, falling back to scrypt:', error);
+          data.password = await hashPassword(data.password);
+        }
       }
       
       const [updatedUser] = await db
@@ -899,9 +917,20 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updatePasswordAndClearResetToken(id: number, hashedPassword: string): Promise<User | undefined> {
+  async updatePasswordAndClearResetToken(id: number, password: string): Promise<User | undefined> {
     try {
       console.log(`[Storage] Updating password and clearing reset token for user ${id}`);
+      
+      // Hash the password with bcrypt before storing it
+      let hashedPassword;
+      try {
+        const bcrypt = require('bcrypt');
+        hashedPassword = await bcrypt.hash(password, 10);
+        console.log('[Storage] Password hashed with bcrypt for reset:', hashedPassword.substring(0, 7) + "...");
+      } catch (error) {
+        console.error('[Storage] Error using bcrypt for password reset, falling back to scrypt:', error);
+        hashedPassword = await hashPassword(password);
+      }
       
       const [updatedUser] = await db
         .update(users)

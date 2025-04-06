@@ -28,14 +28,19 @@ export async function hashPassword(password: string) {
 }
 
 export async function comparePasswords(supplied: string, stored: string) {
+  console.log('[Auth] Comparing passwords, hash format:', stored.startsWith('$2') ? 'bcrypt' : 'scrypt');
+  
   // Check if it's a bcrypt hash (starts with $2a$, $2b$ or $2y$)
   if (stored.startsWith('$2')) {
     // Handle bcrypt password
     try {
-      const bcrypt = await import('bcrypt');
-      return await bcrypt.compare(supplied, stored);
+      // Use direct import instead of dynamic import which might be causing issues
+      const bcrypt = require('bcrypt');
+      const isValid = await bcrypt.compare(supplied, stored);
+      console.log('[Auth] bcrypt comparison result:', isValid);
+      return isValid;
     } catch (error) {
-      console.error('[Auth] Error importing bcrypt:', error);
+      console.error('[Auth] Error using bcrypt:', error);
       throw error;
     }
   } else {
@@ -45,9 +50,16 @@ export async function comparePasswords(supplied: string, stored: string) {
       console.error('[Auth] Invalid password format, no salt found:', stored);
       return false;
     }
-    const hashedBuf = Buffer.from(hashed, "hex");
-    const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-    return timingSafeEqual(hashedBuf, suppliedBuf);
+    try {
+      const hashedBuf = Buffer.from(hashed, "hex");
+      const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+      const isValid = timingSafeEqual(hashedBuf, suppliedBuf);
+      console.log('[Auth] scrypt comparison result:', isValid);
+      return isValid;
+    } catch (error) {
+      console.error('[Auth] Error in scrypt comparison:', error);
+      return false;
+    }
   }
 }
 
