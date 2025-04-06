@@ -1124,4 +1124,37 @@ export async function registerRoutes(app: Express) {
       });
     }
   });
+  
+  // Debug bcrypt functionality
+  app.get('/api/debug/bcrypt', async (req, res) => {
+    try {
+      const bcrypt = await import('bcrypt');
+      const testPassword = 'admin123';
+      const testHash = await bcrypt.hash(testPassword, 10);
+      const isValid = await bcrypt.compare(testPassword, testHash);
+      
+      // Get the existing admin user and try to verify with that hash too
+      const adminUser = await storage.getUserByUsername('admin');
+      const adminHash = adminUser?.password || 'not-found';
+      const adminValid = adminUser ? await bcrypt.compare(testPassword, adminHash) : false;
+      
+      res.json({
+        test: {
+          password: testPassword,
+          hash: testHash,
+          isValid: isValid
+        },
+        admin: {
+          hash: adminHash.substring(0, 10) + '...',
+          isValid: adminValid
+        }
+      });
+    } catch (error) {
+      console.error("[API] Error in bcrypt debug:", error);
+      res.status(500).json({ 
+        message: "Failed to test bcrypt", 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
 }

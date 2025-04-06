@@ -22,7 +22,7 @@ function useLoginMutation() {
       try {
         console.log('Attempting login with username:', credentials.username);
         // Don't use apiRequest as it throws on !res.ok
-        const res = await fetch("/api/login", {
+        const res = await fetch("/api/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(credentials)
@@ -44,7 +44,7 @@ function useLoginMutation() {
     },
     onSuccess: (user: User) => {
       console.log('Login successful:', user.username);
-      queryClient.setQueryData(["/api/user"], user);
+      queryClient.setQueryData(["/api/auth/user"], user);
       toast({
         title: "Success",
         description: "Successfully logged in!",
@@ -67,7 +67,7 @@ function useLogoutMutation() {
     mutationFn: async () => {
       try {
         // Use direct fetch instead of apiRequest
-        const res = await fetch("/api/logout", {
+        const res = await fetch("/api/auth/logout", {
           method: "POST"
         });
         
@@ -80,7 +80,7 @@ function useLogoutMutation() {
       }
     },
     onSuccess: () => {
-      queryClient.setQueryData(["/api/user"], null);
+      queryClient.setQueryData(["/api/auth/user"], null);
       toast({
         title: "Success",
         description: "Successfully logged out!",
@@ -104,7 +104,7 @@ function useRegisterMutation() {
       try {
         console.log('Attempting registration for:', userData.username);
         // Use direct fetch instead of apiRequest
-        const res = await fetch("/api/register", {
+        const res = await fetch("/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(userData)
@@ -126,7 +126,7 @@ function useRegisterMutation() {
     },
     onSuccess: (user: User) => {
       console.log('Registration successful:', user.username);
-      queryClient.setQueryData(["/api/user"], user);
+      queryClient.setQueryData(["/api/auth/user"], user);
       toast({
         title: "Success",
         description: "Registration successful! You are now logged in.",
@@ -149,10 +149,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     error,
     isLoading,
   } = useQuery<User | null>({
-    queryKey: ["/api/user"],
+    queryKey: ["/api/auth/user"],
     queryFn: async () => {
       try {
-        const res = await fetch("/api/user");
+        const res = await fetch("/api/auth/user");
         if (res.status === 401) return null;
         if (!res.ok) {
           throw new Error('Failed to fetch user');

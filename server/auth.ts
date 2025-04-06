@@ -136,7 +136,7 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/login", (req, res, next) => {
+  app.post("/api/auth/login", (req, res, next) => {
     console.log("[Auth] Login request received:", req.body.username);
 
     // Set proper content type for response
@@ -163,7 +163,7 @@ export function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  app.post("/api/register", async (req, res) => {
+  app.post("/api/auth/register", async (req, res) => {
     try {
       console.log("[Auth] Registration attempt:", req.body);
       // Set proper content type for response
@@ -210,7 +210,7 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/logout", (req, res) => {
+  app.post("/api/auth/logout", (req, res) => {
     const userId = req.user?.id;
     console.log("[Auth] Logout request for user:", userId);
     // Set proper content type for response
@@ -222,7 +222,7 @@ export function setupAuth(app: Express) {
     });
   });
 
-  app.get("/api/user", (req, res) => {
+  app.get("/api/auth/user", (req, res) => {
     console.log("[Auth] User session check:", {
       isAuthenticated: req.isAuthenticated(),
       sessionID: req.sessionID,
