@@ -854,6 +854,42 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  // Calendar diagnostics endpoint (for admin use only)
+  app.get("/api/calendar/diagnostics", async (req, res) => {
+    try {
+      // Create a masked version of credentials for safe display
+      const clientId = process.env.GOOGLE_CALENDAR_CLIENT_ID;
+      const clientSecret = process.env.GOOGLE_CALENDAR_CLIENT_SECRET;
+      const refreshToken = process.env.GOOGLE_CALENDAR_REFRESH_TOKEN;
+      
+      const diagnosticInfo = {
+        configuration: {
+          clientConfigured: !!clientId,
+          clientSecretConfigured: !!clientSecret,
+          refreshTokenConfigured: !!refreshToken,
+          clientId: clientId ? `${clientId.substring(0, 5)}...${clientId.substring(clientId.length - 5)}` : null,
+          refreshToken: refreshToken ? `${refreshToken.substring(0, 5)}...${refreshToken.substring(refreshToken.length - 5)}` : null,
+        },
+        regenerationHelper: {
+          available: true,
+          helperScript: "npx tsx server/utils/refresh-token-helper.ts",
+          instructions: "Run this helper script to generate a new refresh token"
+        },
+        tips: [
+          "If you're seeing 'invalid_grant' errors, you need to generate a new refresh token",
+          "The refresh token may have expired or been revoked by Google",
+          "Use the refresh token helper script to get a new token",
+          "Make sure to update your environment variables with the new token"
+        ]
+      };
+      
+      res.json(diagnosticInfo);
+    } catch (error) {
+      console.error("[API] Error getting calendar diagnostics:", error);
+      res.status(500).json({ message: "Error getting calendar diagnostics" });
+    }
+  });
+
   // ==== CUSTOMER SUPPLIES MANAGEMENT ROUTES ====
 
   // Get all supplies

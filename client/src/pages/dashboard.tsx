@@ -19,6 +19,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { CalendarAdminPanel } from "@/components/calendar-admin-panel";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -87,8 +88,9 @@ export default function Dashboard() {
     queryKey: ["/api/supplies", "filtered", filterClient],
     queryFn: async () => {
       // Filter client-side instead of making an API call
-      const allSupplies = await apiRequest<Supply[]>(`/api/supplies`);
-      return allSupplies.filter(supply => 
+      const response = await apiRequest(`/api/supplies`);
+      const allSupplies = response as Supply[];
+      return allSupplies.filter((supply: Supply) => 
         supply.clientName.toLowerCase().includes(filterClient.toLowerCase())
       );
     },
@@ -99,7 +101,7 @@ export default function Dashboard() {
   // Create supply mutation
   const createSupplyMutation = useMutation({
     mutationFn: (data: SupplyFormValues) => {
-      return apiRequest<Supply>("/api/supplies", {
+      return apiRequest("/api/supplies", {
         method: "POST",
         body: JSON.stringify(data),
       });
@@ -128,7 +130,7 @@ export default function Dashboard() {
   // Update payment status mutation
   const updatePaymentStatusMutation = useMutation({
     mutationFn: ({ id, paid, paymentMethod }: { id: number; paid: boolean; paymentMethod?: string }) => {
-      return apiRequest<Supply>(`/api/supplies/${id}/payment`, {
+      return apiRequest(`/api/supplies/${id}/payment`, {
         method: "PATCH",
         body: JSON.stringify({ paid, paymentMethod }),
       });
@@ -180,7 +182,7 @@ export default function Dashboard() {
       const formData = new FormData();
       formData.append("receipt", file);
       
-      return apiRequest<Supply>(`/api/supplies/${id}/receipt`, {
+      return apiRequest(`/api/supplies/${id}/receipt`, {
         method: "POST",
         body: formData,
         headers: {}, // Let browser set the content type with boundary for formData
@@ -774,6 +776,12 @@ export default function Dashboard() {
                 <UpdatePasswordForm />
               </CardContent>
             </Card>
+            
+            {isAdmin && (
+              <div className="mt-6">
+                <CalendarAdminPanel />
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>

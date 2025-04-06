@@ -28,8 +28,32 @@ function initCalendarClient() {
   }
   
   try {
-    oauth2Client = new google.auth.OAuth2(clientId, clientSecret);
-    oauth2Client.setCredentials({ refresh_token: refreshToken });
+    oauth2Client = new google.auth.OAuth2(
+      clientId,
+      clientSecret,
+      'https://handypro-charleston.com/auth/google/callback' // Production URL for redirect
+    );
+    
+    // Set refresh token and auth parameters
+    oauth2Client.setCredentials({ 
+      refresh_token: refreshToken,
+      // Force token refresh on next API call
+      expiry_date: 1 
+    });
+    
+    // Add a token refresh handler to detect invalid tokens
+    oauth2Client.on('tokens', (tokens: { refresh_token?: string; access_token?: string; expiry_date?: number }) => {
+      console.log('[CALENDAR] Token refreshed successfully');
+      if (tokens.refresh_token) {
+        console.log('[CALENDAR] Received new refresh token - store this for future use!');
+        // Log partially masked token for debugging
+        const maskedToken = tokens.refresh_token ? 
+          `${tokens.refresh_token.substring(0, 5)}...${tokens.refresh_token.substring(tokens.refresh_token.length - 5)}` : 
+          'Not provided';
+        console.log('[CALENDAR] New refresh token (masked):', maskedToken);
+      }
+    });
+    
     calendar = google.calendar({ version: 'v3', auth: oauth2Client });
     console.log('[CALENDAR] Google Calendar API client initialized successfully');
     return true;
@@ -150,7 +174,10 @@ ${booking.notes ? `Additional Notes: ${booking.notes}` : ''}
  * @returns Array of available time slots
  */
 export async function getAvailableTimeSlots(date: Date): Promise<Date[]> {
+  console.log('[CALENDAR] Checking availability for date:', date.toISOString().split('T')[0]);
+  
   if (!initCalendarClient()) {
+    console.log('[CALENDAR] Client not initialized, returning default time slots');
     // If calendar is not configured, return default business hours
     return getDefaultTimeSlots(date);
   }
@@ -163,6 +190,11 @@ export async function getAvailableTimeSlots(date: Date): Promise<Date[]> {
   endOfDay.setHours(23, 59, 59, 999);
   
   try {
+    console.log('[CALENDAR] Fetching events from calendar for date range:', {
+      start: startOfDay.toISOString(),
+      end: endOfDay.toISOString()
+    });
+    
     // Get all events for the day
     const response = await calendar.events.list({
       calendarId: 'primary',
@@ -172,14 +204,25 @@ export async function getAvailableTimeSlots(date: Date): Promise<Date[]> {
       orderBy: 'startTime',
     });
     
+    console.log(`[CALENDAR] Found ${response.data.items?.length || 0} events for the day`);
+    
     // Get busy times
     const busyTimes = (response.data.items || []).map((event: any) => ({
       start: new Date(event.start.dateTime || event.start.date),
       end: new Date(event.end.dateTime || event.end.date)
     }));
     
+    // Summarize busy periods (without exposing full details)
+    if (busyTimes.length > 0) {
+      console.log('[CALENDAR] Busy periods:');
+      busyTimes.forEach((busyTime: { start: Date; end: Date }, index: number) => {
+        console.log(`  Period ${index + 1}: ${busyTime.start.toLocaleTimeString()} - ${busyTime.end.toLocaleTimeString()}`);
+      });
+    }
+    
     // Get all possible time slots (business hours)
     const allTimeSlots = getDefaultTimeSlots(date);
+    console.log(`[CALENDAR] Generated ${allTimeSlots.length} potential time slots`);
     
     // Filter out time slots that overlap with busy times
     const availableTimeSlots = allTimeSlots.filter(timeSlot => {
@@ -202,9 +245,20 @@ export async function getAvailableTimeSlots(date: Date): Promise<Date[]> {
       });
     });
     
+    console.log(`[CALENDAR] Found ${availableTimeSlots.length} available time slots`);
     return availableTimeSlots;
-  } catch (error) {
+    
+  } catch (error: any) {
     console.error('[CALENDAR] Error fetching available time slots:', error);
+    
+    // Enhanced error reporting for token issues
+    if (error?.response?.data?.error === 'invalid_grant') {
+      console.error('[CALENDAR] Google API returned invalid_grant error. This usually means the refresh token is expired or has been revoked.');
+      console.error('[CALENDAR] Please obtain a new refresh token and update the environment variable.');
+    } else if (error?.code === 401 || error?.response?.status === 401) {
+      console.error('[CALENDAR] Authentication error (401). The token may be invalid or expired.');
+    }
+    
     // In case of error, return default time slots
     return getDefaultTimeSlots(date);
   }
