@@ -167,6 +167,7 @@ export const insertSupplySchema = createInsertSchema(supplies)
     purchaseDate: z.string().transform(str => new Date(str)),
     paymentDate: z.string().transform(str => new Date(str)).optional().nullable(),
     paid: z.boolean().default(false),
+    receiptImageUrl: z.string().optional().nullable(),
   });
 
 export type Service = typeof services.$inferSelect;

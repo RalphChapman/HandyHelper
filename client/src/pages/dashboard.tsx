@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { queryClient } from "@/lib/queryClient";
 import type { Booking, QuoteRequest, Testimonial, Supply } from "@shared/schema";
 import { UpdatePasswordForm } from "@/components/update-password-form";
-import { FileText, DollarSign } from "lucide-react";
+import { FileText, DollarSign, Upload, FileImage, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -172,6 +172,50 @@ export default function Dashboard() {
       id: supply.id,
       paid: false,
     });
+  }
+
+  // Receipt upload mutation
+  const uploadReceiptMutation = useMutation({
+    mutationFn: async ({ id, file }: { id: number; file: File }) => {
+      const formData = new FormData();
+      formData.append("receipt", file);
+      
+      return apiRequest<Supply>(`/api/supplies/${id}/receipt`, {
+        method: "POST",
+        body: formData,
+        headers: {}, // Let browser set the content type with boundary for formData
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Receipt uploaded",
+        description: "The receipt image has been uploaded successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/supplies"] });
+      if (filterClient && filterClient.trim() !== '') {
+        queryClient.invalidateQueries({ queryKey: ["/api/supplies", "filtered", filterClient] });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to upload receipt: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Handle receipt upload
+  function handleReceiptUpload(supply: Supply, event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (file) {
+      uploadReceiptMutation.mutate({ id: supply.id, file });
+    }
+  }
+  
+  // View receipt
+  function viewReceipt(receiptUrl: string) {
+    window.open(receiptUrl, '_blank');
   }
 
   // Get display data
@@ -357,6 +401,42 @@ export default function Dashboard() {
                         )}
                         
                         <div className="mt-4 flex gap-2 justify-end">
+                          {/* Receipt upload and view buttons */}
+                          <label
+                            className={`flex items-center gap-1 px-3 py-1 rounded-md text-sm font-medium ${
+                              supply.receiptImageUrl ? "bg-gray-100 hover:bg-gray-200 text-gray-800" : "bg-blue-50 hover:bg-blue-100 text-blue-700"
+                            } cursor-pointer transition-colors`}
+                          >
+                            {supply.receiptImageUrl ? (
+                              <>
+                                <FileImage className="h-4 w-4" /> Update Receipt
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="h-4 w-4" /> Upload Receipt
+                              </>
+                            )}
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept="image/*"
+                              onChange={(e) => handleReceiptUpload(supply, e)}
+                              disabled={uploadReceiptMutation.isPending}
+                            />
+                          </label>
+                          
+                          {supply.receiptImageUrl && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => viewReceipt(supply.receiptImageUrl!)}
+                              className="flex items-center gap-1"
+                            >
+                              <Eye className="h-4 w-4" /> View Receipt
+                            </Button>
+                          )}
+                          
+                          {/* Payment status buttons */}
                           {supply.paid ? (
                             <Button
                               variant="outline"

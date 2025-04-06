@@ -1043,4 +1043,49 @@ export async function registerRoutes(app: Express) {
       });
     }
   });
+  
+  // Upload receipt image for a supply
+  app.post("/api/supplies/:id/receipt", upload.single("receipt"), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const file = req.file;
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid supply ID" });
+      }
+      
+      if (!file) {
+        return res.status(400).json({ message: "No receipt image uploaded" });
+      }
+      
+      // Verify supply exists
+      const existingSupply = await storage.getSupply(id);
+      if (!existingSupply) {
+        return res.status(404).json({ message: "Supply not found" });
+      }
+      
+      console.log("[API] Receipt image received:", {
+        filename: file.filename,
+        originalname: file.originalname,
+        size: file.size
+      });
+      
+      // Save the file using fileManager
+      const receiptImageUrl = await fileManager.saveFile(file);
+      
+      // Update the supply with the receipt image URL
+      const updatedSupply = await storage.updateSupply(id, {
+        receiptImageUrl
+      });
+      
+      console.log(`[API] Successfully added receipt image to supply #${id}`);
+      res.json(updatedSupply);
+    } catch (error) {
+      console.error("[API] Error uploading receipt image:", error);
+      res.status(500).json({ 
+        message: "Failed to upload receipt image", 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
 }
