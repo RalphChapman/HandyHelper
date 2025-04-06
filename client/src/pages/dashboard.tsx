@@ -13,20 +13,29 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { CalendarAdminPanel } from "@/components/calendar-admin-panel";
+import { useLocation } from "wouter";
 
 export default function Dashboard() {
   const { user, loginMutation, logoutMutation } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const isAdmin = user?.role === "admin";
   const [isAddSupplyOpen, setIsAddSupplyOpen] = useState(false);
   const [filterClient, setFilterClient] = useState("");
+  
+  // Redirect to auth page if not logged in
+  useEffect(() => {
+    if (!user) {
+      setLocation("/auth");
+    }
+  }, [user, setLocation]);
 
   // Supply form schema
   const supplyFormSchema = z.object({

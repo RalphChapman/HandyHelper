@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/drawer";
 
 export function Navigation() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const { user, logoutMutation } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -24,6 +24,14 @@ export function Navigation() {
     { href: "/quote", label: "Get Quote" },
     { href: "/dashboard", label: "Dashboard" },
   ];
+
+  // For desktop navigation
+  const handleAuthClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!user && location !== "/auth") {
+      event.preventDefault();
+      setLocation("/auth");
+    }
+  };
 
   return (
     <nav className="bg-white border-b">
@@ -41,6 +49,7 @@ export function Navigation() {
               <Link
                 key={link.href}
                 href={link.href}
+                onClick={link.href === "/dashboard" ? handleAuthClick : undefined}
                 className={cn(
                   "px-3 py-2 rounded-md text-sm font-medium",
                   location === link.href
@@ -51,7 +60,7 @@ export function Navigation() {
                 {link.label}
               </Link>
             ))}
-            {user && (
+            {user ? (
               <Button
                 variant="ghost"
                 onClick={() => logoutMutation.mutate()}
@@ -59,6 +68,13 @@ export function Navigation() {
               >
                 Logout
               </Button>
+            ) : (
+              <Link
+                href="/auth"
+                className="px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-primary"
+              >
+                Login
+              </Link>
             )}
           </div>
 
@@ -89,7 +105,12 @@ export function Navigation() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  onClick={() => setIsOpen(false)}
+                  onClick={(e) => {
+                    setIsOpen(false);
+                    if (link.href === "/dashboard") {
+                      handleAuthClick(e);
+                    }
+                  }}
                   className={cn(
                     "px-3 py-2 rounded-md text-sm font-medium",
                     location === link.href
@@ -100,7 +121,7 @@ export function Navigation() {
                   {link.label}
                 </Link>
               ))}
-              {user && (
+              {user ? (
                 <Button
                   variant="ghost"
                   onClick={() => {
@@ -111,6 +132,14 @@ export function Navigation() {
                 >
                   Logout
                 </Button>
+              ) : (
+                <Link
+                  href="/auth"
+                  onClick={() => setIsOpen(false)}
+                  className="px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-primary"
+                >
+                  Login
+                </Link>
               )}
             </div>
           </div>
