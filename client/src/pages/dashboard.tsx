@@ -84,13 +84,14 @@ export default function Dashboard() {
 
   // Query filtered supplies
   const { data: filteredSupplies, isLoading: isLoadingFiltered } = useQuery<Supply[]>({
-    queryKey: ["/api/supplies/client", filterClient],
-    queryFn: () => apiRequest<Supply[]>(`/api/supplies/client`, {
-      method: "GET",
-      headers: {
-        'Client-Name': encodeURIComponent(filterClient)
-      }
-    }),
+    queryKey: ["/api/supplies", "filtered", filterClient],
+    queryFn: async () => {
+      // Filter client-side instead of making an API call
+      const allSupplies = await apiRequest<Supply[]>(`/api/supplies`);
+      return allSupplies.filter(supply => 
+        supply.clientName.toLowerCase().includes(filterClient.toLowerCase())
+      );
+    },
     enabled: !!filterClient && filterClient.trim().length > 0,
     throwOnError: false,
   });
@@ -110,7 +111,7 @@ export default function Dashboard() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/supplies"] });
       if (filterClient && filterClient.trim() !== '') {
-        queryClient.invalidateQueries({ queryKey: ["/api/supplies/client", filterClient] });
+        queryClient.invalidateQueries({ queryKey: ["/api/supplies", "filtered", filterClient] });
       }
       setIsAddSupplyOpen(false);
       form.reset();
@@ -139,7 +140,7 @@ export default function Dashboard() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/supplies"] });
       if (filterClient && filterClient.trim() !== '') {
-        queryClient.invalidateQueries({ queryKey: ["/api/supplies/client", filterClient] });
+        queryClient.invalidateQueries({ queryKey: ["/api/supplies", "filtered", filterClient] });
       }
     },
     onError: (error) => {
