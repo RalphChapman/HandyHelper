@@ -210,7 +210,7 @@ export class DatabaseStorage implements IStorage {
     try {
       const [createdRequest] = await db
         .insert(quoteRequests)
-        .values({ ...request, createdAt: new Date() })
+        .values({ ...request })
         .returning();
       return createdRequest;
     } catch (error) {
@@ -225,7 +225,7 @@ export class DatabaseStorage implements IStorage {
       const allRequests = await db
         .select()
         .from(quoteRequests)
-        .orderBy(quoteRequests.createdAt, 'desc');
+        .orderBy(quoteRequests.id, 'desc');
       console.log(`[Storage] Found ${allRequests.length} quote requests`);
       return allRequests;
     } catch (error) {
@@ -241,7 +241,6 @@ export class DatabaseStorage implements IStorage {
         .insert(bookings)
         .values({ 
           ...booking, 
-          createdAt: new Date(),
           status: booking.status || 'scheduled' 
         })
         .returning();
