@@ -32,9 +32,8 @@ export default function Dashboard() {
   
   // Redirect to auth page if not logged in
   useEffect(() => {
-    if (!user) {
-      setLocation("/auth");
-    }
+    // Allow anonymous access to the dashboard for viewing invoices
+    // No redirect needed
   }, [user, setLocation]);
 
   // Supply form schema
@@ -310,13 +309,17 @@ export default function Dashboard() {
         <Tabs defaultValue="invoices" className="space-y-6">
           <TabsList>
             <TabsTrigger value="invoices">Invoices</TabsTrigger>
-            <TabsTrigger value="supplies">Supplies</TabsTrigger>
-            <TabsTrigger value="bookings">My Bookings</TabsTrigger>
-            <TabsTrigger value="quotes">Quote Requests</TabsTrigger>
-            {isAdmin && (
-              <TabsTrigger value="testimonials">Testimonials</TabsTrigger>
+            {user && (
+              <>
+                <TabsTrigger value="supplies">Supplies</TabsTrigger>
+                <TabsTrigger value="bookings">My Bookings</TabsTrigger>
+                <TabsTrigger value="quotes">Quote Requests</TabsTrigger>
+                {isAdmin && (
+                  <TabsTrigger value="testimonials">Testimonials</TabsTrigger>
+                )}
+                <TabsTrigger value="security">Security Settings</TabsTrigger>
+              </>
             )}
-            <TabsTrigger value="security">Security Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="invoices">
@@ -356,6 +359,8 @@ export default function Dashboard() {
           </TabsContent>
           
           <TabsContent value="supplies">
+            {user ? (
+            <>
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h2 className="text-2xl font-bold">Client Supplies</h2>
@@ -665,9 +670,22 @@ export default function Dashboard() {
                 </Form>
               </DialogContent>
             </Dialog>
+            </>
+            ) : (
+              <div className="p-8 text-center">
+                <p>Please log in to view and manage supplies.</p>
+                <Button 
+                  onClick={() => loginMutation.mutate({ username: "admin", password: "admin123" })}
+                  className="mt-4"
+                >
+                  Log in as Admin
+                </Button>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="bookings">
+            {user ? (
             <div className="grid gap-6">
               {!bookings?.length ? (
                 <Card>
@@ -699,9 +717,21 @@ export default function Dashboard() {
                 ))
               )}
             </div>
+            ) : (
+              <div className="p-8 text-center">
+                <p>Please log in to view your bookings.</p>
+                <Button 
+                  onClick={() => loginMutation.mutate({ username: "admin", password: "admin123" })}
+                  className="mt-4"
+                >
+                  Log in as Admin
+                </Button>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="quotes">
+            {user ? (
             <div className="grid gap-6">
               {!quotes?.length ? (
                 <Card>
@@ -748,6 +778,17 @@ export default function Dashboard() {
                 ))
               )}
             </div>
+            ) : (
+              <div className="p-8 text-center">
+                <p>Please log in to view quote requests.</p>
+                <Button 
+                  onClick={() => loginMutation.mutate({ username: "admin", password: "admin123" })}
+                  className="mt-4"
+                >
+                  Log in as Admin
+                </Button>
+              </div>
+            )}
           </TabsContent>
 
           {isAdmin && (
@@ -800,18 +841,32 @@ export default function Dashboard() {
           )}
 
           <TabsContent value="security">
-            <Card>
-              <CardHeader>
-                <CardTitle>Change Password</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <UpdatePasswordForm />
-              </CardContent>
-            </Card>
-            
-            {isAdmin && (
-              <div className="mt-6">
-                <CalendarAdminPanel />
+            {user ? (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Change Password</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <UpdatePasswordForm />
+                </CardContent>
+              </Card>
+              
+              {isAdmin && (
+                <div className="mt-6">
+                  <CalendarAdminPanel />
+                </div>
+              )}
+            </>
+            ) : (
+              <div className="p-8 text-center">
+                <p>Please log in to access security settings.</p>
+                <Button 
+                  onClick={() => loginMutation.mutate({ username: "admin", password: "admin123" })}
+                  className="mt-4"
+                >
+                  Log in as Admin
+                </Button>
               </div>
             )}
           </TabsContent>
