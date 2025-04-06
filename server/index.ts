@@ -7,6 +7,7 @@ import { createServer } from "http";
 import path from "path";
 import fs from 'fs';
 import { storage } from "./storage";
+import { setupAuth } from "./auth";
 
 const app = express();
 
@@ -149,10 +150,19 @@ try {
     await storage.initialize();
     console.log("[Server] Database storage initialized successfully");
 
-    // Register API routes
-    await registerRoutes(app);
-
+    // Create HTTP server
     const server = createServer(app);
+
+    // CRITICAL: Set up authentication and API routes BEFORE Vite middleware
+    // This ensures API routes take precedence over Vite's catch-all handler
+    console.log("[Server] Setting up authentication routes...");
+    setupAuth(app);
+    console.log("[Server] Authentication routes configured");
+
+    // Register API routes
+    console.log("[Server] Registering API routes...");
+    await registerRoutes(app);
+    console.log("[Server] API routes registered");
 
     if (process.env.NODE_ENV === 'production') {
       console.log("[Server] Running in PRODUCTION mode");

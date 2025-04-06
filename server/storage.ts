@@ -6,7 +6,6 @@ import session from "express-session";
 import MemoryStore from "memorystore";
 import { and, asc, desc, eq } from "drizzle-orm";
 import {
-  schema,
   Service,
   QuoteRequest,
   Booking,
@@ -36,11 +35,7 @@ import {
   supplies
 } from "@shared/schema";
 import { db } from "./db";
-
-async function hashPassword(password: string) {
-  const saltRounds = 10;
-  return bcrypt.hash(password, saltRounds);
-}
+import { hashPassword, comparePasswords } from "./auth"; // Import auth functions to ensure consistent hashing
 
 export interface IStorage {
   initialize(): Promise<void>;
@@ -786,11 +781,16 @@ export class DatabaseStorage implements IStorage {
         return undefined;
       }
       
-      // Compare passwords
-      const passwordValid = await bcrypt.compare(password, user.password);
-      
-      if (!passwordValid) {
-        console.log(`[Storage] Password invalid for user ${username}`);
+      // Compare passwords using the same method as auth.ts
+      try {
+        const passwordValid = await comparePasswords(password, user.password);
+        
+        if (!passwordValid) {
+          console.log(`[Storage] Password invalid for user ${username}`);
+          return undefined;
+        }
+      } catch (err) {
+        console.error(`[Storage] Password comparison error:`, err);
         return undefined;
       }
       
