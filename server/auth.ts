@@ -6,6 +6,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { type User } from "@shared/schema";
+import bcrypt from "bcrypt";
 
 declare global {
   namespace Express {
@@ -32,10 +33,8 @@ export async function comparePasswords(supplied: string, stored: string) {
   
   // Check if it's a bcrypt hash (starts with $2a$, $2b$ or $2y$)
   if (stored.startsWith('$2')) {
-    // Handle bcrypt password
+    // Handle bcrypt password using the imported bcrypt module
     try {
-      // Use direct import instead of dynamic import which might be causing issues
-      const bcrypt = require('bcrypt');
       const isValid = await bcrypt.compare(supplied, stored);
       console.log('[Auth] bcrypt comparison result:', isValid);
       return isValid;

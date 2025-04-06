@@ -413,7 +413,7 @@ export class DatabaseStorage implements IStorage {
       // (skip hashPassword to avoid scrypt format issues)
       let hashedPassword;
       try {
-        const bcrypt = require('bcrypt');
+        // Use the bcrypt module that should be imported at the top of the file
         hashedPassword = await bcrypt.hash(user.password, 10);
         console.log('[Storage] Password hashed with bcrypt format:', hashedPassword.substring(0, 7) + "...");
       } catch (error) {
@@ -725,7 +725,7 @@ export class DatabaseStorage implements IStorage {
       // If password is being updated, hash it with bcrypt
       if (data.password) {
         try {
-          const bcrypt = require('bcrypt');
+          // Use the imported bcrypt module
           data.password = await bcrypt.hash(data.password, 10);
           console.log('[Storage] Password hashed with bcrypt for user update');
         } catch (error) {
@@ -924,7 +924,7 @@ export class DatabaseStorage implements IStorage {
       // Hash the password with bcrypt before storing it
       let hashedPassword;
       try {
-        const bcrypt = require('bcrypt');
+        // Use the imported bcrypt module
         hashedPassword = await bcrypt.hash(password, 10);
         console.log('[Storage] Password hashed with bcrypt for reset:', hashedPassword.substring(0, 7) + "...");
       } catch (error) {
