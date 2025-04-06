@@ -86,7 +86,7 @@ export default function Dashboard() {
   const { data: filteredSupplies, isLoading: isLoadingFiltered } = useQuery<Supply[]>({
     queryKey: ["/api/supplies/client", filterClient],
     queryFn: () => apiRequest<Supply[]>(`/api/supplies/client/${encodeURIComponent(filterClient)}`),
-    enabled: !!filterClient,
+    enabled: !!filterClient && filterClient.trim().length > 0,
     throwOnError: false,
   });
 
@@ -104,7 +104,7 @@ export default function Dashboard() {
         description: "The supply has been added successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/supplies"] });
-      if (filterClient) {
+      if (filterClient && filterClient.trim() !== '') {
         queryClient.invalidateQueries({ queryKey: ["/api/supplies/client", filterClient] });
       }
       setIsAddSupplyOpen(false);
@@ -133,7 +133,7 @@ export default function Dashboard() {
         description: "The payment status has been updated successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/supplies"] });
-      if (filterClient) {
+      if (filterClient && filterClient.trim() !== '') {
         queryClient.invalidateQueries({ queryKey: ["/api/supplies/client", filterClient] });
       }
     },
@@ -169,8 +169,8 @@ export default function Dashboard() {
   }
 
   // Get display data
-  const displaySupplies = filterClient && filteredSupplies ? filteredSupplies : supplies;
-  const displayLoading = filterClient ? isLoadingFiltered : isLoading;
+  const displaySupplies = filterClient && filterClient.trim() !== '' && filteredSupplies ? filteredSupplies : supplies;
+  const displayLoading = filterClient && filterClient.trim() !== '' ? isLoadingFiltered : isLoading;
 
   const approveTestimonialMutation = useMutation({
     mutationFn: async ({ id, approved }: { id: number; approved: boolean }) => {
