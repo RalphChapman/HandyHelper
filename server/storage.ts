@@ -221,13 +221,15 @@ export class DatabaseStorage implements IStorage {
 
   async getQuoteRequests(): Promise<QuoteRequest[]> {
     try {
+      console.log('[Storage] Fetching all quote requests');
       const allRequests = await db
         .select()
         .from(quoteRequests)
-        .orderBy(desc(quoteRequests.createdAt));
+        .orderBy(quoteRequests.createdAt, 'desc');
+      console.log(`[Storage] Found ${allRequests.length} quote requests`);
       return allRequests;
     } catch (error) {
-      console.error("Error fetching quote requests:", error);
+      console.error("[Storage] Error fetching quote requests:", error);
       throw error;
     }
   }
@@ -270,33 +272,33 @@ export class DatabaseStorage implements IStorage {
 
   async getBookings(): Promise<Booking[]> {
     try {
-      console.log('Fetching all bookings');
+      console.log('[Storage] Fetching all bookings');
       const allBookings = await db
         .select()
         .from(bookings)
-        .orderBy(desc(bookings.appointmentDate));
+        .orderBy(bookings.appointmentDate, 'desc');
       
-      console.log(`Found ${allBookings.length} bookings`);
+      console.log(`[Storage] Found ${allBookings.length} bookings`);
       return allBookings;
     } catch (error) {
-      console.error('Error fetching bookings:', error);
+      console.error('[Storage] Error fetching bookings:', error);
       throw error;
     }
   }
 
   async getBookingsByEmail(email: string): Promise<Booking[]> {
     try {
-      console.log('Fetching bookings for email:', email);
+      console.log('[Storage] Fetching bookings for email:', email);
       const userBookings = await db
         .select()
         .from(bookings)
         .where(eq(bookings.clientEmail, email))
-        .orderBy(desc(bookings.appointmentDate));
+        .orderBy(bookings.appointmentDate, 'desc');
       
-      console.log(`Found ${userBookings.length} bookings for ${email}`);
+      console.log(`[Storage] Found ${userBookings.length} bookings for ${email}`);
       return userBookings;
     } catch (error) {
-      console.error(`Error fetching bookings for ${email}:`, error);
+      console.error(`[Storage] Error fetching bookings for ${email}:`, error);
       throw error;
     }
   }
@@ -320,18 +322,18 @@ export class DatabaseStorage implements IStorage {
 
   async getProjects(serviceId: number): Promise<Project[]> {
     try {
-      console.log('Fetching projects for service:', serviceId);
+      console.log('[Storage] Fetching projects for service:', serviceId);
       
       const serviceProjects = await db
         .select()
         .from(projects)
         .where(serviceId > 0 ? eq(projects.serviceId, serviceId) : undefined)
-        .orderBy(desc(projects.createdAt));
+        .orderBy(projects.createdAt, 'desc');
       
-      console.log(`Found ${serviceProjects.length} projects for service ${serviceId}`);
+      console.log(`[Storage] Found ${serviceProjects.length} projects for service ${serviceId}`);
       return serviceProjects;
     } catch (error) {
-      console.error(`Error fetching projects for service ${serviceId}:`, error);
+      console.error(`[Storage] Error fetching projects for service ${serviceId}:`, error);
       throw error;
     }
   }
@@ -478,7 +480,7 @@ export class DatabaseStorage implements IStorage {
         query = query.where(eq(testimonials.approved, approved));
       }
       
-      const allTestimonials = await query.orderBy(desc(testimonials.createdAt));
+      const allTestimonials = await query.orderBy(testimonials.createdAt, 'desc');
       console.log(`[Storage] Found ${allTestimonials.length} testimonials`);
       
       return allTestimonials;
@@ -629,7 +631,7 @@ export class DatabaseStorage implements IStorage {
       const allReviews = await db
         .select()
         .from(reviews)
-        .orderBy(desc(reviews.createdAt));
+        .orderBy(reviews.createdAt, 'desc');
       
       console.log(`[Storage] Found ${allReviews.length} reviews`);
       return allReviews;
@@ -646,7 +648,7 @@ export class DatabaseStorage implements IStorage {
         .select()
         .from(reviews)
         .where(eq(reviews.serviceId, serviceId))
-        .orderBy(desc(reviews.createdAt));
+        .orderBy(reviews.createdAt, 'desc');
       
       console.log(`[Storage] Found ${serviceReviews.length} reviews for service ${serviceId}`);
       return serviceReviews;
@@ -663,7 +665,7 @@ export class DatabaseStorage implements IStorage {
         .select()
         .from(reviews)
         .where(eq(reviews.userId, userId))
-        .orderBy(desc(reviews.createdAt));
+        .orderBy(reviews.createdAt, 'desc');
       
       console.log(`[Storage] Found ${userReviews.length} reviews by user ${userId}`);
       return userReviews;
@@ -984,7 +986,10 @@ export class DatabaseStorage implements IStorage {
   async getSupplies(): Promise<Supply[]> {
     try {
       console.log("[Storage] Fetching all supplies");
-      const allSupplies = await db.select().from(supplies).orderBy(desc(supplies.createdAt));
+      const allSupplies = await db
+        .select()
+        .from(supplies)
+        .orderBy(supplies.createdAt, 'desc');
       console.log(`[Storage] Found ${allSupplies.length} supplies`);
       return allSupplies;
     } catch (error) {
@@ -1000,7 +1005,7 @@ export class DatabaseStorage implements IStorage {
         .select()
         .from(supplies)
         .where(eq(supplies.clientName, clientName))
-        .orderBy(desc(supplies.createdAt));
+        .orderBy(supplies.createdAt, 'desc');
       console.log(`[Storage] Found ${clientSupplies.length} supplies for client ${clientName}`);
       return clientSupplies;
     } catch (error) {
