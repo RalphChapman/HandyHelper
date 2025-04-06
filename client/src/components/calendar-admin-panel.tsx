@@ -33,8 +33,18 @@ export function CalendarAdminPanel() {
     try {
       setLoading(true);
       setError(null);
-      const data = await apiRequest('/api/calendar/diagnostics');
-      setDiagnostics(data as CalendarDiagnostics);
+      // Use direct fetch to avoid apiRequest issues
+      const response = await fetch('/api/calendar/diagnostics', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+      }
+      const data = await response.json();
+      setDiagnostics(data);
     } catch (err) {
       console.error('Error fetching calendar diagnostics:', err);
       setError('Failed to load calendar diagnostic information');
