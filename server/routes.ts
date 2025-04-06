@@ -873,17 +873,18 @@ export async function registerRoutes(app: Express) {
   });
 
   // Get supplies by client name
-  app.get("/api/supplies/client/:clientName", async (req, res) => {
+  app.get("/api/supplies/client", async (req, res) => {
     try {
-      const { clientName } = req.params;
+      const clientName = req.headers['client-name'] as string;
       console.log(`[API] Fetching supplies for client: ${clientName}`);
       
       if (!clientName) {
-        return res.status(400).json({ message: "Client name is required" });
+        return res.status(400).json({ message: "Client name is required in Client-Name header" });
       }
       
-      const supplies = await storage.getSuppliesByClient(clientName);
-      console.log(`[API] Found ${supplies.length} supplies for client: ${clientName}`);
+      const decodedClientName = decodeURIComponent(clientName);
+      const supplies = await storage.getSuppliesByClient(decodedClientName);
+      console.log(`[API] Found ${supplies.length} supplies for client: ${decodedClientName}`);
       res.json(supplies);
     } catch (error) {
       console.error("[API] Error fetching client supplies:", error);

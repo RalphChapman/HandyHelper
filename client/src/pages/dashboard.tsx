@@ -85,7 +85,12 @@ export default function Dashboard() {
   // Query filtered supplies
   const { data: filteredSupplies, isLoading: isLoadingFiltered } = useQuery<Supply[]>({
     queryKey: ["/api/supplies/client", filterClient],
-    queryFn: () => apiRequest<Supply[]>(`/api/supplies/client/${encodeURIComponent(filterClient)}`),
+    queryFn: () => apiRequest<Supply[]>(`/api/supplies/client`, {
+      method: "GET",
+      headers: {
+        'Client-Name': encodeURIComponent(filterClient)
+      }
+    }),
     enabled: !!filterClient && filterClient.trim().length > 0,
     throwOnError: false,
   });
