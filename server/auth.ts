@@ -28,10 +28,27 @@ export async function hashPassword(password: string) {
 }
 
 export async function comparePasswords(supplied: string, stored: string) {
-  const [hashed, salt] = stored.split(".");
-  const hashedBuf = Buffer.from(hashed, "hex");
-  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  return timingSafeEqual(hashedBuf, suppliedBuf);
+  // Check if it's a bcrypt hash (starts with $2a$, $2b$ or $2y$)
+  if (stored.startsWith('$2')) {
+    // Handle bcrypt password
+    try {
+      const bcrypt = await import('bcrypt');
+      return await bcrypt.compare(supplied, stored);
+    } catch (error) {
+      console.error('[Auth] Error importing bcrypt:', error);
+      throw error;
+    }
+  } else {
+    // Handle scrypt password (our format with salt)
+    const [hashed, salt] = stored.split(".");
+    if (!salt) {
+      console.error('[Auth] Invalid password format, no salt found:', stored);
+      return false;
+    }
+    const hashedBuf = Buffer.from(hashed, "hex");
+    const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+    return timingSafeEqual(hashedBuf, suppliedBuf);
+  }
 }
 
 export function setupAuth(app: Express) {
