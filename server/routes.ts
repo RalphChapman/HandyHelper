@@ -890,13 +890,14 @@ export async function registerRoutes(app: Express) {
           available: true,
           helperScript: "npx tsx server/utils/refresh-token-helper.ts",
           instructions: "Run this helper script to generate a new refresh token",
-          webLink: "/api/calendar/auth-url" // New endpoint for browser-based auth
+          webLink: "/api/calendar/auth-url", // New endpoint for browser-based auth
+          refreshEndpoint: "/api/calendar/refresh-client" // Endpoint to refresh client after token update
         },
         tips: [
           "If you're seeing 'invalid_grant' errors, you need to generate a new refresh token",
           "The refresh token may have expired or been revoked by Google",
           "Click 'Get New Token' to start the browser-based authorization process",
-          "After authorization, copy the new refresh token and update your environment variable"
+          "After authorization, the system will automatically start using the new token"
         ]
       };
       
@@ -904,6 +905,30 @@ export async function registerRoutes(app: Express) {
     } catch (error) {
       console.error("[API] Error getting calendar diagnostics:", error);
       res.status(500).json({ message: "Error getting calendar diagnostics" });
+    }
+  });
+  
+  // Force calendar client refresh endpoint
+  app.post("/api/calendar/refresh-client", async (req, res) => {
+    try {
+      console.log("[API] Forcing calendar client refresh");
+      
+      // Force reinitialization of calendar client with current environment variables
+      const { initCalendarClient } = await import("./utils/calendar");
+      const success = initCalendarClient(true); // true = force reinitialization
+      
+      res.json({ 
+        success, 
+        timestamp: new Date().toISOString(),
+        message: success ? "Calendar client successfully refreshed" : "Failed to refresh calendar client" 
+      });
+    } catch (error) {
+      console.error("[API] Error refreshing calendar client:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Error refreshing calendar client",
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
   
@@ -972,6 +997,27 @@ export async function registerRoutes(app: Express) {
       // Exchange the code for tokens
       const { tokens } = await oauth2Client.getToken(code);
       
+      let tokenUpdated = false;
+      let errorMessage = '';
+      
+      // If we received a refresh token, update the environment variable
+      if (tokens.refresh_token) {
+        try {
+          // Set the new token in the environment variable to use immediately
+          process.env.GOOGLE_CALENDAR_REFRESH_TOKEN = tokens.refresh_token;
+          console.log('[CALENDAR] Successfully updated refresh token in environment');
+          
+          // In a production environment, we would want to save this to a secure storage
+          // For now, just log that it needs to be saved permanently
+          console.log('[CALENDAR] IMPORTANT: For persistence across restarts, add this token to your env file or secrets manager');
+          
+          tokenUpdated = true;
+        } catch (updateError) {
+          console.error('[CALENDAR] Failed to update refresh token in environment:', updateError);
+          errorMessage = 'Could not update environment variable automatically. Please manually update your GOOGLE_CALENDAR_REFRESH_TOKEN.';
+        }
+      }
+      
       // Return HTML page with the token
       res.send(`
         <html>
@@ -985,6 +1031,7 @@ export async function registerRoutes(app: Express) {
               .steps { margin-top: 30px; }
               .steps ol { padding-left: 20px; }
               code { background: #eee; padding: 3px 5px; border-radius: 3px; font-family: monospace; }
+              .note { background: #fff8e1; border-left: 4px solid #ffc107; padding: 12px; margin: 15px 0; }
             </style>
           </head>
           <body>
@@ -997,12 +1044,22 @@ export async function registerRoutes(app: Express) {
                 <h2>Your New Refresh Token:</h2>
                 <div class="token-box">${tokens.refresh_token}</div>
                 
+                ${tokenUpdated 
+                  ? `<div class="note">
+                      <p><strong>Good news!</strong> The refresh token has been automatically updated in your application.</p>
+                      <p>You can now return to the dashboard and use Google Calendar integration.</p>
+                    </div>`
+                  : `<div class="note">
+                      <p><strong>Important:</strong> ${errorMessage || 'The refresh token could not be automatically updated.'}</p>
+                    </div>`
+                }
+                
                 <div class="steps">
-                  <h2>Next Steps:</h2>
+                  <h2>Save for Future Use:</h2>
                   <ol>
                     <li>Copy the refresh token above</li>
                     <li>Add it to your environment variables as: <code>GOOGLE_CALENDAR_REFRESH_TOKEN</code></li>
-                    <li>Restart your application</li>
+                    <li>This ensures the token persists if the application restarts</li>
                   </ol>
                 </div>
                 
@@ -1026,6 +1083,17 @@ export async function registerRoutes(app: Express) {
             <p style="margin-top: 40px;">
               <a href="/dashboard">Return to Dashboard</a>
             </p>
+            
+            <script>
+              // Refresh the opener window if it exists (to update status)
+              if (window.opener && !window.opener.closed) {
+                try {
+                  window.opener.location.reload();
+                } catch (e) {
+                  console.error("Could not reload opener window:", e);
+                }
+              }
+            </script>
           </body>
         </html>
       `);
@@ -1037,7 +1105,7 @@ export async function registerRoutes(app: Express) {
           <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h1 style="color: #d32f2f;">Authentication Error</h1>
             <p>Failed to process the authorization code.</p>
-            <p>Error details: ${error.message || 'Unknown error'}</p>
+            <p>Error details: ${error instanceof Error ? error.message : 'Unknown error'}</p>
             <p><a href="/dashboard">Return to Dashboard</a></p>
           </body>
         </html>

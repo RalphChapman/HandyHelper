@@ -27,6 +27,7 @@ interface CalendarDiagnostics {
     helperScript: string;
     instructions: string;
     webLink: string;
+    refreshEndpoint: string;
   };
   tips: string[];
 }
@@ -72,6 +73,58 @@ function GetTokenButton({ webLink }: { webLink: string }) {
       <p className="text-xs mt-2 text-gray-600 dark:text-gray-400">
         This will open Google's authentication page in a new window
       </p>
+    </div>
+  );
+}
+
+// Button to refresh calendar client
+function RefreshCalendarButton({ refreshEndpoint }: { refreshEndpoint: string }) {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState<string | null>(null);
+  
+  const refreshCalendarClient = async () => {
+    try {
+      setIsRefreshing(true);
+      
+      // Call the refresh endpoint
+      const response = await fetch(refreshEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setLastRefreshed(data.timestamp);
+      } else {
+        console.error('Failed to refresh calendar client:', data.message);
+      }
+    } catch (error) {
+      console.error('Error refreshing calendar client:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+  
+  return (
+    <div className="mt-4">
+      <Button 
+        variant="outline" 
+        size="sm" 
+        onClick={refreshCalendarClient} 
+        disabled={isRefreshing}
+        className="w-full"
+      >
+        <RefreshCcw className="w-4 h-4 mr-2" />
+        {isRefreshing ? 'Refreshing Calendar Client...' : 'Refresh Calendar Client'}
+      </Button>
+      {lastRefreshed && (
+        <p className="text-xs mt-1 text-gray-600 dark:text-gray-400 text-center">
+          Last refreshed: {new Date(lastRefreshed).toLocaleTimeString()}
+        </p>
+      )}
     </div>
   );
 }
@@ -250,6 +303,11 @@ export function CalendarAdminPanel() {
                   Use the button below to start the Google authentication process and generate a new refresh token.
                 </p>
                 <GetTokenButton webLink={diagnostics.regenerationHelper.webLink} />
+                
+                {/* Add the refresh calendar client button */}
+                {diagnostics.regenerationHelper.refreshEndpoint && (
+                  <RefreshCalendarButton refreshEndpoint={diagnostics.regenerationHelper.refreshEndpoint} />
+                )}
                 
                 <details className="mt-4">
                   <summary className="cursor-pointer text-sm font-medium">Advanced: Generate token via terminal</summary>

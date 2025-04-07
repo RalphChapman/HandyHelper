@@ -4,22 +4,33 @@ import type { Booking } from '@shared/schema';
 // Initialize Google Calendar client
 let oauth2Client: any = null;
 let calendar: any = null;
+let lastRefreshToken: string | null = null;
 
 // Lazy initialization when credentials are available
-function initCalendarClient() {
-  // Always reinitialize to pick up new credentials
-  oauth2Client = null;
-  calendar = null;
-  
+export function initCalendarClient(forceReInit = false) {
   const clientId = process.env.GOOGLE_CALENDAR_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CALENDAR_CLIENT_SECRET;
   const refreshToken = process.env.GOOGLE_CALENDAR_REFRESH_TOKEN;
   
+  // Check if we need to reinitialize due to credential changes or force flag
+  const tokenChanged = refreshToken !== lastRefreshToken;
+  
+  if (oauth2Client && calendar && !tokenChanged && !forceReInit) {
+    // We already have a client initialized with the same refresh token
+    return true;
+  }
+  
+  // Clear existing clients to ensure we use fresh credentials
+  oauth2Client = null;
+  calendar = null;
+  
   // Log masked values to debug without exposing full credentials
-  console.log('[CALENDAR] Checking credentials:', {
+  console.log('[CALENDAR] Initializing calendar client with credentials:', {
     clientId: clientId ? `${clientId.substring(0, 5)}...${clientId.substring(clientId.length - 5)}` : 'Missing',
     clientSecret: clientSecret ? 'Present' : 'Missing',
-    refreshToken: refreshToken ? `${refreshToken.substring(0, 5)}...${refreshToken.substring(refreshToken.length - 5)}` : 'Missing'
+    refreshToken: refreshToken ? `${refreshToken.substring(0, 5)}...${refreshToken.substring(refreshToken.length - 5)}` : 'Missing',
+    tokenChanged: tokenChanged ? 'Yes' : 'No',
+    forceReInit: forceReInit ? 'Yes' : 'No'
   });
   
   if (!clientId || !clientSecret || !refreshToken) {
@@ -41,6 +52,9 @@ function initCalendarClient() {
       expiry_date: 1 
     });
     
+    // Store current refresh token for future change detection
+    lastRefreshToken = refreshToken;
+    
     // Add a token refresh handler to detect invalid tokens
     oauth2Client.on('tokens', (tokens: { refresh_token?: string; access_token?: string; expiry_date?: number }) => {
       console.log('[CALENDAR] Token refreshed successfully');
@@ -51,6 +65,12 @@ function initCalendarClient() {
           `${tokens.refresh_token.substring(0, 5)}...${tokens.refresh_token.substring(tokens.refresh_token.length - 5)}` : 
           'Not provided';
         console.log('[CALENDAR] New refresh token (masked):', maskedToken);
+        
+        // Update the environment variable with the new token
+        process.env.GOOGLE_CALENDAR_REFRESH_TOKEN = tokens.refresh_token;
+        lastRefreshToken = tokens.refresh_token;
+        
+        console.log('[CALENDAR] Updated environment with new refresh token');
       }
     });
     
