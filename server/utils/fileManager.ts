@@ -54,6 +54,71 @@ export class FileManager {
       const files = await fs.promises.readdir(this.uploadDir);
       console.log('[FileManager] Current files in directory:', files);
       
+      // If we're using Replit's persistent storage in production, create a symlink for backward compatibility
+      if (this.uploadDir.includes('.data')) {
+        const legacyUploadDir = path.resolve(process.cwd(), 'uploads');
+        
+        // Only create symlink if the paths are different
+        if (this.uploadDir !== legacyUploadDir) {
+          try {
+            // Check if legacy directory exists but is not a symlink
+            let needSymlink = false;
+            
+            try {
+              const stats = await fs.promises.lstat(legacyUploadDir);
+              if (!stats.isSymbolicLink()) {
+                // Directory exists but is not a symlink
+                console.log(`[FileManager] Legacy directory exists but is not a symlink. Will replace with symlink.`);
+                needSymlink = true;
+                
+                // Backup existing files if any
+                const backupDir = path.resolve(process.cwd(), 'uploads_backup');
+                console.log(`[FileManager] Backing up any existing files from ${legacyUploadDir} to ${backupDir}`);
+                
+                // Create backup directory
+                await fs.promises.mkdir(backupDir, { recursive: true });
+                
+                // Copy files before removing directory
+                const legacyFiles = await fs.promises.readdir(legacyUploadDir);
+                for (const file of legacyFiles) {
+                  const srcPath = path.join(legacyUploadDir, file);
+                  const destPath = path.join(backupDir, file);
+                  await fs.promises.copyFile(srcPath, destPath);
+                  
+                  // Also copy to the persistent directory if it doesn't exist there
+                  const persistentPath = path.join(this.uploadDir, file);
+                  try {
+                    await fs.promises.access(persistentPath);
+                  } catch (err) {
+                    // File doesn't exist in persistent directory, copy it
+                    await fs.promises.copyFile(srcPath, persistentPath);
+                  }
+                }
+                
+                // Now remove legacy directory to replace with symlink
+                try {
+                  await fs.promises.rm(legacyUploadDir, { recursive: true, force: true });
+                } catch (rmErr) {
+                  console.error(`[FileManager] Error removing legacy directory: ${rmErr}`);
+                }
+              }
+            } catch (err) {
+              // Directory doesn't exist, we'll create symlink
+              needSymlink = true;
+            }
+            
+            if (needSymlink) {
+              // Create symlink for backward compatibility
+              await fs.promises.symlink(this.uploadDir, legacyUploadDir, 'dir');
+              console.log(`[FileManager] Created symlink from ${legacyUploadDir} to ${this.uploadDir} for persistence across deployments`);
+            }
+          } catch (linkErr) {
+            console.warn(`[FileManager] Could not set up persistent storage symlink: ${linkErr}`);
+            // Don't throw an error, this is non-critical
+          }
+        }
+      }
+      
       this.initialized = true;
     } catch (error) {
       console.error('[FileManager] Initialization error:', error);
@@ -285,4 +350,11 @@ export class FileManager {
   }
 }
 
-export const fileManager = new FileManager(path.resolve(process.cwd(), 'uploads'));
+// Use Replit's persistent storage for file uploads if in production
+// This ensures files persist across deployments
+const isProduction = process.env.NODE_ENV === 'production';
+const uploadPath = isProduction 
+  ? path.resolve(process.env.HOME || process.cwd(), '.data', 'uploads')
+  : path.resolve(process.cwd(), 'uploads');
+
+export const fileManager = new FileManager(uploadPath);

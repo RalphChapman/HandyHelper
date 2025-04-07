@@ -13,9 +13,13 @@ import { sendQuoteNotification, sendBookingConfirmation } from "./utils/email";
 import { analyzeProjectDescription, estimateProjectCost } from "./utils/grok";
 import { createCalendarEvent, getAvailableTimeSlots } from "./utils/calendar";
 
-// Initialize multer with our upload directory
-// Create explicit upload directory path using cwd
-const UPLOADS_DIR = path.resolve(process.cwd(), "uploads");
+// Initialize multer with our upload directory from FileManager
+// This ensures uploads persist across deployments in production
+const isProduction = process.env.NODE_ENV === 'production';
+// We need to access the private property - use type assertion to make TypeScript happy
+const fileManagerAny = fileManager as any;
+const UPLOADS_DIR = fileManagerAny.uploadDir || path.resolve(process.cwd(), isProduction ? '.data/uploads' : 'uploads');
+
 console.log('[Multer Setup] Configuring uploads directory at:', UPLOADS_DIR);
 console.log('[Multer Setup] Current working directory:', process.cwd());
 console.log('[Multer Setup] Environment:', process.env.NODE_ENV || 'development');
@@ -136,10 +140,9 @@ export async function registerRoutes(app: Express) {
   await storage.initialize();
   await fileManager.initialize();
 
-  // Serve uploaded files - use path.resolve with process.cwd() for better compatibility
-  const uploadsDir = path.resolve(process.cwd(), "uploads");
-  console.log("[API] Serving uploads from:", uploadsDir);
-  app.use('/uploads', express.static(uploadsDir, {
+  // Serve uploaded files - use the same directory as fileManager for consistency
+  console.log("[API] Serving uploads from:", UPLOADS_DIR);
+  app.use('/uploads', express.static(UPLOADS_DIR, {
     setHeaders: (res, filePath) => {
       console.log('[API] Serving uploaded file:', filePath);
       const ext = path.extname(filePath).toLowerCase();
@@ -237,8 +240,8 @@ export async function registerRoutes(app: Express) {
           const filename = file.filename;
           const url = `/uploads/${filename}`;
           
-          // Verify file exists in the uploads directory
-          const fullPath = path.resolve(process.cwd(), 'uploads', filename);
+          // Verify file exists in the uploads directory using UPLOADS_DIR constant
+          const fullPath = path.join(UPLOADS_DIR, filename);
           const fileExists = fs.existsSync(fullPath);
           
           console.log('[API] Generated URL for file:', {
@@ -247,7 +250,8 @@ export async function registerRoutes(app: Express) {
             url: url,
             fullPath: fullPath,
             fileExists: fileExists,
-            fileSize: fileExists ? fs.statSync(fullPath).size : 'N/A'
+            fileSize: fileExists ? fs.statSync(fullPath).size : 'N/A',
+            uploadsDir: UPLOADS_DIR
           });
           
           // If file doesn't exist or is empty, we have a problem
@@ -255,7 +259,7 @@ export async function registerRoutes(app: Express) {
             console.error('[API] File not found in uploads directory:', fullPath);
             return res.status(500).json({ 
               message: "File was uploaded but not found in expected location",
-              details: { fullPath, filename }
+              details: { fullPath, filename, uploadsDir: UPLOADS_DIR }
             });
           }
           
@@ -501,17 +505,16 @@ export async function registerRoutes(app: Express) {
   // Add a diagnostic endpoint for checking uploads functionality
   app.get("/api/uploads-check", (req, res) => {
     const isProduction = process.env.NODE_ENV === 'production';
-    const uploadsDir = path.resolve(process.cwd(), "uploads");
     
     try {
       // Check if uploads directory exists
-      const dirExists = fs.existsSync(uploadsDir);
+      const dirExists = fs.existsSync(UPLOADS_DIR);
       
       // Check if it's writable
       let isWritable = false;
       if (dirExists) {
         try {
-          fs.accessSync(uploadsDir, fs.constants.W_OK);
+          fs.accessSync(UPLOADS_DIR, fs.constants.W_OK);
           isWritable = true;
         } catch (e) {
           // Not writable
@@ -522,7 +525,7 @@ export async function registerRoutes(app: Express) {
       let dirInfo = null;
       let files = [];
       if (dirExists) {
-        const stats = fs.statSync(uploadsDir);
+        const stats = fs.statSync(UPLOADS_DIR);
         dirInfo = {
           isDirectory: stats.isDirectory(),
           mode: stats.mode.toString(8),
@@ -532,13 +535,13 @@ export async function registerRoutes(app: Express) {
         };
         
         // List files in directory
-        files = fs.readdirSync(uploadsDir);
+        files = fs.readdirSync(UPLOADS_DIR);
       }
       
       // Try to write a test file
       let canWrite = false;
       const testFilename = `test-${Date.now()}.txt`;
-      const testPath = path.join(uploadsDir, testFilename);
+      const testPath = path.join(UPLOADS_DIR, testFilename);
       try {
         fs.writeFileSync(testPath, 'Upload test file');
         canWrite = true;
@@ -550,7 +553,7 @@ export async function registerRoutes(app: Express) {
       
       res.json({
         environment: isProduction ? 'production' : 'development',
-        uploadsDir,
+        uploadsDir: UPLOADS_DIR,
         dirExists,
         isWritable,
         canWrite,
@@ -618,8 +621,9 @@ export async function registerRoutes(app: Express) {
       // Try multiple possible paths to verify where the file might be
       const possiblePaths = [
         file.path, // Multer's recorded path
-        path.resolve(process.cwd(), 'uploads', file.filename),
-        path.resolve('./uploads', file.filename),
+        path.join(UPLOADS_DIR, file.filename), // Main uploads directory from FileManager
+        path.resolve(process.cwd(), 'uploads', file.filename), // Legacy path
+        path.resolve('./uploads', file.filename), // Relative path
         // Add any other potential paths here
       ];
       
@@ -672,9 +676,8 @@ export async function registerRoutes(app: Express) {
       // List all files in uploads directory for diagnostics
       let currentFiles = [];
       try {
-        const uploadsDir = path.resolve(process.cwd(), 'uploads');
-        if (fs.existsSync(uploadsDir)) {
-          currentFiles = fs.readdirSync(uploadsDir);
+        if (fs.existsSync(UPLOADS_DIR)) {
+          currentFiles = fs.readdirSync(UPLOADS_DIR);
           console.log("[API] Current files in uploads directory:", currentFiles);
         } else {
           console.error("[API] Uploads directory does not exist!");
@@ -699,7 +702,7 @@ export async function registerRoutes(app: Express) {
           foundAt: foundPath,
           pathChecks: pathResults,
           fileList: currentFiles,
-          directory: path.resolve(process.cwd(), 'uploads')
+          directory: UPLOADS_DIR
         },
         server: {
           cwd: process.cwd(),
