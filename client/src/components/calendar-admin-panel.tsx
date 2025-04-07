@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CircleAlert, AlertCircle, CheckCircle, Calendar, RefreshCcw } from 'lucide-react';
+import { CircleAlert, AlertCircle, CheckCircle, Calendar, RefreshCcw, ExternalLink } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 
 interface CalendarConfig {
@@ -13,14 +13,67 @@ interface CalendarConfig {
   refreshToken: string | null;
 }
 
+interface CalendarStatus {
+  hasErrors: boolean;
+  needsTokenRefresh: boolean;
+  lastChecked: string;
+}
+
 interface CalendarDiagnostics {
   configuration: CalendarConfig;
+  status: CalendarStatus;
   regenerationHelper: {
     available: boolean;
     helperScript: string;
     instructions: string;
+    webLink: string;
   };
   tips: string[];
+}
+
+// Button component for getting a new token
+function GetTokenButton({ webLink }: { webLink: string }) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [authUrl, setAuthUrl] = useState<string | null>(null);
+  
+  const getAuthUrl = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Request the auth URL from our endpoint
+      const response = await fetch(webLink);
+      const data = await response.json();
+      
+      if (data.authUrl) {
+        // Open the auth URL in a new window
+        window.open(data.authUrl, '_blank');
+      } else {
+        console.error('No auth URL returned from server');
+      }
+    } catch (error) {
+      console.error('Error getting auth URL:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  return (
+    <div className="flex flex-col items-start">
+      <Button 
+        variant="default" 
+        size="sm" 
+        onClick={getAuthUrl} 
+        disabled={isLoading}
+        className="bg-amber-600 hover:bg-amber-700 text-white dark:bg-amber-700 dark:hover:bg-amber-800 mt-2"
+      >
+        <ExternalLink className="w-4 h-4 mr-2" />
+        {isLoading ? 'Opening Authentication...' : 'Get New Token'}
+      </Button>
+      <p className="text-xs mt-2 text-gray-600 dark:text-gray-400">
+        This will open Google's authentication page in a new window
+      </p>
+    </div>
+  );
 }
 
 export function CalendarAdminPanel() {
@@ -160,14 +213,53 @@ export function CalendarAdminPanel() {
               </ul>
             </div>
             
-            <Alert>
+            {/* Status section */}
+            {diagnostics.status && (
+              <Alert variant={diagnostics.status.hasErrors ? "destructive" : "default"}>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Calendar Status</AlertTitle>
+                <AlertDescription>
+                  {diagnostics.status.hasErrors 
+                    ? (
+                      <div className="mt-2">
+                        <p className="font-semibold text-red-600 dark:text-red-400">
+                          There are issues with your Google Calendar integration.
+                        </p>
+                        {diagnostics.status.needsTokenRefresh && (
+                          <p className="mt-1">
+                            It appears your refresh token needs to be regenerated. 
+                            Please use the button below to get a new token.
+                          </p>
+                        )}
+                      </div>
+                    ) 
+                    : "Your Google Calendar integration is working correctly."}
+                  <div className="text-xs mt-2 text-gray-500">
+                    Last checked: {new Date(diagnostics.status.lastChecked).toLocaleString()}
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {/* Token regeneration section */}
+            <Alert className="border border-amber-300 bg-amber-50 dark:bg-amber-950 dark:border-amber-800">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Token Regeneration</AlertTitle>
               <AlertDescription>
-                Run this command in your terminal to generate a new refresh token:
-                <code className="block mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded text-sm font-mono">
-                  {diagnostics.regenerationHelper.helperScript}
-                </code>
+                <p className="mt-1 mb-2">
+                  Use the button below to start the Google authentication process and generate a new refresh token.
+                </p>
+                <GetTokenButton webLink={diagnostics.regenerationHelper.webLink} />
+                
+                <details className="mt-4">
+                  <summary className="cursor-pointer text-sm font-medium">Advanced: Generate token via terminal</summary>
+                  <div className="mt-2">
+                    <p className="text-sm mb-1">Alternative method using terminal command:</p>
+                    <code className="block p-2 bg-gray-100 dark:bg-gray-800 rounded text-sm font-mono">
+                      {diagnostics.regenerationHelper.helperScript}
+                    </code>
+                  </div>
+                </details>
               </AlertDescription>
             </Alert>
           </div>

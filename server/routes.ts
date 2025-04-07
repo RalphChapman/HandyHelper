@@ -4,6 +4,7 @@ import multer from "multer";
 import path from "path";
 import express from "express";
 import fs from 'fs';
+import { google } from 'googleapis';
 import { storage } from "./storage";
 import { fileManager } from "./utils/fileManager";
 import { insertQuoteRequestSchema, insertBookingSchema, insertSupplySchema } from "@shared/schema";
@@ -862,6 +863,16 @@ export async function registerRoutes(app: Express) {
       const clientSecret = process.env.GOOGLE_CALENDAR_CLIENT_SECRET;
       const refreshToken = process.env.GOOGLE_CALENDAR_REFRESH_TOKEN;
       
+      // Check if we have any calendar errors in recent logs
+      let calendarErrors = false;
+      try {
+        // Try a simple calendar operation to check current status
+        const testDate = new Date();
+        await getAvailableTimeSlots(testDate);
+      } catch (err) {
+        calendarErrors = true;
+      }
+      
       const diagnosticInfo = {
         configuration: {
           clientConfigured: !!clientId,
@@ -870,16 +881,22 @@ export async function registerRoutes(app: Express) {
           clientId: clientId ? `${clientId.substring(0, 5)}...${clientId.substring(clientId.length - 5)}` : null,
           refreshToken: refreshToken ? `${refreshToken.substring(0, 5)}...${refreshToken.substring(refreshToken.length - 5)}` : null,
         },
+        status: {
+          hasErrors: calendarErrors,
+          needsTokenRefresh: calendarErrors && !!clientId && !!clientSecret,
+          lastChecked: new Date().toISOString()
+        },
         regenerationHelper: {
           available: true,
           helperScript: "npx tsx server/utils/refresh-token-helper.ts",
-          instructions: "Run this helper script to generate a new refresh token"
+          instructions: "Run this helper script to generate a new refresh token",
+          webLink: "/api/calendar/auth-url" // New endpoint for browser-based auth
         },
         tips: [
           "If you're seeing 'invalid_grant' errors, you need to generate a new refresh token",
           "The refresh token may have expired or been revoked by Google",
-          "Use the refresh token helper script to get a new token",
-          "Make sure to update your environment variables with the new token"
+          "Click 'Get New Token' to start the browser-based authorization process",
+          "After authorization, copy the new refresh token and update your environment variable"
         ]
       };
       
@@ -887,6 +904,144 @@ export async function registerRoutes(app: Express) {
     } catch (error) {
       console.error("[API] Error getting calendar diagnostics:", error);
       res.status(500).json({ message: "Error getting calendar diagnostics" });
+    }
+  });
+  
+  // New endpoint to get Google authentication URL
+  app.get("/api/calendar/auth-url", (req, res) => {
+    try {
+      const clientId = process.env.GOOGLE_CALENDAR_CLIENT_ID;
+      const clientSecret = process.env.GOOGLE_CALENDAR_CLIENT_SECRET;
+      
+      if (!clientId || !clientSecret) {
+        return res.status(400).json({
+          error: "Missing credentials",
+          message: "Client ID and/or Client Secret are missing. Please check your environment variables."
+        });
+      }
+      
+      // Create OAuth client
+      const oauth2Client = new google.auth.OAuth2(
+        clientId,
+        clientSecret,
+        `${req.protocol}://${req.get('host')}/api/calendar/callback`
+      );
+      
+      // Generate auth URL
+      const authUrl = oauth2Client.generateAuthUrl({
+        access_type: 'offline',
+        scope: ['https://www.googleapis.com/auth/calendar'],
+        prompt: 'consent' // Force consent screen to always appear, ensuring refresh token is generated
+      });
+      
+      res.json({ authUrl });
+    } catch (error) {
+      console.error("[API] Error generating auth URL:", error);
+      res.status(500).json({ message: "Error generating auth URL" });
+    }
+  });
+  
+  // OAuth callback endpoint
+  app.get("/api/calendar/callback", async (req, res) => {
+    try {
+      const code = req.query.code as string;
+      
+      if (!code) {
+        return res.status(400).send(`
+          <html>
+            <head><title>Error</title></head>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h1 style="color: #d32f2f;">Authentication Error</h1>
+              <p>No authorization code received from Google.</p>
+              <p>Please try again.</p>
+            </body>
+          </html>
+        `);
+      }
+      
+      const clientId = process.env.GOOGLE_CALENDAR_CLIENT_ID;
+      const clientSecret = process.env.GOOGLE_CALENDAR_CLIENT_SECRET;
+      
+      // Create OAuth client
+      const oauth2Client = new google.auth.OAuth2(
+        clientId,
+        clientSecret,
+        `${req.protocol}://${req.get('host')}/api/calendar/callback`
+      );
+      
+      // Exchange the code for tokens
+      const { tokens } = await oauth2Client.getToken(code);
+      
+      // Return HTML page with the token
+      res.send(`
+        <html>
+          <head>
+            <title>Google Calendar Authentication</title>
+            <style>
+              body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }
+              .token-box { background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0; overflow-wrap: break-word; word-break: break-all; }
+              .success { color: #2e7d32; }
+              .error { color: #d32f2f; }
+              .steps { margin-top: 30px; }
+              .steps ol { padding-left: 20px; }
+              code { background: #eee; padding: 3px 5px; border-radius: 3px; font-family: monospace; }
+            </style>
+          </head>
+          <body>
+            <h1>Google Calendar Authentication Complete</h1>
+            
+            ${tokens.refresh_token 
+              ? `
+                <p class="success">✅ Successfully generated a new refresh token!</p>
+                
+                <h2>Your New Refresh Token:</h2>
+                <div class="token-box">${tokens.refresh_token}</div>
+                
+                <div class="steps">
+                  <h2>Next Steps:</h2>
+                  <ol>
+                    <li>Copy the refresh token above</li>
+                    <li>Add it to your environment variables as: <code>GOOGLE_CALENDAR_REFRESH_TOKEN</code></li>
+                    <li>Restart your application</li>
+                  </ol>
+                </div>
+                
+                <p><strong>Important:</strong> Keep this token secure! It provides access to your Google Calendar.</p>
+              `
+              : `
+                <p class="error">⚠️ No refresh token was generated.</p>
+                <p>This can happen if your Google account has already generated a refresh token for this application.</p>
+                
+                <div class="steps">
+                  <h2>To force a new refresh token:</h2>
+                  <ol>
+                    <li>Go to <a href="https://myaccount.google.com/permissions" target="_blank">Google Account Permissions</a></li>
+                    <li>Find and remove access for your application</li>
+                    <li>Close this window and try again</li>
+                  </ol>
+                </div>
+              `
+            }
+            
+            <p style="margin-top: 40px;">
+              <a href="/dashboard">Return to Dashboard</a>
+            </p>
+          </body>
+        </html>
+      `);
+    } catch (error) {
+      console.error("[API] Error handling OAuth callback:", error);
+      res.status(500).send(`
+        <html>
+          <head><title>Error</title></head>
+          <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #d32f2f;">Authentication Error</h1>
+            <p>Failed to process the authorization code.</p>
+            <p>Error details: ${error.message || 'Unknown error'}</p>
+            <p><a href="/dashboard">Return to Dashboard</a></p>
+          </body>
+        </html>
+      `);
     }
   });
 
