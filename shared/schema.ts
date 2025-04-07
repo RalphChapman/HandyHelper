@@ -135,7 +135,7 @@ export const insertBookingSchema = createInsertSchema(bookings)
     clientName: z.string().min(1, "Name is required"),
     clientEmail: z.string().email("Invalid email address"),
     clientPhone: z.string().min(10, "Phone number is required"),
-    appointmentDate: z.string().transform((str) => new Date(str).toISOString()),
+    appointmentDate: z.string().transform((str) => new Date(str)),
     notes: z.string().nullable().optional(),
   });
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
