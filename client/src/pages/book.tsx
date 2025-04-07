@@ -42,6 +42,9 @@ export default function Book() {
   // Get the currently selected date from the form
   const selectedDate = new Date(form.watch("appointmentDate"));
 
+  // Track available time slots for all dates to prevent flickering
+  const [timeSlotCache, setTimeSlotCache] = useState<Record<string, {time: Date, label: string, disabled: boolean}[]>>({});
+  
   // Fetch available time slots from the server
   const { data: availableTimeSlotsResponse = [], isLoading: timeSlotsLoading, refetch: refetchTimeSlots } = useQuery<any>({
     queryKey: ["/api/calendar/available-slots", selectedDate.toISOString().split('T')[0]],
@@ -55,6 +58,7 @@ export default function Book() {
       return data;
     },
     enabled: true,
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes to prevent unnecessary refetches
   });
   
   // Extract time slots from the response (handling both array and object formats)
@@ -66,10 +70,16 @@ export default function Book() {
   const getTimeSlots = (slots: Date[], date: Date) => {
     const today = new Date();
     const isToday = date.toDateString() === today.toDateString();
+    const dateString = date.toISOString().split('T')[0];
+    
+    // If we have cached time slots for this date and we're still loading new ones, use the cache
+    if (timeSlotCache[dateString] && timeSlotsLoading) {
+      return timeSlotCache[dateString];
+    }
     
     // If no slots are available from the API, fall back to business hours
     if (!slots || slots.length === 0) {
-      return BUSINESS_HOURS.map(hour => {
+      const generatedSlots = BUSINESS_HOURS.map(hour => {
         const timeSlot = new Date(date);
         timeSlot.setHours(hour, 0, 0, 0);
         
@@ -82,10 +92,14 @@ export default function Book() {
           disabled: isPast
         };
       });
+      
+      // We'll cache these slots in useEffect, not here
+      // to avoid infinite re-renders
+      return generatedSlots;
     }
     
     // Format the available slots from the API
-    return slots.map(slot => {
+    const formattedSlots = slots.map(slot => {
       const timeSlot = new Date(slot);
       // If it's today, disable past time slots
       const isPast = isToday && timeSlot < today;
@@ -96,16 +110,50 @@ export default function Book() {
         disabled: isPast
       };
     });
+    
+    // We'll cache these formatted slots in useEffect, not here
+    // to avoid infinite re-renders
+    return formattedSlots;
   };
 
   const timeSlots = getTimeSlots(availableTimeSlots, selectedDate);
   
-  // When the selected date changes, refetch the available slots
+  // Update cache whenever we get new time slots
+  useEffect(() => {
+    if (!timeSlotsLoading && availableTimeSlots.length > 0) {
+      const dateString = selectedDate.toISOString().split('T')[0];
+      const formattedSlots = availableTimeSlots.map(slot => {
+        const timeSlot = new Date(slot);
+        const today = new Date();
+        const isToday = selectedDate.toDateString() === today.toDateString();
+        const isPast = isToday && timeSlot < today;
+        
+        return {
+          time: timeSlot,
+          label: format(timeSlot, "h:mm a"),
+          disabled: isPast
+        };
+      });
+      
+      // Only update cache if we have new data
+      if (formattedSlots.length > 0) {
+        setTimeSlotCache(prev => ({
+          ...prev,
+          [dateString]: formattedSlots
+        }));
+      }
+    }
+  }, [availableTimeSlots, selectedDate, timeSlotsLoading]);
+  
+  // When the selected date changes, refetch the available slots if not in cache
   useEffect(() => {
     if (selectedDate) {
-      refetchTimeSlots();
+      const dateString = selectedDate.toISOString().split('T')[0];
+      if (!timeSlotCache[dateString]) {
+        refetchTimeSlots();
+      }
     }
-  }, [selectedDate, refetchTimeSlots]);
+  }, [selectedDate, refetchTimeSlots, timeSlotCache]);
 
   async function onSubmit(formData: any) {
     setIsSubmitting(true);
@@ -209,37 +257,56 @@ export default function Book() {
                       />
                     </FormControl>
 
-                    {/* Time Slots */}
-                    <div className="space-y-4">
-                      {timeSlotsLoading ? (
-                        <div className="text-center p-6">
-                          <Loader2 className="animate-spin h-8 w-8 mx-auto mb-2 text-primary" />
-                          <p className="text-muted-foreground">Checking calendar availability...</p>
+                    {/* Time Slots with Stable Layout */}
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-medium text-gray-700">Available Time Slots</h3>
+                      
+                      {/* Loading Overlay */}
+                      <div className="relative min-h-[180px] border rounded-md bg-card">
+                        {timeSlotsLoading && (
+                          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-md">
+                            <div className="text-center">
+                              <Loader2 className="animate-spin h-8 w-8 mx-auto mb-2 text-primary" />
+                              <p className="text-muted-foreground text-sm">Loading time slots...</p>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Time Slot Grid - Always rendered to maintain layout stability */}
+                        <div className="p-4">
+                          {timeSlots.length === 0 ? (
+                            <div className="text-center py-10">
+                              <p className="text-muted-foreground">No available time slots for this date.</p>
+                              <p className="text-muted-foreground text-sm mt-1">Please select another date.</p>
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-3 gap-2">
+                              {timeSlots.map(({ time, label, disabled }) => (
+                                <Button
+                                  key={label}
+                                  type="button"
+                                  variant={time.getTime() === new Date(field.value).getTime() ? "default" : "outline"}
+                                  className="w-full transition-all"
+                                  disabled={disabled}
+                                  onClick={() => {
+                                    const newDate = new Date(selectedDate);
+                                    newDate.setHours(time.getHours(), 0, 0, 0);
+                                    field.onChange(newDate.toISOString());
+                                  }}
+                                >
+                                  {label}
+                                </Button>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      ) : timeSlots.length === 0 ? (
-                        <div className="text-center p-6 border rounded-md bg-muted/20">
-                          <p className="text-muted-foreground">No available time slots for this date. Please select another date.</p>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-3 gap-2">
-                          {timeSlots.map(({ time, label, disabled }) => (
-                            <Button
-                              key={label}
-                              type="button"
-                              variant={time.getTime() === new Date(field.value).getTime() ? "default" : "outline"}
-                              className="w-full"
-                              disabled={disabled}
-                              onClick={() => {
-                                const newDate = new Date(selectedDate);
-                                newDate.setHours(time.getHours(), 0, 0, 0);
-                                field.onChange(newDate.toISOString());
-                              }}
-                            >
-                              {label}
-                            </Button>
-                          ))}
-                        </div>
-                      )}
+                      </div>
+                      
+                      {/* Selected Time Display */}
+                      <div className="text-sm text-center pt-2">
+                        <span className="text-muted-foreground">Selected time: </span>
+                        <span className="font-medium">{format(new Date(field.value), "EEEE, MMMM d, yyyy 'at' h:mm a")}</span>
+                      </div>
                     </div>
                   </div>
                   <FormMessage />
