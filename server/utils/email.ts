@@ -10,7 +10,7 @@ const createTransporter = () => {
     return nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: "chapman.ralph@gmail.com",
+        user: "chapman.ralph@gmail.com", // Keep this as the primary email for SMTP auth
         pass: process.env.EMAIL_APP_PASSWORD
       },
       tls: {
@@ -164,7 +164,7 @@ HandyPro Service Team
 
                 <p style="margin: 8px 0; display: flex; align-items: center;">
                   <span style="color: #64748b; margin-right: 8px;">✉️</span>
-                  <a href="mailto:chapman.ralph@gmail.com" style="color: #2563eb; text-decoration: none;">chapman.ralph@gmail.com</a>
+                  <a href="mailto:chapman.ralph@gmail.com,ralph.chapman2024@gamail.com" style="color: #2563eb; text-decoration: none;">chapman.ralph@gmail.com, ralph.chapman2024@gamail.com</a>
                 </p>
 
                 <p style="margin: 8px 0; display: flex; align-items: center;">
@@ -275,7 +275,7 @@ HandyPro Service Team
 
                 <p style="margin: 8px 0; display: flex; align-items: center;">
                   <span style="color: #64748b; margin-right: 8px;">✉️</span>
-                  <a href="mailto:chapman.ralph@gmail.com" style="color: #2563eb; text-decoration: none;">chapman.ralph@gmail.com</a>
+                  <a href="mailto:chapman.ralph@gmail.com,ralph.chapman2024@gamail.com" style="color: #2563eb; text-decoration: none;">chapman.ralph@gmail.com, ralph.chapman2024@gamail.com</a>
                 </p>
 
                 <p style="margin: 8px 0; display: flex; align-items: center;">
