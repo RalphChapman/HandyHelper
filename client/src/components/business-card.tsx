@@ -22,7 +22,7 @@ export function BusinessCard() {
     name: "Ralph Chapman",
     phone: "(864) 361-3730",
     phoneClean: "8643613730", // Clean version without special characters
-    email: "chapman.ralph@gmail.com, ralph.chapman2024@gamail.com",
+    email: "chapman.ralph@gmail.com, ralph.chapman2024@gmail.com",
     linkedin: "linkedin.com/in/ralph-chapman",
     company: "HandyPro Services",
     jobTitle: "Professional Handyman"

@@ -44,8 +44,8 @@ const sendQuoteNotification = async (quoteRequest: any) => {
   const serviceInfo = `Service Requested: ${quoteRequest.serviceName}`;
   // Determine recipient list - don't include customer email if it's not provided
   const recipientList = quoteRequest.email 
-    ? [quoteRequest.email, "chapman.ralph@gmail.com", "ralph.chapman2024@gamail.com"] 
-    : ["chapman.ralph@gmail.com", "ralph.chapman2024@gamail.com"];
+    ? [quoteRequest.email, "chapman.ralph@gmail.com", "ralph.chapman2024@gmail.com"] 
+    : ["chapman.ralph@gmail.com", "ralph.chapman2024@gmail.com"];
     
   console.log("[EMAIL] Recipients:", recipientList);
     
@@ -87,7 +87,7 @@ Visit our website: https://handyhelper.replit.app/
 Contact Information:
 Ralph Chapman
 Phone: (864) 361-3730
-Email: chapman.ralph@gmail.com, ralph.chapman2024@gamail.com
+Email: chapman.ralph@gmail.com, ralph.chapman2024@gmail.com
 LinkedIn: linkedin.com/in/ralph-chapman
 
 Best regards,
@@ -164,7 +164,7 @@ HandyPro Service Team
 
                 <p style="margin: 8px 0; display: flex; align-items: center;">
                   <span style="color: #64748b; margin-right: 8px;">✉️</span>
-                  <a href="mailto:chapman.ralph@gmail.com,ralph.chapman2024@gamail.com" style="color: #2563eb; text-decoration: none;">chapman.ralph@gmail.com, ralph.chapman2024@gamail.com</a>
+                  <a href="mailto:chapman.ralph@gmail.com,ralph.chapman2024@gmail.com" style="color: #2563eb; text-decoration: none;">chapman.ralph@gmail.com, ralph.chapman2024@gmail.com</a>
                 </p>
 
                 <p style="margin: 8px 0; display: flex; align-items: center;">
@@ -216,7 +216,7 @@ const sendBookingConfirmation = async (booking: any) => {
 
   const message = {
     from: '"HandyPro Service" <chapman.ralph@gmail.com>',
-    to: [booking.clientEmail, "chapman.ralph@gmail.com", "ralph.chapman2024@gamail.com"].join(", "),
+    to: [booking.clientEmail, "chapman.ralph@gmail.com", "ralph.chapman2024@gmail.com"].join(", "),
     subject: "Booking Confirmation - HandyPro Service",
     text: `
 Thank you for your booking!
@@ -275,7 +275,7 @@ HandyPro Service Team
 
                 <p style="margin: 8px 0; display: flex; align-items: center;">
                   <span style="color: #64748b; margin-right: 8px;">✉️</span>
-                  <a href="mailto:chapman.ralph@gmail.com,ralph.chapman2024@gamail.com" style="color: #2563eb; text-decoration: none;">chapman.ralph@gmail.com, ralph.chapman2024@gamail.com</a>
+                  <a href="mailto:chapman.ralph@gmail.com,ralph.chapman2024@gmail.com" style="color: #2563eb; text-decoration: none;">chapman.ralph@gmail.com, ralph.chapman2024@gmail.com</a>
                 </p>
 
                 <p style="margin: 8px 0; display: flex; align-items: center;">
@@ -323,7 +323,7 @@ const sendPasswordResetEmail = async (email: string, resetToken: string) => {
 
     const message = {
       from: '"HandyPro Service" <chapman.ralph@gmail.com>',
-      to: [email, "chapman.ralph@gmail.com", "ralph.chapman2024@gamail.com"].join(", "),
+      to: [email, "chapman.ralph@gmail.com", "ralph.chapman2024@gmail.com"].join(", "),
       subject: "Password Reset Request",
       text: `
 Hello,
