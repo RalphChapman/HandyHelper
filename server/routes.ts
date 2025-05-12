@@ -520,7 +520,7 @@ export async function registerRoutes(app: Express) {
   });
 
   // File upload endpoint
-  app.post("/api/upload", upload.single("image"), handleUploadError, async (req, res) => {
+  app.post("/api/upload", upload.single("image"), handleUploadError, async (req: Request, res: Response) => {
     try {
       console.log("[API] Processing file upload");
       
