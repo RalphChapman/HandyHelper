@@ -9,7 +9,7 @@ import { storage } from "./storage";
 import { fileManager } from "./utils/fileManager";
 import { insertQuoteRequestSchema, insertBookingSchema, insertSupplySchema } from "@shared/schema";
 import { ZodError } from "zod";
-import { sendQuoteNotification, sendBookingConfirmation } from "./utils/email";
+import { sendQuoteNotification, sendBookingConfirmation, testEmailSending } from "./utils/email";
 import { analyzeProjectDescription, estimateProjectCost } from "./utils/grok";
 import { createCalendarEvent, getAvailableTimeSlots } from "./utils/calendar";
 

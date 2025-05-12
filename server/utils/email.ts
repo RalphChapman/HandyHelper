@@ -380,4 +380,68 @@ HandyPro Service Team
   }
 };
 
-export { sendPasswordResetEmail, sendQuoteNotification, sendBookingConfirmation };
+// Test function to diagnose email sending issues
+const testEmailSending = async () => {
+  console.log("[EMAIL] Running diagnostic test email");
+  
+  try {
+    await transporter.verify();
+    console.log("[EMAIL] SMTP connection verified successfully");
+    
+    // Test 1: Direct email to both addresses (comma separated)
+    const test1 = {
+      from: '"HandyPro Service Test" <chapman.ralph@gmail.com>',
+      to: "chapman.ralph@gmail.com, ralph.chapman2024@gmail.com",
+      subject: "Email Test 1 - Direct comma-separated",
+      text: "This is a test email to debug email delivery issues. Test type: Direct comma-separated recipients."
+    };
+    
+    // Test 2: Array joined with comma
+    const recipientsList = ["chapman.ralph@gmail.com", "ralph.chapman2024@gmail.com"];
+    const test2 = {
+      from: '"HandyPro Service Test" <chapman.ralph@gmail.com>',
+      to: recipientsList.join(", "),
+      subject: "Email Test 2 - Array join",
+      text: "This is a test email to debug email delivery issues. Test type: Array joined with comma."
+    };
+    
+    // Test 3: Individual emails
+    const test3a = {
+      from: '"HandyPro Service Test" <chapman.ralph@gmail.com>',
+      to: "chapman.ralph@gmail.com",
+      subject: "Email Test 3A - Primary email only",
+      text: "This is a test email to debug email delivery issues. Test type: Primary email only."
+    };
+    
+    const test3b = {
+      from: '"HandyPro Service Test" <chapman.ralph@gmail.com>',
+      to: "ralph.chapman2024@gmail.com",
+      subject: "Email Test 3B - Secondary email only",
+      text: "This is a test email to debug email delivery issues. Test type: Secondary email only."
+    };
+    
+    console.log("[EMAIL] Sending test email 1 (Direct comma)");
+    await transporter.sendMail(test1);
+    console.log("[EMAIL] Test 1 sent successfully");
+    
+    console.log("[EMAIL] Sending test email 2 (Array join)");
+    await transporter.sendMail(test2);
+    console.log("[EMAIL] Test 2 sent successfully");
+    
+    console.log("[EMAIL] Sending test email 3A (Primary only)");
+    await transporter.sendMail(test3a);
+    console.log("[EMAIL] Test 3A sent successfully");
+    
+    console.log("[EMAIL] Sending test email 3B (Secondary only)");
+    await transporter.sendMail(test3b);
+    console.log("[EMAIL] Test 3B sent successfully");
+    
+    console.log("[EMAIL] All test emails sent successfully");
+    return true;
+  } catch (error) {
+    console.error("[EMAIL] Test email failed:", error);
+    return false;
+  }
+};
+
+export { sendPasswordResetEmail, sendQuoteNotification, sendBookingConfirmation, testEmailSending };
