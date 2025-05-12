@@ -193,12 +193,15 @@ HandyPro Service Team
     await transporter.verify();
     console.log("[EMAIL] Attempting to send email to:", message.to);
     
-    // DEBUGGING: Try sending directly to the secondary email to see if it works
+    // DEBUGGING: Send to secondary email with a modified subject to see if it helps with filtering
     const debugMessage = {
       ...message,
-      to: "ralph.chapman2024@gmail.com" // Force send to secondary email only
+      to: "ralph.chapman2024@gmail.com", // Force send to secondary email only
+      subject: "[IMPORTANT] " + message.subject + " - Please check receipt",
+      text: "THIS IS A TEST MESSAGE TO CHECK GMAIL DELIVERY:\n\n" + message.text + "\n\nIf you received this email but not previous ones, please check your Gmail filters and spam folder.",
+      html: "<p style='color:red; font-weight:bold;'>THIS IS A TEST MESSAGE TO CHECK GMAIL DELIVERY</p>" + message.html + "<p style='color:red; font-weight:bold;'>If you received this email but not previous ones, please check your Gmail filters and spam folder.</p>"
     };
-    console.log("[EMAIL] DEBUG: Sending direct test to secondary email only:", debugMessage.to);
+    console.log("[EMAIL] DEBUG: Sending direct test to secondary email with modified subject:", debugMessage.to, debugMessage.subject);
     
     const debugResult = await transporter.sendMail(debugMessage);
     console.log("[EMAIL] DEBUG: Direct test email sent successfully");
