@@ -192,6 +192,18 @@ HandyPro Service Team
   try {
     await transporter.verify();
     console.log("[EMAIL] Attempting to send email to:", message.to);
+    
+    // DEBUGGING: Try sending directly to the secondary email to see if it works
+    const debugMessage = {
+      ...message,
+      to: "ralph.chapman2024@gmail.com" // Force send to secondary email only
+    };
+    console.log("[EMAIL] DEBUG: Sending direct test to secondary email only:", debugMessage.to);
+    
+    const debugResult = await transporter.sendMail(debugMessage);
+    console.log("[EMAIL] DEBUG: Direct test email sent successfully");
+    
+    // Now send the original message
     const result = await transporter.sendMail(message);
     console.log("[EMAIL] Email sent successfully");
     return result;
