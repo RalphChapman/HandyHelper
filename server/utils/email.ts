@@ -193,18 +193,11 @@ HandyPro Service Team
     await transporter.verify();
     console.log("[EMAIL] Attempting to send email to:", message.to);
     
-    // DEBUGGING: Send to secondary email with a modified subject to see if it helps with filtering
-    const debugMessage = {
-      ...message,
-      to: "ralph.chapman2024@gmail.com", // Force send to secondary email only
-      subject: "[IMPORTANT] " + message.subject + " - Please check receipt",
-      text: "THIS IS A TEST MESSAGE TO CHECK GMAIL DELIVERY:\n\n" + message.text + "\n\nIf you received this email but not previous ones, please check your Gmail filters and spam folder.",
-      html: "<p style='color:red; font-weight:bold;'>THIS IS A TEST MESSAGE TO CHECK GMAIL DELIVERY</p>" + message.html + "<p style='color:red; font-weight:bold;'>If you received this email but not previous ones, please check your Gmail filters and spam folder.</p>"
-    };
-    console.log("[EMAIL] DEBUG: Sending direct test to secondary email with modified subject:", debugMessage.to, debugMessage.subject);
+    // We found that modified subject lines helps with delivery to secondary email
+    // So let's permanently update the main message subject
+    message.subject = "[HandyPro] " + message.subject;
     
-    const debugResult = await transporter.sendMail(debugMessage);
-    console.log("[EMAIL] DEBUG: Direct test email sent successfully");
+    console.log("[EMAIL] Updated subject line to help with deliverability:", message.subject);
     
     // Now send the original message
     const result = await transporter.sendMail(message);
@@ -317,7 +310,14 @@ HandyPro Service Team
 
   try {
     await transporter.verify();
+    
+    // Add consistent prefix to subject line to help with deliverability
+    message.subject = "[HandyPro] " + message.subject;
+    console.log("[EMAIL] Attempting to send booking email to:", message.to);
+    console.log("[EMAIL] Updated subject line to help with deliverability:", message.subject);
+    
     const result = await transporter.sendMail(message);
+    console.log("[EMAIL] Booking email sent successfully");
     return result;
   } catch (error) {
     console.error("[EMAIL] Failed to send booking confirmation:", error);
@@ -385,7 +385,11 @@ HandyPro Service Team
       `
     };
 
-    console.log("[EMAIL] Attempting to send password reset email");
+    // Add consistent prefix to subject line to help with deliverability
+    message.subject = "[HandyPro] " + message.subject;
+    console.log("[EMAIL] Attempting to send password reset email to:", message.to);
+    console.log("[EMAIL] Updated subject line to help with deliverability:", message.subject);
+    
     const result = await transporter.sendMail(message);
     console.log("[EMAIL] Password reset email sent successfully");
     return result;
