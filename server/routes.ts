@@ -215,6 +215,38 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ message: "Failed to fetch projects" });
     }
   });
+  
+  // Generic projects endpoint - gets all projects for all services
+  app.get("/api/projects", async (req, res) => {
+    try {
+      console.log("[API] Fetching all projects");
+      
+      // Get service ID from query parameter if provided
+      const serviceId = req.query.serviceId ? parseInt(req.query.serviceId as string, 10) : null;
+      
+      let projects = [];
+      if (serviceId && !isNaN(serviceId)) {
+        // If service ID is provided, get projects for that service
+        console.log(`[API] Filtering projects by service ID: ${serviceId}`);
+        projects = await storage.getProjects(serviceId);
+      } else {
+        // Otherwise, get projects for all services
+        console.log("[API] Getting projects for all services");
+        const services = await storage.getServices();
+        
+        // Get projects for each service and flatten the array
+        const projectPromises = services.map(service => storage.getProjects(service.id));
+        const projectsByService = await Promise.all(projectPromises);
+        projects = projectsByService.flat();
+      }
+      
+      console.log(`[API] Found ${projects.length} projects`);
+      res.json(projects);
+    } catch (error) {
+      console.error("[API] Error fetching all projects:", error);
+      res.status(500).json({ message: "Failed to fetch projects" });
+    }
+  });
 
   app.get("/api/services/:id/providers", async (req, res) => {
     try {
